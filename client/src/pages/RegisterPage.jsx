@@ -41,7 +41,6 @@ export const RegisterPage = () => {
         email: formData.email,
         password: formData.password,
       });
-      // After registration, directly proceed to business setup as specified!
       navigate(ROUTES.BUSINESS_SETUP, { replace: true });
     } catch (err) {
       setError(err.message || 'Registration failed');
@@ -53,32 +52,34 @@ export const RegisterPage = () => {
   return (
     <div>
       <div className="mb-6">
-        <h3 className="text-xl font-bold text-slate-900">Create your account</h3>
-        <p className="text-xs text-slate-500 mt-1">
+        <h3 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+          Create Account
+        </h3>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
           Step 1: Sign up, then configure your business inventory
         </p>
       </div>
 
       {error && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg bg-rose-50 p-3 text-xs text-rose-700 border border-rose-200">
+        <div className="mb-4 flex items-center gap-2 rounded-lg bg-rose-50/80 p-3 text-xs text-rose-700 border border-rose-200/80 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-900/40">
           <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-3.5">
         <Input
           label="Full Name"
           id="name"
           type="text"
-          placeholder="e.g. John Doe"
+          placeholder="e.g. Alex Mercer"
           required
           value={formData.name}
           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
         />
 
         <Input
-          label="Email Address"
+          label="Work Email"
           id="email"
           type="email"
           placeholder="name@company.com"
@@ -91,7 +92,7 @@ export const RegisterPage = () => {
           label="Password"
           id="password"
           type="password"
-          placeholder="At least 6 characters"
+          placeholder="Min. 6 characters"
           required
           value={formData.password}
           onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -108,15 +109,15 @@ export const RegisterPage = () => {
         />
 
         <Button type="submit" variant="primary" loading={loading} className="w-full mt-2">
-          <UserPlus className="mr-2 h-4 w-4" /> Create Account & Continue
+          <UserPlus className="h-3.5 w-3.5 mr-1" /> Create Account & Setup Business
         </Button>
       </form>
 
-      <p className="mt-6 text-center text-xs text-slate-600">
-        Already have an account?{' '}
+      <p className="mt-6 text-center text-xs text-zinc-500 dark:text-zinc-400">
+        Already registered?{' '}
         <Link
           to={ROUTES.LOGIN}
-          className="font-semibold text-indigo-600 hover:text-indigo-500 hover:underline"
+          className="font-medium text-emerald-600 dark:text-emerald-400 hover:underline"
         >
           Sign in
         </Link>

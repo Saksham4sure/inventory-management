@@ -22,36 +22,38 @@ export const QRViewerModal = ({ isOpen, onClose, product, currency = 'USD' }) =>
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Print QR Label - ${product.sku}</title>
+          <title>Print Label - ${product.sku}</title>
           <style>
             body {
-              font-family: sans-serif;
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
               display: flex;
               flex-direction: column;
               align-items: center;
               justify-content: center;
               padding: 24px;
+              color: #09090b;
+            }
+            .label {
+              border: 1px dashed #71717a;
+              border-radius: 12px;
+              padding: 18px 24px;
               text-align: center;
+              width: 260px;
             }
-            .label-box {
-              border: 2px dashed #000;
-              padding: 20px;
-              border-radius: 8px;
-              display: inline-block;
-            }
-            h2 { margin: 0 0 8px 0; font-size: 20px; }
-            p { margin: 4px 0; font-size: 14px; }
-            img { width: 220px; height: 220px; margin: 12px 0; }
-            .sku { font-weight: bold; font-family: monospace; font-size: 18px; letter-spacing: 2px; }
+            h2 { margin: 0 0 6px 0; font-size: 16px; font-weight: 700; }
+            .sku { font-family: monospace; font-size: 14px; color: #52525b; letter-spacing: 1px; margin-bottom: 8px; }
+            img { width: 180px; height: 180px; margin: 6px 0; }
+            .price { font-size: 16px; font-weight: 700; margin: 4px 0; color: #059669; }
+            .footer { font-size: 10px; color: #a1a1aa; margin-top: 8px; }
           </style>
         </head>
         <body>
-          <div class="label-box">
+          <div class="label">
             <h2>${product.name}</h2>
             <div class="sku">SKU: ${product.sku}</div>
-            <img src="${product.qrCodeImage}" alt="QR Code" />
-            <p><strong>Price:</strong> ${formatCurrency(product.sellingPrice, currency)}</p>
-            <p style="font-size: 11px; color: #666;">Scan for Instant Purchase & Stock Verification</p>
+            <img src="${product.qrCodeImage}" alt="QR" />
+            <div class="price">${formatCurrency(product.sellingPrice, currency)}</div>
+            <div class="footer">Scan with StockPulse QR Scanner</div>
           </div>
           <script>
             window.onload = () => { window.print(); window.close(); };
@@ -65,44 +67,48 @@ export const QRViewerModal = ({ isOpen, onClose, product, currency = 'USD' }) =>
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Product QR Code Label" maxWidth="max-w-md">
       <div className="flex flex-col items-center text-center space-y-4">
-        <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-6 shadow-inner">
+        {/* Crisp high-contrast QR display frame */}
+        <div className="rounded-xl border border-zinc-200/80 bg-white p-5 shadow-xs dark:border-zinc-800">
           {product.qrCodeImage ? (
             <img
               src={product.qrCodeImage}
               alt={`QR code for ${product.name}`}
-              className="h-56 w-56 object-contain rounded-lg shadow-sm"
+              className="h-48 w-48 object-contain rounded-lg"
             />
           ) : (
-            <div className="h-56 w-56 flex items-center justify-center text-slate-400">
-              No QR Generated
+            <div className="h-48 w-48 flex items-center justify-center text-zinc-400 text-xs">
+              No QR available
             </div>
           )}
         </div>
 
         <div>
-          <h4 className="text-lg font-bold text-slate-900">{product.name}</h4>
-          <div className="flex items-center justify-center gap-2 mt-1">
-            <span className="inline-flex items-center gap-1 font-mono text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">
+          <h4 className="text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+            {product.name}
+          </h4>
+          <div className="flex items-center justify-center gap-2 mt-1.5">
+            <span className="inline-flex items-center gap-1 font-mono text-xs font-medium px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-750">
               <Tag className="h-3 w-3" /> {product.sku}
             </span>
-            <span className="text-sm font-semibold text-indigo-600">
+            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
               {formatCurrency(product.sellingPrice, currency)}
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-2 font-mono break-all px-2">
-            Payload: {product.qrCodeData}
+          <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-2 font-mono break-all px-4">
+            {product.qrCodeData}
           </p>
         </div>
 
-        <div className="flex w-full gap-3 pt-2">
+        <div className="flex w-full gap-2.5 pt-2">
           <Button variant="secondary" className="flex-1" onClick={handleDownload}>
-            <Download className="mr-2 h-4 w-4" /> Download PNG
+            <Download className="h-3.5 w-3.5 mr-1" /> Download
           </Button>
           <Button variant="primary" className="flex-1" onClick={handlePrint}>
-            <Printer className="mr-2 h-4 w-4" /> Print Label
+            <Printer className="h-3.5 w-3.5 mr-1" /> Print Label
           </Button>
         </div>
       </div>
     </Modal>
   );
 };
+export default QRViewerModal;

@@ -41,14 +41,16 @@ export const LoginPage = () => {
   return (
     <div>
       <div className="mb-6">
-        <h3 className="text-xl font-bold text-slate-900">Sign in to your account</h3>
-        <p className="text-xs text-slate-500 mt-1">
-          Access your inventory dashboard and QR scanner
+        <h3 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+          Sign In
+        </h3>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+          Access your inventory workspace and QR scanner
         </p>
       </div>
 
       {error && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg bg-rose-50 p-3 text-xs text-rose-700 border border-rose-200">
+        <div className="mb-4 flex items-center gap-2 rounded-lg bg-rose-50/80 p-3 text-xs text-rose-700 border border-rose-200/80 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-900/40">
           <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>
@@ -76,17 +78,17 @@ export const LoginPage = () => {
         />
 
         <Button type="submit" variant="primary" loading={loading} className="w-full mt-2">
-          <LogIn className="mr-2 h-4 w-4" /> Sign In
+          <LogIn className="h-3.5 w-3.5 mr-1" /> Continue to Workspace
         </Button>
       </form>
 
-      <p className="mt-6 text-center text-xs text-slate-600">
-        Don't have an account?{' '}
+      <p className="mt-6 text-center text-xs text-zinc-500 dark:text-zinc-400">
+        New to StockPulse?{' '}
         <Link
           to={ROUTES.REGISTER}
-          className="font-semibold text-indigo-600 hover:text-indigo-500 hover:underline"
+          className="font-medium text-emerald-600 dark:text-emerald-400 hover:underline"
         >
-          Sign up & set up business
+          Create account
         </Link>
       </p>
     </div>

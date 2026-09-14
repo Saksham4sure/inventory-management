@@ -13,11 +13,8 @@ import {
   Keyboard,
   CheckCircle2,
   AlertTriangle,
-  ShoppingCart,
   TrendingDown,
   TrendingUp,
-  RefreshCw,
-  Tag,
 } from 'lucide-react';
 
 export const QRScanPage = () => {
@@ -40,7 +37,6 @@ export const QRScanPage = () => {
   const [processingTxn, setProcessingTxn] = useState(false);
 
   const scannerRef = useRef(null);
-  const isScannerRunning = useRef(false);
 
   const lookupProduct = async (rawCode) => {
     if (!rawCode || !rawCode.trim()) return;
@@ -75,7 +71,7 @@ export const QRScanPage = () => {
       scannerId,
       {
         fps: 10,
-        qrbox: { width: 250, height: 250 },
+        qrbox: { width: 220, height: 220 },
         aspectRatio: 1.0,
       },
       false
@@ -86,7 +82,7 @@ export const QRScanPage = () => {
         lookupProduct(decodedText);
       },
       () => {
-        // scan failure / scanning frame - ignore to avoid spamming
+        // frame scanning callback - quiet
       }
     );
 
@@ -100,7 +96,6 @@ export const QRScanPage = () => {
     };
   }, [scanMode]);
 
-  // Update custom price when transaction type changes
   useEffect(() => {
     if (scannedProduct) {
       setCustomPrice(txnType === 'SALE' ? scannedProduct.sellingPrice : scannedProduct.costPrice);
@@ -148,7 +143,6 @@ export const QRScanPage = () => {
         scannedViaQR: true,
       });
 
-      // Update local product stock
       const updatedStock =
         txnType === 'SALE'
           ? scannedProduct.currentStock - qty
@@ -160,7 +154,7 @@ export const QRScanPage = () => {
       }));
 
       setSuccessMessage(
-        `Successfully processed ${txnType === 'SALE' ? 'Sale' : 'Purchase'}! Ref #${res.referenceNumber}. Stock updated to ${updatedStock} ${scannedProduct.unit}.`
+        `Processed ${txnType === 'SALE' ? 'Sale' : 'Purchase'}! Ref #${res.referenceNumber}. New stock: ${updatedStock} ${scannedProduct.unit}.`
       );
       setQuantity(1);
       setNotes('');
@@ -172,86 +166,88 @@ export const QRScanPage = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-          QR Scanner & Stock Tracker
-        </h2>
-        <p className="text-sm text-slate-500 mt-1">
-          Scan QR labels to instantly record sales, receive purchases, or check live stock counts
+      <div className="pb-2 border-b border-zinc-200/60 dark:border-zinc-800/60">
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+          QR Scanner & Stock Operations
+        </h1>
+        <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
+          Scan QR shelf labels to verify counts and log instant sales or stock-in orders
         </p>
       </div>
 
       {/* Mode Switcher */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-3">
+      <div className="flex items-center gap-1.5 p-1 rounded-lg border border-zinc-200/80 dark:border-zinc-800 bg-zinc-100/60 dark:bg-zinc-900 w-fit text-xs font-medium">
         <button
           type="button"
           onClick={() => setScanMode('camera')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-all ${
             scanMode === 'camera'
-              ? 'bg-indigo-600 text-white shadow-sm'
-              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+              ? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-800 dark:text-zinc-100'
+              : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
           }`}
         >
-          <Camera className="h-4 w-4" /> Live Camera Scanner
+          <Camera className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" /> Camera Scanner
         </button>
         <button
           type="button"
           onClick={() => setScanMode('manual')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md transition-all ${
             scanMode === 'manual'
-              ? 'bg-indigo-600 text-white shadow-sm'
-              : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+              ? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-800 dark:text-zinc-100'
+              : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
           }`}
         >
-          <Keyboard className="h-4 w-4" /> Barcode Gun / Manual Input
+          <Keyboard className="h-3.5 w-3.5" /> Barcode Gun / Manual
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Scanner Column */}
-        <div className="lg:col-span-6 space-y-4">
-          <Card>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
+        {/* Scanner Card */}
+        <div className="lg:col-span-6 space-y-3.5">
+          <Card compact>
             {scanMode === 'camera' ? (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
-                    <ScanLine className="h-4 w-4 text-indigo-600" />
-                    <span>Point Camera at Product QR</span>
+                  <div className="flex items-center gap-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                    <ScanLine className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <span>Position Label in Frame</span>
                   </div>
-                  <Badge variant="primary">Active</Badge>
+                  <Badge variant="accent" size="sm" dot>
+                    Ready
+                  </Badge>
                 </div>
 
                 <div
                   id="qr-reader-container"
-                  className="rounded-xl overflow-hidden border border-slate-200 bg-slate-50 min-h-[300px]"
+                  className="rounded-xl overflow-hidden border border-zinc-200/90 dark:border-zinc-800 bg-zinc-100/40 dark:bg-zinc-950 min-h-[280px]"
                 ></div>
-                <p className="text-xs text-slate-400 text-center">
-                  Position the QR label within the scanner box
+                <p className="text-[11px] text-zinc-400 text-center">
+                  Supports device webcam, phone back cameras, and screen scans
                 </p>
               </div>
             ) : (
-              <form onSubmit={handleManualSubmit} className="space-y-4">
-                <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
-                  <Keyboard className="h-4 w-4 text-indigo-600" />
-                  <span>Enter QR Payload, SKU, or Barcode</span>
+              <form onSubmit={handleManualSubmit} className="space-y-3">
+                <div className="flex items-center gap-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                  <Keyboard className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>Enter Scanned Code or SKU</span>
                 </div>
                 <div className="flex gap-2">
                   <input
                     type="text"
-                    placeholder="e.g. SCAN-001 or INV:biz:SCAN-001"
+                    placeholder="e.g. SCAN-101 or INV:biz:SCAN-101"
                     value={manualCode}
                     onChange={(e) => setManualCode(e.target.value)}
-                    className="flex-1 rounded-lg border border-slate-300 px-3.5 py-2 text-sm font-mono text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="flex-1 rounded-lg border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs sm:text-sm font-mono text-zinc-900 dark:text-zinc-100 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15"
                     autoFocus
                   />
-                  <Button type="submit" variant="primary" loading={loadingLookup}>
+                  <Button type="submit" variant="primary" size="sm" loading={loadingLookup}>
                     Lookup
                   </Button>
                 </div>
-                <p className="text-xs text-slate-400">
-                  Compatible with handheld USB/Bluetooth barcode guns or manual keyboard entry
+                <p className="text-[11px] text-zinc-400">
+                  Connect any USB/Bluetooth hardware barcode scanner or type manually
                 </p>
               </form>
             )}
@@ -259,35 +255,37 @@ export const QRScanPage = () => {
 
           {/* Status feedback */}
           {error && (
-            <div className="flex items-center gap-2 rounded-xl bg-rose-50 border border-rose-200 p-4 text-sm text-rose-700">
-              <AlertTriangle className="h-5 w-5 shrink-0" />
+            <div className="flex items-center gap-2 rounded-xl bg-rose-50/80 border border-rose-200/80 p-3 text-xs text-rose-700 dark:bg-rose-950/30 dark:border-rose-900/40 dark:text-rose-400">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
           {successMessage && (
-            <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 p-4 text-sm text-emerald-700">
-              <CheckCircle2 className="h-5 w-5 shrink-0" />
+            <div className="flex items-center gap-2 rounded-xl bg-emerald-50/80 border border-emerald-200/80 p-3 text-xs text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-900/50 dark:text-emerald-300">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
               <span>{successMessage}</span>
             </div>
           )}
         </div>
 
-        {/* Product Details & Action Column */}
+        {/* Product Scanned Detail & Action */}
         <div className="lg:col-span-6">
           {scannedProduct ? (
-            <Card className="border-indigo-100 shadow-md">
-              <div className="flex items-start justify-between pb-4 border-b border-slate-100">
+            <Card compact className="border-zinc-300 dark:border-zinc-700">
+              <div className="flex items-start justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800/80">
                 <div>
-                  <Badge variant="primary" className="mb-1">
-                    Scanned Product
+                  <Badge variant="accent" size="sm" className="mb-1">
+                    Scanned Active Item
                   </Badge>
-                  <h3 className="text-xl font-bold text-slate-900">{scannedProduct.name}</h3>
-                  <div className="flex items-center gap-2 mt-1 text-xs text-slate-500 font-mono">
-                    <span className="bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                  <h3 className="text-base sm:text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+                    {scannedProduct.name}
+                  </h3>
+                  <div className="flex items-center gap-2 mt-0.5 text-xs text-zinc-400 font-mono">
+                    <span className="bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-700 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-700/60">
                       SKU: {scannedProduct.sku}
                     </span>
-                    <span>Category: {scannedProduct.category}</span>
+                    <span>{scannedProduct.category}</span>
                   </div>
                 </div>
 
@@ -295,69 +293,75 @@ export const QRScanPage = () => {
                   <img
                     src={scannedProduct.qrCodeImage}
                     alt="QR"
-                    className="h-16 w-16 rounded-lg border border-slate-200 bg-white p-1"
+                    className="h-14 w-14 rounded-lg border border-zinc-200 bg-white p-1"
                   />
                 )}
               </div>
 
-              {/* Stock and Price highlight cards */}
-              <div className="grid grid-cols-3 gap-3 my-4">
-                <div className="rounded-xl bg-slate-50 p-3 border border-slate-100 text-center">
-                  <p className="text-[11px] font-semibold text-slate-400 uppercase">Current Stock</p>
-                  <p className="text-lg font-black text-slate-900 mt-0.5">
+              {/* Current stock and prices strip */}
+              <div className="grid grid-cols-3 gap-2 my-3.5">
+                <div className="rounded-lg bg-zinc-50 dark:bg-zinc-850 p-2.5 border border-zinc-100 dark:border-zinc-800 text-center">
+                  <span className="text-[10px] font-medium text-zinc-400 uppercase tracking-wider block">
+                    Current Stock
+                  </span>
+                  <span className="text-base font-bold font-mono text-zinc-900 dark:text-zinc-100">
                     {scannedProduct.currentStock} {scannedProduct.unit}
-                  </p>
+                  </span>
                 </div>
-                <div className="rounded-xl bg-slate-50 p-3 border border-slate-100 text-center">
-                  <p className="text-[11px] font-semibold text-slate-400 uppercase">Cost Price</p>
-                  <p className="text-lg font-black text-slate-700 mt-0.5">
+                <div className="rounded-lg bg-zinc-50 dark:bg-zinc-850 p-2.5 border border-zinc-100 dark:border-zinc-800 text-center">
+                  <span className="text-[10px] font-medium text-zinc-400 uppercase tracking-wider block">
+                    Cost
+                  </span>
+                  <span className="text-base font-bold font-mono text-zinc-600 dark:text-zinc-400">
                     {formatCurrency(scannedProduct.costPrice, currency)}
-                  </p>
+                  </span>
                 </div>
-                <div className="rounded-xl bg-indigo-50/70 p-3 border border-indigo-100 text-center">
-                  <p className="text-[11px] font-semibold text-indigo-500 uppercase">Selling Price</p>
-                  <p className="text-lg font-black text-indigo-700 mt-0.5">
+                <div className="rounded-lg bg-emerald-50/50 dark:bg-emerald-950/30 p-2.5 border border-emerald-100 dark:border-emerald-900/40 text-center">
+                  <span className="text-[10px] font-medium text-emerald-700 dark:text-emerald-400 uppercase tracking-wider block">
+                    Sale Price
+                  </span>
+                  <span className="text-base font-bold font-mono text-emerald-700 dark:text-emerald-400">
                     {formatCurrency(scannedProduct.sellingPrice, currency)}
-                  </p>
+                  </span>
                 </div>
               </div>
 
-              {/* Action Form: SALE vs PURCHASE */}
-              <form onSubmit={handleProcessTransaction} className="space-y-4 pt-2">
+              {/* Action Form */}
+              <form onSubmit={handleProcessTransaction} className="space-y-3">
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5">
-                    Operation Type
+                  <label className="block text-[11px] font-medium tracking-wide uppercase text-zinc-400 mb-1">
+                    Action Type
                   </label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
                       onClick={() => setTxnType('SALE')}
-                      className={`flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold border transition-all ${
+                      className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold border transition-all ${
                         txnType === 'SALE'
-                          ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                          : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                          ? 'bg-zinc-900 text-white border-zinc-900 dark:bg-zinc-100 dark:text-zinc-950 shadow-xs'
+                          : 'bg-white text-zinc-700 border-zinc-200 hover:bg-zinc-50 dark:bg-zinc-900 dark:text-zinc-300 dark:border-zinc-800'
                       }`}
                     >
-                      <TrendingDown className="h-4 w-4" /> Sale (Stock-Out)
+                      <TrendingDown className="h-3.5 w-3.5 text-emerald-400" /> Sale (Stock-Out)
                     </button>
                     <button
                       type="button"
                       onClick={() => setTxnType('PURCHASE')}
-                      className={`flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold border transition-all ${
+                      className={`flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold border transition-all ${
                         txnType === 'PURCHASE'
-                          ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-                          : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
+                          ? 'bg-zinc-900 text-white border-zinc-900 dark:bg-zinc-100 dark:text-zinc-950 shadow-xs'
+                          : 'bg-white text-zinc-700 border-zinc-200 hover:bg-zinc-50 dark:bg-zinc-900 dark:text-zinc-300 dark:border-zinc-800'
                       }`}
                     >
-                      <TrendingUp className="h-4 w-4" /> Purchase (Stock-In)
+                      <TrendingUp className="h-3.5 w-3.5 text-blue-400" /> Purchase (Stock-In)
                     </button>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2.5">
                   <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-                      Quantity ({scannedProduct.unit})
+                    <label className="block text-[11px] font-medium tracking-wide uppercase text-zinc-400 mb-1">
+                      Qty ({scannedProduct.unit})
                     </label>
                     <input
                       type="number"
@@ -365,12 +369,12 @@ export const QRScanPage = () => {
                       required
                       value={quantity}
                       onChange={(e) => setQuantity(e.target.value)}
-                      className="w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full rounded-lg border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-1.5 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-                      Unit Price ({currency})
+                    <label className="block text-[11px] font-medium tracking-wide uppercase text-zinc-400 mb-1">
+                      Price ({currency})
                     </label>
                     <input
                       type="number"
@@ -379,20 +383,20 @@ export const QRScanPage = () => {
                       required
                       value={customPrice}
                       onChange={(e) => setCustomPrice(e.target.value)}
-                      className="w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full rounded-lg border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-1.5 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2.5">
                   <div>
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-                      Payment Method
+                    <label className="block text-[11px] font-medium tracking-wide uppercase text-zinc-400 mb-1">
+                      Payment
                     </label>
                     <select
                       value={paymentMethod}
                       onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full rounded-lg border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-1.5 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15"
                     >
                       <option value="CASH">Cash</option>
                       <option value="CARD">Card / POS</option>
@@ -402,46 +406,46 @@ export const QRScanPage = () => {
                   </div>
 
                   <div className="flex flex-col justify-end">
-                    <span className="text-xs text-slate-400 font-semibold uppercase">
-                      Total Transaction
-                    </span>
-                    <span className="text-lg font-black text-slate-900">
+                    <span className="text-[10px] text-zinc-400 uppercase font-medium">Subtotal</span>
+                    <span className="text-base font-bold font-mono text-zinc-900 dark:text-zinc-100">
                       {formatCurrency(Number(quantity || 0) * Number(customPrice || 0), currency)}
                     </span>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1">
-                    Notes (Optional)
-                  </label>
                   <input
                     type="text"
-                    placeholder="e.g. Counter sale or Vendor restock batch"
+                    placeholder="Transaction note (optional)"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    className="w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full rounded-lg border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15"
                   />
                 </div>
 
                 <Button
                   type="submit"
-                  variant={txnType === 'SALE' ? 'success' : 'primary'}
+                  variant="primary"
                   loading={processingTxn}
-                  className="w-full py-2.5 text-base font-bold shadow-md"
+                  className="w-full py-2.5 font-semibold"
                 >
-                  <CheckCircle2 className="mr-2 h-5 w-5" />
-                  {txnType === 'SALE' ? 'Confirm Sale & Deduct Stock' : 'Confirm Purchase & Add Stock'}
+                  <CheckCircle2 className="h-4 w-4 mr-1.5" />
+                  {txnType === 'SALE' ? 'Execute Sale & Deduct Stock' : 'Execute Purchase & Replenish Stock'}
                 </Button>
               </form>
             </Card>
           ) : (
-            <Card className="h-full flex flex-col items-center justify-center p-12 text-center text-slate-400 border-dashed">
-              <ScanLine className="h-12 w-12 text-slate-300 mb-3" />
-              <h4 className="text-base font-semibold text-slate-700">No Product Scanned Yet</h4>
-              <p className="text-xs text-slate-400 max-w-xs mt-1">
-                Point your device camera at a product QR code or enter an SKU on the left to pull up
-                its live inventory record.
+            <Card
+              compact
+              className="h-full min-h-[300px] flex flex-col items-center justify-center p-8 text-center text-zinc-400 border-dashed"
+            >
+              <ScanLine className="h-10 w-10 text-zinc-300 dark:text-zinc-700 mb-2.5" />
+              <h4 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+                Awaiting Product Scan
+              </h4>
+              <p className="text-xs text-zinc-400 max-w-xs mt-1">
+                Scan a product QR code label or enter an SKU on the left to pull up live inventory
+                records and process stock movements.
               </p>
             </Card>
           )}

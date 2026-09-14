@@ -13,8 +13,6 @@ import {
   RefreshCw,
   QrCode,
   FileText,
-  TrendingDown,
-  TrendingUp,
 } from 'lucide-react';
 
 export const TransactionsPage = () => {
@@ -50,53 +48,54 @@ export const TransactionsPage = () => {
   }, [fetchTransactions]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-zinc-200/60 dark:border-zinc-800/60">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-            Transaction History
-          </h2>
-          <p className="text-sm text-slate-500 mt-1">
-            Complete audit trail of product purchases, customer sales, and QR scan operations
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+            Audit Trail & Transactions
+          </h1>
+          <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
+            Verified ledger of sales, purchases, and QR verified inventory movements
           </p>
         </div>
 
         <Button variant="secondary" size="sm" onClick={fetchTransactions} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? 'animate-spin' : ''}`} /> Refresh
+          <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+          <span className="hidden sm:inline">Refresh</span>
         </Button>
       </div>
 
       {error && (
-        <div className="rounded-xl bg-rose-50 border border-rose-200 p-4 text-sm text-rose-700">
+        <div className="rounded-xl bg-rose-50/80 border border-rose-200/80 p-3.5 text-xs text-rose-700 dark:bg-rose-950/30 dark:border-rose-900/40 dark:text-rose-400">
           {error}
         </div>
       )}
 
       {/* Filter and Search */}
-      <Card className="p-4">
-        <div className="flex flex-col md:flex-row items-center gap-3">
+      <Card compact className="p-3 sm:p-4">
+        <div className="flex flex-col md:flex-row items-center gap-2.5 sm:gap-3">
           <div className="relative flex-1 w-full">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-zinc-400" />
             <input
               type="text"
-              placeholder="Search by reference number (e.g. SAL-1234)..."
+              placeholder="Search reference # (e.g. SAL-146698)..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-lg border border-slate-200 pl-9 pr-4 py-2 text-sm text-slate-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-lg border border-zinc-200/90 bg-white dark:bg-zinc-900 dark:border-zinc-800 pl-9 pr-4 py-1.5 sm:py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15"
             />
           </div>
 
           <div className="flex items-center gap-2 w-full md:w-auto">
-            <Filter className="h-4 w-4 text-slate-400" />
-            <div className="inline-flex rounded-lg border border-slate-200 p-1 bg-slate-50 text-xs font-semibold">
+            <Filter className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
+            <div className="inline-flex rounded-lg border border-zinc-200/80 dark:border-zinc-800 p-0.5 bg-zinc-100/60 dark:bg-zinc-850 text-xs font-medium">
               <button
                 type="button"
                 onClick={() => setTypeFilter('ALL')}
-                className={`px-3 py-1.5 rounded-md transition-colors ${
+                className={`px-3 py-1 rounded-md transition-all ${
                   typeFilter === 'ALL'
-                    ? 'bg-white text-slate-900 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-800 dark:text-zinc-100'
+                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
                 }`}
               >
                 All
@@ -104,10 +103,10 @@ export const TransactionsPage = () => {
               <button
                 type="button"
                 onClick={() => setTypeFilter('SALE')}
-                className={`px-3 py-1.5 rounded-md transition-colors ${
+                className={`px-3 py-1 rounded-md transition-all ${
                   typeFilter === 'SALE'
-                    ? 'bg-white text-emerald-700 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-white text-emerald-700 shadow-xs dark:bg-zinc-800 dark:text-emerald-400'
+                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
                 }`}
               >
                 Sales
@@ -115,10 +114,10 @@ export const TransactionsPage = () => {
               <button
                 type="button"
                 onClick={() => setTypeFilter('PURCHASE')}
-                className={`px-3 py-1.5 rounded-md transition-colors ${
+                className={`px-3 py-1 rounded-md transition-all ${
                   typeFilter === 'PURCHASE'
-                    ? 'bg-white text-blue-700 shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-white text-blue-700 shadow-xs dark:bg-zinc-800 dark:text-blue-400'
+                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
                 }`}
               >
                 Purchases
@@ -131,74 +130,69 @@ export const TransactionsPage = () => {
       {/* Transactions Table */}
       <Card className="overflow-hidden p-0">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-50/80 border-b border-slate-200/80 text-xs font-bold uppercase text-slate-500">
+          <table className="w-full text-left text-xs sm:text-sm">
+            <thead className="bg-zinc-50/80 dark:bg-zinc-850/80 border-b border-zinc-200/80 dark:border-zinc-800 text-[10px] font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
               <tr>
-                <th className="px-6 py-3.5">Reference #</th>
-                <th className="px-6 py-3.5">Type</th>
-                <th className="px-6 py-3.5">Items Summary</th>
-                <th className="px-6 py-3.5">Total Amount</th>
-                <th className="px-6 py-3.5">Payment</th>
-                <th className="px-6 py-3.5">Recorded By</th>
-                <th className="px-6 py-3.5">Date</th>
-                <th className="px-6 py-3.5 text-right">Details</th>
+                <th className="px-4 sm:px-6 py-3">Reference #</th>
+                <th className="px-4 py-3">Type</th>
+                <th className="px-4 py-3">Line Items</th>
+                <th className="px-4 py-3">Amount</th>
+                <th className="px-4 py-3">Method</th>
+                <th className="px-4 py-3">Logged By</th>
+                <th className="px-4 py-3">Date</th>
+                <th className="px-4 sm:px-6 py-3 text-right">Receipt</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
               {transactions.length > 0 ? (
                 transactions.map((txn) => {
                   const isSale = txn.type === 'SALE';
                   return (
-                    <tr key={txn._id} className="hover:bg-slate-50/60 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="font-mono font-bold text-slate-900">
+                    <tr
+                      key={txn._id}
+                      className="hover:bg-zinc-50/60 dark:hover:bg-zinc-850/60 transition-colors"
+                    >
+                      <td className="px-4 sm:px-6 py-3.5">
+                        <div className="font-mono font-semibold text-zinc-900 dark:text-zinc-100">
                           {txn.referenceNumber}
                         </div>
                         {txn.scannedViaQR && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded mt-0.5">
-                            <QrCode className="h-3 w-3" /> Scanned QR
+                          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.2 rounded mt-0.5 dark:text-emerald-400">
+                            <QrCode className="h-2.5 w-2.5" /> QR Verified
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4">
-                        <Badge variant={isSale ? 'success' : 'primary'}>
-                          {isSale ? (
-                            <>
-                              <TrendingDown className="h-3 w-3 inline mr-1" /> Sale
-                            </>
-                          ) : (
-                            <>
-                              <TrendingUp className="h-3 w-3 inline mr-1" /> Purchase
-                            </>
-                          )}
+                      <td className="px-4 py-3.5">
+                        <Badge variant={isSale ? 'accent' : 'default'} dot>
+                          {isSale ? 'Sale' : 'Purchase'}
                         </Badge>
                       </td>
-                      <td className="px-6 py-4 text-xs text-slate-700">
+                      <td className="px-4 py-3.5 text-xs text-zinc-600 dark:text-zinc-400">
                         {txn.items?.map((item, idx) => (
-                          <div key={idx} className="truncate max-w-[200px]">
+                          <div key={idx} className="truncate max-w-[180px]">
                             {item.quantity}x {item.productName}{' '}
-                            <span className="text-slate-400">({item.sku})</span>
+                            <span className="text-zinc-400 font-mono">({item.sku})</span>
                           </div>
                         ))}
                       </td>
-                      <td className="px-6 py-4 text-xs font-bold text-slate-900">
+                      <td className="px-4 py-3.5 font-semibold font-mono text-zinc-900 dark:text-zinc-100">
                         {formatCurrency(txn.totalAmount, currency)}
                       </td>
-                      <td className="px-6 py-4 text-xs font-medium text-slate-600">
+                      <td className="px-4 py-3.5 text-xs text-zinc-500 dark:text-zinc-400">
                         {txn.paymentMethod}
                       </td>
-                      <td className="px-6 py-4 text-xs text-slate-500">
+                      <td className="px-4 py-3.5 text-xs text-zinc-400">
                         {txn.createdBy?.name || 'Staff'}
                       </td>
-                      <td className="px-6 py-4 text-xs text-slate-500">
+                      <td className="px-4 py-3.5 text-xs text-zinc-400 dark:text-zinc-500">
                         {formatDate(txn.createdAt)}
                       </td>
-                      <td className="px-6 py-4 text-right">
+                      <td className="px-4 sm:px-6 py-3.5 text-right">
                         <button
                           type="button"
                           onClick={() => setSelectedTxn(txn)}
-                          className="rounded-lg p-1.5 text-indigo-600 hover:bg-indigo-50 transition-colors"
-                          title="View Receipt"
+                          className="rounded-lg p-1 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 transition-colors"
+                          title="View Details"
                         >
                           <FileText className="h-4 w-4" />
                         </button>
@@ -208,17 +202,17 @@ export const TransactionsPage = () => {
                 })
               ) : (
                 <tr>
-                  <td colSpan="8" className="py-12 text-center text-slate-400">
+                  <td colSpan="8" className="py-10 text-center text-zinc-400 dark:text-zinc-500">
                     {loading ? (
-                      <p className="text-sm">Loading transactions...</p>
+                      <p className="text-xs">Loading records...</p>
                     ) : (
                       <div className="space-y-1">
-                        <ArrowLeftRight className="mx-auto h-8 w-8 text-slate-300 mb-2" />
-                        <p className="text-base font-semibold text-slate-700">
+                        <ArrowLeftRight className="mx-auto h-7 w-7 text-zinc-300 dark:text-zinc-700 mb-2" />
+                        <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
                           No transactions found
                         </p>
-                        <p className="text-xs text-slate-500">
-                          Transactions will show up here after recording purchases or sales
+                        <p className="text-xs text-zinc-400">
+                          Transactions will appear after scanning QR codes or recording operations
                         </p>
                       </div>
                     )}
@@ -230,7 +224,7 @@ export const TransactionsPage = () => {
         </div>
       </Card>
 
-      {/* Transaction Receipt / Details Modal */}
+      {/* Transaction Details Modal */}
       <Modal
         isOpen={Boolean(selectedTxn)}
         onClose={() => setSelectedTxn(null)}
@@ -238,29 +232,35 @@ export const TransactionsPage = () => {
         maxWidth="max-w-md"
       >
         {selectedTxn && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div className="space-y-3.5">
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800/80">
               <div>
-                <span className="text-xs font-semibold text-slate-400 uppercase">Reference</span>
-                <p className="font-mono font-bold text-slate-900">{selectedTxn.referenceNumber}</p>
+                <span className="text-[10px] font-medium text-zinc-400 uppercase tracking-wider">
+                  Reference
+                </span>
+                <p className="font-mono font-bold text-zinc-900 dark:text-zinc-100">
+                  {selectedTxn.referenceNumber}
+                </p>
               </div>
-              <Badge variant={selectedTxn.type === 'SALE' ? 'success' : 'primary'}>
+              <Badge variant={selectedTxn.type === 'SALE' ? 'accent' : 'default'} dot>
                 {selectedTxn.type}
               </Badge>
             </div>
 
-            <div className="space-y-2">
-              <span className="text-xs font-semibold text-slate-400 uppercase">Items</span>
-              <div className="divide-y divide-slate-100 border rounded-xl p-3 bg-slate-50/50">
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-medium text-zinc-400 uppercase tracking-wider">
+                Line Items
+              </span>
+              <div className="divide-y divide-zinc-100 dark:divide-zinc-800/80 border border-zinc-200/80 dark:border-zinc-800 rounded-lg p-3 bg-zinc-50/50 dark:bg-zinc-850/50">
                 {selectedTxn.items?.map((item, idx) => (
                   <div key={idx} className="flex justify-between items-center py-2 text-xs">
                     <div>
-                      <p className="font-semibold text-slate-800">{item.productName}</p>
-                      <p className="text-slate-400 font-mono">
+                      <p className="font-medium text-zinc-800 dark:text-zinc-200">{item.productName}</p>
+                      <p className="text-zinc-400 font-mono text-[11px]">
                         SKU: {item.sku} • {item.quantity} x {formatCurrency(item.unitPrice, currency)}
                       </p>
                     </div>
-                    <span className="font-bold text-slate-900">
+                    <span className="font-bold font-mono text-zinc-900 dark:text-zinc-100">
                       {formatCurrency(item.subtotal, currency)}
                     </span>
                   </div>
@@ -268,37 +268,37 @@ export const TransactionsPage = () => {
               </div>
             </div>
 
-            <div className="flex justify-between items-center pt-3 border-t border-slate-100">
-              <span className="text-sm font-semibold text-slate-600">Total Amount:</span>
-              <span className="text-lg font-black text-slate-900">
+            <div className="flex justify-between items-center pt-2.5 border-t border-zinc-100 dark:border-zinc-800/80">
+              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Total:</span>
+              <span className="text-base font-bold font-mono text-zinc-900 dark:text-zinc-100">
                 {formatCurrency(selectedTxn.totalAmount, currency)}
               </span>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 text-xs text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-100">
+            <div className="grid grid-cols-2 gap-2 text-[11px] text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-850 p-3 rounded-lg border border-zinc-200/60 dark:border-zinc-800">
               <div>
-                <span className="font-semibold">Payment:</span> {selectedTxn.paymentMethod}
+                <span className="font-medium">Payment:</span> {selectedTxn.paymentMethod}
               </div>
               <div>
-                <span className="font-semibold">QR Processed:</span>{' '}
+                <span className="font-medium">QR Scanned:</span>{' '}
                 {selectedTxn.scannedViaQR ? 'Yes' : 'No'}
               </div>
               <div>
-                <span className="font-semibold">Date:</span> {formatDate(selectedTxn.createdAt)}
+                <span className="font-medium">Date:</span> {formatDate(selectedTxn.createdAt)}
               </div>
               <div>
-                <span className="font-semibold">User:</span> {selectedTxn.createdBy?.name || 'Staff'}
+                <span className="font-medium">Author:</span> {selectedTxn.createdBy?.name || 'Staff'}
               </div>
             </div>
 
             {selectedTxn.notes && (
-              <div className="text-xs text-slate-600 bg-amber-50/60 p-2.5 rounded-lg border border-amber-100">
-                <span className="font-semibold text-amber-800">Notes: </span>
+              <div className="text-xs text-zinc-600 dark:text-zinc-300 bg-zinc-100/70 dark:bg-zinc-800/70 p-2.5 rounded-lg border border-zinc-200/60 dark:border-zinc-700/60">
+                <span className="font-medium text-zinc-800 dark:text-zinc-200">Notes: </span>
                 {selectedTxn.notes}
               </div>
             )}
 
-            <Button variant="secondary" className="w-full" onClick={() => setSelectedTxn(null)}>
+            <Button variant="secondary" size="sm" className="w-full" onClick={() => setSelectedTxn(null)}>
               Close
             </Button>
           </div>
