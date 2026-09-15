@@ -5,6 +5,8 @@ export const ROUTES = {
   BUSINESS_SETUP: '/business/setup',
   DASHBOARD: '/dashboard',
   PRODUCTS: '/products',
-  TRANSACTIONS: '/transactions',
   SCAN: '/scan',
+  SALES: '/sales',
+  PURCHASES: '/purchases',
+  TRANSACTIONS: '/transactions',
 };

@@ -4,6 +4,7 @@ import { productService } from '../services/productService';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { Badge } from '../components/ui/Badge';
 import { Modal } from '../components/ui/Modal';
 import { QRViewerModal } from '../components/common/QRViewerModal';
 import { formatCurrency, formatStockBadge } from '../utils/formatters';
@@ -16,6 +17,10 @@ import {
   RefreshCw,
   AlertCircle,
   Tag,
+  ChevronRight,
+  TrendingUp,
+  Package,
+  Layers,
 } from 'lucide-react';
 
 export const ProductsPage = () => {
@@ -28,6 +33,9 @@ export const ProductsPage = () => {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [showLowStockOnly, setShowLowStockOnly] = useState(false);
+
+  // Detail popup state (for rich mobile tap experience!)
+  const [activeDetailProduct, setActiveDetailProduct] = useState(null);
 
   // Modal states
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -92,6 +100,7 @@ export const ProductsPage = () => {
     if (!window.confirm(`Delete "${name}" from inventory?`)) return;
     try {
       await productService.deleteProduct(id);
+      setActiveDetailProduct(null);
       fetchProducts();
     } catch (err) {
       alert(err.message || 'Failed to delete product');
@@ -118,7 +127,7 @@ export const ProductsPage = () => {
   ];
 
   return (
-    <div className="space-y-5 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-zinc-200/60 dark:border-zinc-800/60">
         <div>
@@ -126,43 +135,48 @@ export const ProductsPage = () => {
             Products & Inventory
           </h1>
           <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
-            Manage catalog items, stock quantities, and QR identification tags
+            {products.length} catalog items with live stock counts and QR tags
           </p>
         </div>
 
-        <Button variant="primary" size="sm" onClick={() => setIsAddModalOpen(true)}>
-          <Plus className="h-3.5 w-3.5 mr-1" /> Add Product
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="secondary" size="sm" onClick={fetchProducts} disabled={loading}>
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
+          <Button variant="primary" size="sm" onClick={() => setIsAddModalOpen(true)}>
+            <Plus className="h-3.5 w-3.5 mr-1" /> Add Product
+          </Button>
+        </div>
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 rounded-xl bg-rose-50/80 border border-rose-200/80 p-3.5 text-xs text-rose-700 dark:bg-rose-950/30 dark:border-rose-900/40 dark:text-rose-400">
+        <div className="flex items-center gap-2 rounded-xl bg-rose-50/80 border border-rose-200/80 p-3 text-xs text-rose-700 dark:bg-rose-950/30 dark:border-rose-900/40 dark:text-rose-400">
           <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       {/* Filter and Search Bar */}
-      <Card compact className="p-3 sm:p-4">
-        <div className="flex flex-col md:flex-row items-center gap-2.5 sm:gap-3">
+      <Card compact className="p-3">
+        <div className="flex flex-col sm:flex-row items-center gap-2.5">
           <div className="relative flex-1 w-full">
             <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-zinc-400" />
             <input
               type="text"
-              placeholder="Search by product name, SKU, or barcode..."
+              placeholder="Search by name, SKU, or barcode..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-lg border border-zinc-200/90 bg-white dark:bg-zinc-900 dark:border-zinc-800 pl-9 pr-4 py-1.5 sm:py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15 transition-all"
+              className="w-full rounded-lg border border-zinc-200/90 bg-white dark:bg-zinc-900 dark:border-zinc-800 pl-9 pr-3 py-1.5 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15"
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-            <div className="flex items-center gap-1.5">
+          <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
+            <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
               <Filter className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="rounded-lg border border-zinc-200/90 bg-white dark:bg-zinc-900 dark:border-zinc-800 px-2.5 py-1.5 sm:py-2 text-xs sm:text-sm text-zinc-700 dark:text-zinc-300 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15"
+                className="w-full sm:w-auto rounded-lg border border-zinc-200/90 bg-white dark:bg-zinc-900 dark:border-zinc-800 px-2.5 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 focus:border-emerald-600 focus:outline-none"
               >
                 {categories.map((c) => (
                   <option key={c} value={c}>
@@ -172,7 +186,7 @@ export const ProductsPage = () => {
               </select>
             </div>
 
-            <label className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-300 cursor-pointer select-none bg-zinc-100/60 dark:bg-zinc-850 px-2.5 py-1.5 sm:py-2 rounded-lg border border-zinc-200/80 dark:border-zinc-800">
+            <label className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-300 cursor-pointer select-none bg-zinc-100/70 dark:bg-zinc-850 px-2.5 py-1.5 rounded-lg border border-zinc-200/80 dark:border-zinc-800 shrink-0">
               <input
                 type="checkbox"
                 checked={showLowStockOnly}
@@ -181,33 +195,84 @@ export const ProductsPage = () => {
               />
               <span className="text-[11px] font-medium">Low Stock</span>
             </label>
-
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={fetchProducts}
-              disabled={loading}
-              title="Refresh"
-            >
-              <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-            </Button>
           </div>
         </div>
       </Card>
 
-      {/* Products Table */}
-      <Card className="overflow-hidden p-0">
+      {/* RICH MOBILE CARD LIST (Optimized for phone screens: compact row with tap for full details!) */}
+      <div className="block lg:hidden space-y-2.5">
+        {products.length > 0 ? (
+          products.map((prod) => {
+            const badge = formatStockBadge(prod.currentStock, prod.minStockLevel);
+            return (
+              <div
+                key={prod._id}
+                onClick={() => setActiveDetailProduct(prod)}
+                className="flex items-center justify-between p-3.5 rounded-xl border border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-900 active:scale-[0.99] transition-all cursor-pointer shadow-2xs hover:border-zinc-300 dark:hover:border-zinc-700"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  {/* QR Thumbnail icon button */}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedProductForQR(prod);
+                    }}
+                    title="View QR Label"
+                    className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-700/80 text-emerald-600 dark:text-emerald-400 shrink-0"
+                  >
+                    <QrCode className="h-5 w-5" />
+                  </button>
+
+                  <div className="min-w-0">
+                    <h3 className="font-semibold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 truncate">
+                      {prod.name}
+                    </h3>
+                    <div className="flex items-center gap-1.5 text-[11px] text-zinc-400 font-mono mt-0.5">
+                      <span>{prod.sku}</span>
+                      <span>•</span>
+                      <span className="text-zinc-500">{prod.category}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="text-right shrink-0 pl-2">
+                  <div className="font-bold font-mono text-xs sm:text-sm text-zinc-900 dark:text-zinc-100">
+                    {formatCurrency(prod.sellingPrice, currency)}
+                  </div>
+                  <div className="flex items-center justify-end gap-1 mt-1">
+                    <span
+                      className={`inline-flex px-1.5 py-0.2 text-[10px] font-medium rounded border ${badge.color}`}
+                    >
+                      {prod.currentStock} {prod.unit}
+                    </span>
+                    <ChevronRight className="h-3.5 w-3.5 text-zinc-400" />
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          <div className="py-12 text-center text-zinc-400 dark:text-zinc-500">
+            <Package className="h-8 w-8 mx-auto text-zinc-300 dark:text-zinc-700 mb-2" />
+            <p className="text-xs font-medium">No items found</p>
+          </div>
+        )}
+      </div>
+
+      {/* DESKTOP TABLE VIEW (Visible on larger screens >= lg) */}
+      <Card className="hidden lg:block overflow-hidden p-0">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs sm:text-sm">
+          <table className="w-full text-left text-sm">
             <thead className="bg-zinc-50/80 dark:bg-zinc-850/80 border-b border-zinc-200/80 dark:border-zinc-800 text-[10px] font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
               <tr>
-                <th className="px-4 sm:px-6 py-3">Product & SKU</th>
+                <th className="px-6 py-3">Product</th>
                 <th className="px-4 py-3">Category</th>
-                <th className="px-4 py-3">Cost</th>
+                <th className="px-4 py-3">Cost Price</th>
                 <th className="px-4 py-3">Selling Price</th>
-                <th className="px-4 py-3">Current Stock</th>
-                <th className="px-4 py-3 text-center">QR Tag</th>
-                <th className="px-4 sm:px-6 py-3 text-right">Actions</th>
+                <th className="px-4 py-3">Stock Level</th>
+                <th className="px-4 py-3 text-center">QR Label</th>
+                <th className="px-6 py-3 text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
@@ -217,17 +282,18 @@ export const ProductsPage = () => {
                   return (
                     <tr
                       key={prod._id}
-                      className="hover:bg-zinc-50/60 dark:hover:bg-zinc-850/60 transition-colors"
+                      onClick={() => setActiveDetailProduct(prod)}
+                      className="hover:bg-zinc-50/60 dark:hover:bg-zinc-850/60 transition-colors cursor-pointer"
                     >
-                      <td className="px-4 sm:px-6 py-3.5">
+                      <td className="px-6 py-3.5">
                         <div className="font-semibold text-zinc-900 dark:text-zinc-100">
                           {prod.name}
                         </div>
                         <div className="flex items-center gap-1.5 mt-0.5 text-[11px] text-zinc-400">
-                          <span className="font-mono bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded border border-zinc-200/60 dark:border-zinc-700/60 text-zinc-700 dark:text-zinc-300">
+                          <span className="font-mono bg-zinc-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-700 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-700/60">
                             {prod.sku}
                           </span>
-                          {prod.barcode && <span>• Barcode: {prod.barcode}</span>}
+                          {prod.barcode && <span>• {prod.barcode}</span>}
                         </div>
                       </td>
                       <td className="px-4 py-3.5 text-xs text-zinc-500 dark:text-zinc-400">
@@ -250,25 +316,27 @@ export const ProductsPage = () => {
                             {badge.label}
                           </span>
                         </div>
-                        <span className="text-[10px] text-zinc-400 block mt-0.5">
-                          Alert at: {prod.minStockLevel} {prod.unit}
-                        </span>
                       </td>
                       <td className="px-4 py-3.5 text-center">
                         <button
                           type="button"
-                          onClick={() => setSelectedProductForQR(prod)}
-                          title="View QR Label"
-                          className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-500/10 hover:bg-emerald-500/20 dark:text-emerald-400 dark:bg-emerald-500/15 px-2.5 py-1 rounded-md border border-emerald-500/20 transition-all active:scale-95"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedProductForQR(prod);
+                          }}
+                          className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-500/10 hover:bg-emerald-500/20 dark:text-emerald-400 dark:bg-emerald-500/15 px-2.5 py-1 rounded-md border border-emerald-500/20 transition-all"
                         >
                           <QrCode className="h-3.5 w-3.5" /> View QR
                         </button>
                       </td>
-                      <td className="px-4 sm:px-6 py-3.5 text-right">
+                      <td className="px-6 py-3.5 text-right">
                         <button
-                          onClick={() => handleDeleteProduct(prod._id, prod.name)}
-                          className="rounded-lg p-1 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 dark:hover:text-rose-400 transition-colors"
-                          title="Delete Product"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteProduct(prod._id, prod.name);
+                          }}
+                          className="rounded-lg p-1 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+                          title="Delete"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -278,27 +346,8 @@ export const ProductsPage = () => {
                 })
               ) : (
                 <tr>
-                  <td colSpan="7" className="py-10 text-center text-zinc-400 dark:text-zinc-500">
-                    {loading ? (
-                      <p className="text-xs">Loading items...</p>
-                    ) : (
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                          No products found
-                        </p>
-                        <p className="text-xs text-zinc-400">
-                          Add a product to generate verifiable QR codes
-                        </p>
-                        <Button
-                          variant="primary"
-                          size="sm"
-                          className="mt-1"
-                          onClick={() => setIsAddModalOpen(true)}
-                        >
-                          <Plus className="mr-1 h-3.5 w-3.5" /> Add Product
-                        </Button>
-                      </div>
-                    )}
+                  <td colSpan="7" className="py-10 text-center text-zinc-400">
+                    No products found
                   </td>
                 </tr>
               )}
@@ -307,11 +356,110 @@ export const ProductsPage = () => {
         </div>
       </Card>
 
+      {/* RICH PRODUCT DETAIL MODAL / POPUP (For phones and desktop inspection!) */}
+      <Modal
+        isOpen={Boolean(activeDetailProduct)}
+        onClose={() => setActiveDetailProduct(null)}
+        title="Product Specifications"
+        maxWidth="max-w-md"
+      >
+        {activeDetailProduct && (
+          <div className="space-y-4">
+            {/* Top header strip */}
+            <div className="flex items-start justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800/80">
+              <div>
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                  {activeDetailProduct.category}
+                </span>
+                <h3 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-zinc-100 mt-0.5">
+                  {activeDetailProduct.name}
+                </h3>
+                <div className="flex items-center gap-2 mt-1 text-xs text-zinc-400 font-mono">
+                  <span>SKU: {activeDetailProduct.sku}</span>
+                  {activeDetailProduct.barcode && <span>• {activeDetailProduct.barcode}</span>}
+                </div>
+              </div>
+
+              {activeDetailProduct.qrCodeImage && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedProductForQR(activeDetailProduct)}
+                  className="shrink-0 p-1 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:opacity-80"
+                  title="Enlarge QR"
+                >
+                  <img
+                    src={activeDetailProduct.qrCodeImage}
+                    alt="QR"
+                    className="h-12 w-12 object-contain"
+                  />
+                </button>
+              )}
+            </div>
+
+            {/* Metrics cards */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <div className="p-2.5 rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-850/70">
+                <span className="text-[10px] uppercase font-medium text-zinc-400 block">
+                  Current Stock
+                </span>
+                <div className="text-base font-bold font-mono text-zinc-900 dark:text-zinc-100 mt-0.5">
+                  {activeDetailProduct.currentStock} {activeDetailProduct.unit}
+                </div>
+                <span className="text-[10px] text-zinc-400 mt-0.5 block">
+                  Alert limit: {activeDetailProduct.minStockLevel} {activeDetailProduct.unit}
+                </span>
+              </div>
+
+              <div className="p-2.5 rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-850/70">
+                <span className="text-[10px] uppercase font-medium text-zinc-400 block">
+                  Selling Price
+                </span>
+                <div className="text-base font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-0.5">
+                  {formatCurrency(activeDetailProduct.sellingPrice, currency)}
+                </div>
+                <span className="text-[10px] text-zinc-400 mt-0.5 block">
+                  Cost: {formatCurrency(activeDetailProduct.costPrice, currency)}
+                </span>
+              </div>
+            </div>
+
+            {activeDetailProduct.description && (
+              <div className="text-xs text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-850 p-2.5 rounded-lg">
+                <span className="font-medium text-zinc-700 dark:text-zinc-300">Description: </span>
+                {activeDetailProduct.description}
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800/80">
+              <Button
+                variant="primary"
+                size="sm"
+                className="flex-1"
+                onClick={() => setSelectedProductForQR(activeDetailProduct)}
+              >
+                <QrCode className="h-3.5 w-3.5 mr-1" /> View & Print QR Label
+              </Button>
+
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() =>
+                  handleDeleteProduct(activeDetailProduct._id, activeDetailProduct.name)
+                }
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
       {/* Add Product Modal */}
       <Modal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        title="Add Inventory Product"
+        title="Add Inventory Item"
         maxWidth="max-w-lg"
       >
         <form onSubmit={handleCreateProduct} className="space-y-3.5">
@@ -328,7 +476,7 @@ export const ProductsPage = () => {
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="block text-[11px] font-medium tracking-wide uppercase text-zinc-500 dark:text-zinc-400">
-                  SKU <span className="text-emerald-600 dark:text-emerald-400">*</span>
+                  SKU <span className="text-emerald-600">*</span>
                 </label>
                 <button
                   type="button"
@@ -410,31 +558,18 @@ export const ProductsPage = () => {
             />
           </div>
 
-          <Input
-            label="Barcode (Optional)"
-            id="barcode"
-            placeholder="e.g. 890123456789"
-            value={formData.barcode}
-            onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
-          />
-
-          <div className="rounded-lg bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/60 dark:border-zinc-700/60 p-2.5 text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center gap-2">
-            <Tag className="h-3.5 w-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
-            <span>A scannable QR Code and physical print label are generated upon creation.</span>
-          </div>
-
           <div className="flex justify-end gap-2 pt-3 border-t border-zinc-100 dark:border-zinc-800/80">
             <Button variant="secondary" size="sm" onClick={() => setIsAddModalOpen(false)}>
               Cancel
             </Button>
             <Button type="submit" variant="primary" size="sm" loading={submitting}>
-              Save Product & Generate QR
+              Save & Generate QR
             </Button>
           </div>
         </form>
       </Modal>
 
-      {/* QR Code Viewer Modal */}
+      {/* QR Viewer Modal */}
       <QRViewerModal
         isOpen={Boolean(selectedProductForQR)}
         onClose={() => setSelectedProductForQR(null)}

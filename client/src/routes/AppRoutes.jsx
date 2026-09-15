@@ -17,6 +17,8 @@ import BusinessSetupPage from '../pages/BusinessSetupPage';
 import DashboardPage from '../pages/DashboardPage';
 import ProductsPage from '../pages/ProductsPage';
 import QRScanPage from '../pages/QRScanPage';
+import SalesPage from '../pages/SalesPage';
+import PurchasesPage from '../pages/PurchasesPage';
 import TransactionsPage from '../pages/TransactionsPage';
 
 export const AppRoutes = () => {
@@ -24,10 +26,10 @@ export const AppRoutes = () => {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center gap-3">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent"></div>
-          <p className="text-sm font-medium text-slate-600">Loading StockPulse QR...</p>
+      <div className="flex h-screen w-full items-center justify-center bg-zinc-50 dark:bg-zinc-950">
+        <div className="flex flex-col items-center gap-2.5">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent"></div>
+          <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Loading StockPulse...</p>
         </div>
       </div>
     );
@@ -85,7 +87,7 @@ export const AppRoutes = () => {
 
       {/* Protected Routes (requires login) */}
       <Route element={<ProtectedRoute />}>
-        {/* Business Onboarding Setup (when user signs up but hasn't configured business) */}
+        {/* Business Onboarding Setup */}
         <Route
           path={ROUTES.BUSINESS_SETUP}
           element={
@@ -99,6 +101,8 @@ export const AppRoutes = () => {
             <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
             <Route path={ROUTES.PRODUCTS} element={<ProductsPage />} />
             <Route path={ROUTES.SCAN} element={<QRScanPage />} />
+            <Route path={ROUTES.SALES} element={<SalesPage />} />
+            <Route path={ROUTES.PURCHASES} element={<PurchasesPage />} />
             <Route path={ROUTES.TRANSACTIONS} element={<TransactionsPage />} />
           </Route>
         </Route>

@@ -8,23 +8,33 @@ import { TRANSACTION_TYPES } from '../constants/transactionTypes.js';
 export const createTransaction = asyncHandler(async (req, res) => {
   const { type, items, paymentMethod = 'CASH', notes = '', scannedViaQR = false } = req.body;
 
-  if (!type || ![TRANSACTION_TYPES.PURCHASE, TRANSACTION_TYPES.SALE].includes(type)) {
-    throw new ApiError(400, 'Invalid transaction type. Must be PURCHASE or SALE.');
+  const validTypes = [
+    TRANSACTION_TYPES.PURCHASE,
+    TRANSACTION_TYPES.SALE,
+    TRANSACTION_TYPES.SALE_RETURN,
+    TRANSACTION_TYPES.PURCHASE_RETURN,
+  ];
+
+  if (!type || !validTypes.includes(type)) {
+    throw new ApiError(
+      400,
+      `Invalid transaction type. Allowed types: ${validTypes.join(', ')}`
+    );
   }
 
   if (!items || !Array.isArray(items) || items.length === 0) {
-    throw new ApiError(400, 'Transaction must contain at least one item');
+    throw new ApiError(400, 'Transaction must contain at least one line item');
   }
 
   let totalAmount = 0;
   const processedItems = [];
   const productsToUpdate = [];
 
-  // Validate all items and check stock availability
+  // Validate all items and update stock
   for (const item of items) {
     const { productId, quantity, unitPrice } = item;
 
-    if (!productId || !quantity || quantity <= 0) {
+    if (!productId || !quantity || Number(quantity) <= 0) {
       throw new ApiError(400, 'Each item must have a valid productId and quantity > 0');
     }
 
@@ -37,23 +47,35 @@ export const createTransaction = asyncHandler(async (req, res) => {
       throw new ApiError(404, `Product with ID ${productId} not found in your inventory`);
     }
 
-    const price = unitPrice !== undefined ? Number(unitPrice) : (type === TRANSACTION_TYPES.SALE ? product.sellingPrice : product.costPrice);
-    const subtotal = price * Number(quantity);
+    const qty = Number(quantity);
+    let price = Number(unitPrice);
+    if (isNaN(price)) {
+      price =
+        type === TRANSACTION_TYPES.SALE || type === TRANSACTION_TYPES.SALE_RETURN
+          ? product.sellingPrice
+          : product.costPrice;
+    }
+
+    const subtotal = price * qty;
     totalAmount += subtotal;
 
-    if (type === TRANSACTION_TYPES.SALE) {
-      if (product.currentStock < Number(quantity)) {
+    // Stock adjustments:
+    // SALE: Customer buys -> Stock decreases
+    // PURCHASE_RETURN: Returned back to vendor -> Stock decreases
+    // PURCHASE: Vendor brings stock -> Stock increases
+    // SALE_RETURN: Customer returns product -> Stock increases
+    if (type === TRANSACTION_TYPES.SALE || type === TRANSACTION_TYPES.PURCHASE_RETURN) {
+      if (product.currentStock < qty) {
         throw new ApiError(
           400,
-          `Insufficient stock for "${product.name}". Available: ${product.currentStock} ${product.unit}, Requested: ${quantity}`
+          `Insufficient stock for "${product.name}". Available: ${product.currentStock} ${product.unit}, Requested: ${qty}`
         );
       }
-      product.currentStock -= Number(quantity);
-    } else if (type === TRANSACTION_TYPES.PURCHASE) {
-      product.currentStock += Number(quantity);
-      // Optionally update cost price if new purchase price is provided
-      if (unitPrice && Number(unitPrice) > 0) {
-        product.costPrice = Number(unitPrice);
+      product.currentStock -= qty;
+    } else if (type === TRANSACTION_TYPES.PURCHASE || type === TRANSACTION_TYPES.SALE_RETURN) {
+      product.currentStock += qty;
+      if (type === TRANSACTION_TYPES.PURCHASE && price > 0) {
+        product.costPrice = price;
       }
     }
 
@@ -63,14 +85,20 @@ export const createTransaction = asyncHandler(async (req, res) => {
       product: product._id,
       productName: product.name,
       sku: product.sku,
-      quantity: Number(quantity),
+      quantity: qty,
       unitPrice: price,
       subtotal,
     });
   }
 
   // Generate readable reference number
-  const prefix = type === TRANSACTION_TYPES.PURCHASE ? 'PUR' : 'SAL';
+  const prefixMap = {
+    [TRANSACTION_TYPES.SALE]: 'SAL',
+    [TRANSACTION_TYPES.PURCHASE]: 'PUR',
+    [TRANSACTION_TYPES.SALE_RETURN]: 'SRT',
+    [TRANSACTION_TYPES.PURCHASE_RETURN]: 'PRT',
+  };
+  const prefix = prefixMap[type] || 'TXN';
   const timestamp = Date.now().toString().slice(-6);
   const randomSuffix = Math.floor(1000 + Math.random() * 9000);
   const referenceNumber = `${prefix}-${timestamp}-${randomSuffix}`;
@@ -91,26 +119,41 @@ export const createTransaction = asyncHandler(async (req, res) => {
     createdBy: req.user._id,
   });
 
+  const typeLabels = {
+    [TRANSACTION_TYPES.SALE]: 'Sale',
+    [TRANSACTION_TYPES.PURCHASE]: 'Purchase',
+    [TRANSACTION_TYPES.SALE_RETURN]: 'Customer Return',
+    [TRANSACTION_TYPES.PURCHASE_RETURN]: 'Vendor Return',
+  };
+
   res.status(201).json(
     new ApiResponse(
       201,
       { transaction },
-      `${type === TRANSACTION_TYPES.PURCHASE ? 'Purchase (Stock-In)' : 'Sale (Stock-Out)'} recorded successfully`
+      `${typeLabels[type] || type} recorded successfully. Reference #${referenceNumber}.`
     )
   );
 });
 
 export const getTransactions = asyncHandler(async (req, res) => {
-  const { type, search, page = 1, limit = 20 } = req.query;
+  const { type, categoryGroup, search, page = 1, limit = 50 } = req.query;
 
   const filter = { businessId: req.user.businessId };
 
-  if (type && type !== 'ALL') {
+  if (categoryGroup === 'sales') {
+    filter.type = { $in: [TRANSACTION_TYPES.SALE, TRANSACTION_TYPES.SALE_RETURN] };
+  } else if (categoryGroup === 'purchases') {
+    filter.type = { $in: [TRANSACTION_TYPES.PURCHASE, TRANSACTION_TYPES.PURCHASE_RETURN] };
+  } else if (type && type !== 'ALL') {
     filter.type = type;
   }
 
   if (search) {
-    filter.referenceNumber = new RegExp(search.trim(), 'i');
+    filter.$or = [
+      { referenceNumber: new RegExp(search.trim(), 'i') },
+      { 'items.productName': new RegExp(search.trim(), 'i') },
+      { 'items.sku': new RegExp(search.trim(), 'i') },
+    ];
   }
 
   const skip = (Number(page) - 1) * Number(limit);
@@ -158,8 +201,8 @@ export const getDashboardSummary = asyncHandler(async (req, res) => {
       businessId,
       $expr: { $lte: ['$currentStock', '$minStockLevel'] },
     })
-      .limit(5)
-      .select('name sku currentStock minStockLevel unit'),
+      .limit(10)
+      .select('name sku currentStock minStockLevel unit sellingPrice'),
     Transaction.find({ businessId }),
     Transaction.aggregate([
       {
@@ -179,22 +222,28 @@ export const getDashboardSummary = asyncHandler(async (req, res) => {
     ]),
     Transaction.find({ businessId })
       .sort({ createdAt: -1 })
-      .limit(5)
+      .limit(8)
       .populate('createdBy', 'name'),
   ]);
 
   let totalSalesAmount = 0;
-  let totalPurchasesAmount = 0;
   let totalSalesCount = 0;
+  let totalSalesReturns = 0;
+  let totalPurchasesAmount = 0;
   let totalPurchasesCount = 0;
+  let totalPurchaseReturns = 0;
 
   for (const txn of allTransactions) {
     if (txn.type === TRANSACTION_TYPES.SALE) {
       totalSalesAmount += txn.totalAmount;
       totalSalesCount += 1;
+    } else if (txn.type === TRANSACTION_TYPES.SALE_RETURN) {
+      totalSalesReturns += txn.totalAmount;
     } else if (txn.type === TRANSACTION_TYPES.PURCHASE) {
       totalPurchasesAmount += txn.totalAmount;
       totalPurchasesCount += 1;
+    } else if (txn.type === TRANSACTION_TYPES.PURCHASE_RETURN) {
+      totalPurchaseReturns += txn.totalAmount;
     }
   }
 
@@ -210,8 +259,12 @@ export const getDashboardSummary = asyncHandler(async (req, res) => {
           lowStockCount: lowStockProducts.length,
           totalSalesAmount,
           totalSalesCount,
+          totalSalesReturns,
+          netSales: totalSalesAmount - totalSalesReturns,
           totalPurchasesAmount,
           totalPurchasesCount,
+          totalPurchaseReturns,
+          netPurchases: totalPurchasesAmount - totalPurchaseReturns,
           todaySalesAmount,
           todaySalesCount,
         },

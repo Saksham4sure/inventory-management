@@ -7,6 +7,8 @@ import {
   QrCode,
   X,
   ShieldCheck,
+  TrendingUp,
+  ShoppingCart,
 } from 'lucide-react';
 import { ROUTES } from '../../constants/routes';
 
@@ -14,8 +16,10 @@ export const Sidebar = ({ isMobileOpen, onClose }) => {
   const navItems = [
     { label: 'Dashboard', path: ROUTES.DASHBOARD, icon: LayoutDashboard },
     { label: 'Products & Stock', path: ROUTES.PRODUCTS, icon: Boxes },
-    { label: 'Scan & Track QR', path: ROUTES.SCAN, icon: ScanLine, highlight: true },
-    { label: 'Transactions', path: ROUTES.TRANSACTIONS, icon: ArrowLeftRight },
+    { label: 'Scan & POS Register', path: ROUTES.SCAN, icon: ScanLine, highlight: true },
+    { label: 'Sales & Returns', path: ROUTES.SALES, icon: TrendingUp },
+    { label: 'Purchases & Returns', path: ROUTES.PURCHASES, icon: ShoppingCart },
+    { label: 'Full Audit Trail', path: ROUTES.TRANSACTIONS, icon: ArrowLeftRight },
   ];
 
   const content = (

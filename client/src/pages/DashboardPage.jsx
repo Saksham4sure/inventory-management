@@ -141,9 +141,12 @@ export const DashboardPage = () => {
             <div className="text-xl sm:text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono">
               {formatCurrency(metrics.todaySalesAmount, currency)}
             </div>
-            <span className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1 block">
-              {metrics.todaySalesCount} {metrics.todaySalesCount === 1 ? 'sale' : 'sales'} recorded
-            </span>
+            <Link
+              to={ROUTES.SALES}
+              className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1 mt-1"
+            >
+              View sales ledger <ArrowRight className="h-2.5 w-2.5" />
+            </Link>
           </div>
         </Card>
 
@@ -160,9 +163,12 @@ export const DashboardPage = () => {
             <div className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 font-mono">
               {formatCurrency(metrics.totalPurchasesAmount, currency)}
             </div>
-            <span className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1 block">
-              {metrics.totalPurchasesCount} stock-in batches
-            </span>
+            <Link
+              to={ROUTES.PURCHASES}
+              className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 hover:underline inline-flex items-center gap-1 mt-1"
+            >
+              View procurement <ArrowRight className="h-2.5 w-2.5" />
+            </Link>
           </div>
         </Card>
       </div>
