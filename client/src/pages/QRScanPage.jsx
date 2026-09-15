@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5QrcodeScanner, Html5Qrcode } from 'html5-qrcode';
 import { productService } from '../services/productService';
 import { transactionService } from '../services/transactionService';
 import { useBusiness } from '../hooks/useBusiness';
@@ -23,6 +23,7 @@ import {
   RotateCcw,
   Sparkles,
   Package,
+  Upload,
 } from 'lucide-react';
 
 export const QRScanPage = () => {
@@ -48,6 +49,7 @@ export const QRScanPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [completedTxn, setCompletedTxn] = useState(null);
   const [scanFlash, setScanFlash] = useState(false);
+  const [isScanningFile, setIsScanningFile] = useState(false);
 
   // Transaction options
   const [paymentMethod, setPaymentMethod] = useState('CASH');
@@ -55,7 +57,20 @@ export const QRScanPage = () => {
 
   // Scanner ref & throttling
   const scannerRef = useRef(null);
+  const fileInputRef = useRef(null);
   const lastScannedTime = useRef({});
+
+  // Secure context detection (mobile browsers require HTTPS for camera live streaming)
+  const isSecure =
+    typeof window !== 'undefined' &&
+    (window.isSecureContext ||
+      window.location.protocol === 'https:' ||
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1');
+
+  const handleSwitchToHttps = () => {
+    window.location.href = `https://${window.location.host}${window.location.pathname}${window.location.search}`;
+  };
 
   // Manual & Calculator state
   const [selectedProductId, setSelectedProductId] = useState('');
@@ -157,6 +172,25 @@ export const QRScanPage = () => {
     } catch (err) {
       setError(err.message || `Unrecognized QR: "${rawCode}"`);
       setTimeout(() => setError(''), 4000);
+    }
+  };
+
+  const handleFileUploadScan = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsScanningFile(true);
+      setError('');
+      const html5QrCode = new Html5Qrcode('qr-temp-reader');
+      const decodedText = await html5QrCode.scanFile(file, true);
+      await handleQRDetected(decodedText);
+      html5QrCode.clear();
+    } catch (err) {
+      setError(err.message || 'Could not detect a QR code in the selected photo.');
+    } finally {
+      setIsScanningFile(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
@@ -421,46 +455,99 @@ export const QRScanPage = () => {
 
           {/* VIEW 1: Camera Scanner with Sleek iOS Viewfinder and Laser Animation */}
           {inputMethod === 'qr' && (
-            <Card compact className="relative overflow-hidden p-3.5 rounded-2xl">
-              <div className="flex items-center justify-between mb-2 px-1">
-                <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-800 dark:text-zinc-200">
-                  <ScanLine className="h-3.5 w-3.5 text-emerald-500" />
-                  <span>Aim Camera at QR Label</span>
+            <div className="space-y-3">
+              {/* Insecure Context (HTTP) Warning for Mobile Users */}
+              {!isSecure && (
+                <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-xs text-amber-800 dark:text-amber-300 space-y-2.5">
+                  <div className="flex items-start gap-2.5">
+                    <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
+                    <div className="space-y-1">
+                      <p className="font-semibold text-zinc-900 dark:text-zinc-100">
+                        Insecure Connection (HTTP)
+                      </p>
+                      <p className="text-[11px] leading-relaxed text-zinc-600 dark:text-zinc-400">
+                        Mobile browsers block live camera video over insecure HTTP. Switch to HTTPS for real-time scanning, or use the photo button below.
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={handleSwitchToHttps}
+                    className="w-full text-xs font-semibold py-1.5"
+                  >
+                    Switch to HTTPS
+                  </Button>
                 </div>
-                <Badge variant="accent" size="sm" dot>
-                  Live View
-                </Badge>
-              </div>
+              )}
 
-              {/* Viewfinder Container with Animated Laser & Corner Brackets */}
-              <div className="relative rounded-2xl overflow-hidden bg-black aspect-square max-h-[300px] flex items-center justify-center border border-zinc-200/20 shadow-inner">
-                {/* HTML5 QR Code Video Target */}
-                <div id="mobile-qr-reader" className="w-full h-full"></div>
+              <Card compact className="relative overflow-hidden p-3.5 rounded-2xl">
+                <div className="flex items-center justify-between mb-2 px-1">
+                  <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+                    <ScanLine className="h-3.5 w-3.5 text-emerald-500" />
+                    <span>Aim Camera at QR Label</span>
+                  </div>
+                  <Badge variant={isSecure ? 'accent' : 'warning'} size="sm" dot>
+                    {isSecure ? 'Live View' : 'Requires HTTPS'}
+                  </Badge>
+                </div>
 
-                {/* iOS Viewfinder Overlay Frame */}
-                <div
-                  className={`pointer-events-none absolute inset-6 sm:inset-10 rounded-2xl border border-white/20 transition-all duration-300 ${
-                    scanFlash ? 'ring-4 ring-emerald-400/80 bg-emerald-500/10' : ''
-                  }`}
-                >
-                  {/* 4 iOS-style corner target brackets */}
-                  <div className="absolute -top-1 -left-1 w-6 h-6 border-t-3 border-l-3 border-emerald-500 rounded-tl-lg" />
-                  <div className="absolute -top-1 -right-1 w-6 h-6 border-t-3 border-r-3 border-emerald-500 rounded-tr-lg" />
-                  <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-3 border-l-3 border-emerald-500 rounded-bl-lg" />
-                  <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-3 border-r-3 border-emerald-500 rounded-br-lg" />
+                {/* Viewfinder Container with Animated Laser & Corner Brackets */}
+                <div className="relative rounded-2xl overflow-hidden bg-black aspect-square max-h-[300px] flex items-center justify-center border border-zinc-200/20 shadow-inner">
+                  {/* HTML5 QR Code Video Target */}
+                  <div id="mobile-qr-reader" className="w-full h-full"></div>
 
-                  {/* Laser Scanning Beam with Gradient Trail & Glow */}
-                  <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_12px_#10b981] animate-laser">
-                    <div className="h-10 w-full bg-gradient-to-b from-emerald-500/20 to-transparent -translate-y-full pointer-events-none" />
+                  {/* iOS Viewfinder Overlay Frame */}
+                  <div
+                    className={`pointer-events-none absolute inset-6 sm:inset-10 rounded-2xl border border-white/20 transition-all duration-300 ${
+                      scanFlash ? 'ring-4 ring-emerald-400/80 bg-emerald-500/10' : ''
+                    }`}
+                  >
+                    {/* 4 iOS-style corner target brackets */}
+                    <div className="absolute -top-1 -left-1 w-6 h-6 border-t-3 border-l-3 border-emerald-500 rounded-tl-lg" />
+                    <div className="absolute -top-1 -right-1 w-6 h-6 border-t-3 border-r-3 border-emerald-500 rounded-tr-lg" />
+                    <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-3 border-l-3 border-emerald-500 rounded-bl-lg" />
+                    <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-3 border-r-3 border-emerald-500 rounded-br-lg" />
+
+                    {/* Laser Scanning Beam with Gradient Trail & Glow */}
+                    <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_12px_#10b981] animate-laser">
+                      <div className="h-10 w-full bg-gradient-to-b from-emerald-500/20 to-transparent -translate-y-full pointer-events-none" />
+                    </div>
+                  </div>
+
+                  {/* Scanning hint badge */}
+                  <div className="pointer-events-none absolute bottom-3 z-10 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-[10px] font-medium text-white/90 border border-white/10">
+                    Multiple items auto-stack in cart
                   </div>
                 </div>
 
-                {/* Scanning hint badge */}
-                <div className="pointer-events-none absolute bottom-3 z-10 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-[10px] font-medium text-white/90 border border-white/10">
-                  Multiple items auto-stack in cart
+                {/* Photo & Image Fallback Action Bar */}
+                <div className="mt-3 pt-2.5 border-t border-zinc-200/60 dark:border-zinc-800/60 flex items-center justify-between gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    capture="environment"
+                    onChange={handleFileUploadScan}
+                    className="hidden"
+                  />
+                  <div id="qr-temp-reader" className="hidden" />
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isScanningFile}
+                    className="w-full flex items-center justify-center gap-2 text-xs py-2 rounded-xl"
+                  >
+                    <Upload className="h-3.5 w-3.5 text-zinc-500" />
+                    <span>{isScanningFile ? 'Scanning Image...' : 'Snap Photo / Select Image'}</span>
+                  </Button>
                 </div>
-              </div>
-            </Card>
+              </Card>
+            </div>
           )}
 
           {/* VIEW 2: Manual Selector + iOS Style Keypad Calculator */}
