@@ -32,63 +32,78 @@ export const createTransaction = asyncHandler(async (req, res) => {
 
   // Validate all items and update stock
   for (const item of items) {
-    const { productId, quantity, unitPrice } = item;
-
-    if (!productId || !quantity || Number(quantity) <= 0) {
-      throw new ApiError(400, 'Each item must have a valid productId and quantity > 0');
-    }
-
-    const product = await Product.findOne({
-      _id: productId,
-      businessId: req.user.businessId,
-    });
-
-    if (!product) {
-      throw new ApiError(404, `Product with ID ${productId} not found in your inventory`);
-    }
+    const { productId, productName, sku, quantity, unitPrice } = item;
 
     const qty = Number(quantity);
+    if (!quantity || isNaN(qty) || qty <= 0) {
+      throw new ApiError(400, 'Each item must have a quantity greater than 0');
+    }
+
     let price = Number(unitPrice);
-    if (isNaN(price)) {
-      price =
-        type === TRANSACTION_TYPES.SALE || type === TRANSACTION_TYPES.SALE_RETURN
-          ? product.sellingPrice
-          : product.costPrice;
+    if (isNaN(price) || price < 0) {
+      price = 0;
     }
 
-    const subtotal = price * qty;
-    totalAmount += subtotal;
+    if (productId) {
+      const product = await Product.findOne({
+        _id: productId,
+        businessId: req.user.businessId,
+      });
 
-    // Stock adjustments:
-    // SALE: Customer buys -> Stock decreases
-    // PURCHASE_RETURN: Returned back to vendor -> Stock decreases
-    // PURCHASE: Vendor brings stock -> Stock increases
-    // SALE_RETURN: Customer returns product -> Stock increases
-    if (type === TRANSACTION_TYPES.SALE || type === TRANSACTION_TYPES.PURCHASE_RETURN) {
-      if (product.currentStock < qty) {
-        throw new ApiError(
-          400,
-          `Insufficient stock for "${product.name}". Available: ${product.currentStock} ${product.unit}, Requested: ${qty}`
-        );
+      if (!product) {
+        throw new ApiError(404, `Product with ID ${productId} not found in your inventory`);
       }
-      product.currentStock -= qty;
-    } else if (type === TRANSACTION_TYPES.PURCHASE || type === TRANSACTION_TYPES.SALE_RETURN) {
-      product.currentStock += qty;
-      if (type === TRANSACTION_TYPES.PURCHASE && price > 0) {
-        product.costPrice = price;
+
+      if (isNaN(Number(unitPrice))) {
+        price =
+          type === TRANSACTION_TYPES.SALE || type === TRANSACTION_TYPES.SALE_RETURN
+            ? product.sellingPrice
+            : product.costPrice;
       }
+
+      const subtotal = price * qty;
+      totalAmount += subtotal;
+
+      // Stock adjustments for catalog items:
+      if (type === TRANSACTION_TYPES.SALE || type === TRANSACTION_TYPES.PURCHASE_RETURN) {
+        if (product.currentStock < qty) {
+          throw new ApiError(
+            400,
+            `Insufficient stock for "${product.name}". Available: ${product.currentStock} ${product.unit}, Requested: ${qty}`
+          );
+        }
+        product.currentStock -= qty;
+      } else if (type === TRANSACTION_TYPES.PURCHASE || type === TRANSACTION_TYPES.SALE_RETURN) {
+        product.currentStock += qty;
+        if (type === TRANSACTION_TYPES.PURCHASE && price > 0) {
+          product.costPrice = price;
+        }
+      }
+
+      productsToUpdate.push(product);
+
+      processedItems.push({
+        product: product._id,
+        productName: product.name,
+        sku: product.sku,
+        quantity: qty,
+        unitPrice: price,
+        subtotal,
+      });
+    } else {
+      // Manual / non-catalog entry
+      const subtotal = price * qty;
+      totalAmount += subtotal;
+
+      processedItems.push({
+        product: null,
+        productName: (productName || 'Manual Entry').trim(),
+        sku: (sku || 'MANUAL').trim(),
+        quantity: qty,
+        unitPrice: price,
+        subtotal,
+      });
     }
-
-    productsToUpdate.push(product);
-
-    processedItems.push({
-      product: product._id,
-      productName: product.name,
-      sku: product.sku,
-      quantity: qty,
-      unitPrice: price,
-      subtotal,
-    });
   }
 
   // Generate readable reference number

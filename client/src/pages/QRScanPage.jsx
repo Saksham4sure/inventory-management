@@ -24,6 +24,10 @@ import {
   Sparkles,
   Package,
   Upload,
+  X,
+  FileText,
+  Tag,
+  RefreshCw,
 } from 'lucide-react';
 
 export const QRScanPage = () => {
@@ -36,103 +40,73 @@ export const QRScanPage = () => {
   // Input Method: 'qr' or 'manual'
   const [inputMethod, setInputMethod] = useState('qr');
 
-  // Products catalog
-  const [allProducts, setAllProducts] = useState([]);
-  const [loadingProducts, setLoadingProducts] = useState(true);
-
-  // Stacked Cart items
+  // Stacked Cart items: each item is { cartId, isManual, product, productName, sku, quantity, unitPrice }
   const [cart, setCart] = useState([]);
 
-  // General state
+  // Notifications & State
   const [error, setError] = useState('');
-  const [toastMessage, setToastMessage] = useState('');
+  const [snackbar, setSnackbar] = useState(null); // { id, title, subtitle }
   const [submitting, setSubmitting] = useState(false);
   const [completedTxn, setCompletedTxn] = useState(null);
   const [scanFlash, setScanFlash] = useState(false);
   const [isScanningFile, setIsScanningFile] = useState(false);
+  const [scannedPill, setScannedPill] = useState(null); // { name, code }
 
   // Transaction options
   const [paymentMethod, setPaymentMethod] = useState('CASH');
   const [notes, setNotes] = useState('');
 
-  // Scanner ref & throttling
+  // Scanner refs & anti-loop controls
   const scannerRef = useRef(null);
   const fileInputRef = useRef(null);
-  const lastScannedTime = useRef({});
+  const isProcessingRef = useRef(false);
+  const lastScannedCodeRef = useRef(null);
+  const lastScannedCooldownTimer = useRef(null);
 
-  // Secure context detection (mobile browsers require HTTPS for camera live streaming)
-  const isSecure =
-    typeof window !== 'undefined' &&
-    (window.isSecureContext ||
-      window.location.protocol === 'https:' ||
-      window.location.hostname === 'localhost' ||
-      window.location.hostname === '127.0.0.1');
-
-  const handleSwitchToHttps = () => {
-    window.location.href = `https://${window.location.host}${window.location.pathname}${window.location.search}`;
-  };
-
-  // Manual & Calculator state
-  const [selectedProductId, setSelectedProductId] = useState('');
-  const [calcDisplay, setCalcDisplay] = useState('1');
-  const [calcTarget, setCalcTarget] = useState('qty');
+  // Manual Calculator state
+  const [manualItemName, setManualItemName] = useState('');
+  const [manualAmount, setManualAmount] = useState('0');
   const [manualQty, setManualQty] = useState(1);
-  const [manualPrice, setManualPrice] = useState('');
+  const [calcTarget, setCalcTarget] = useState('amount'); // 'amount' | 'qty'
 
+  // Auto-dismiss snackbar after 3.5 seconds
   useEffect(() => {
-    const fetchCatalog = async () => {
-      try {
-        setLoadingProducts(true);
-        const data = await productService.getProducts({ limit: 200 });
-        setAllProducts(data.products || []);
-        if (data.products?.length > 0) {
-          setSelectedProductId(data.products[0]._id);
-          setManualPrice(
-            txnType === 'SALE' ? data.products[0].sellingPrice : data.products[0].costPrice
-          );
-        }
-      } catch (err) {
-        console.error('Failed to load products:', err);
-      } finally {
-        setLoadingProducts(false);
-      }
-    };
-    fetchCatalog();
-  }, []);
+    if (!snackbar) return;
+    const timer = setTimeout(() => {
+      setSnackbar(null);
+    }, 3500);
+    return () => clearTimeout(timer);
+  }, [snackbar]);
 
-  useEffect(() => {
-    const prod = allProducts.find((p) => p._id === selectedProductId);
-    if (prod) {
-      setManualPrice(txnType === 'SALE' ? prod.sellingPrice : prod.costPrice);
-    }
-  }, [selectedProductId, txnType, allProducts]);
-
-  const triggerScanFeedback = (productName) => {
+  // Trigger sensory feedback (vibration + viewfinder flash + snackbar)
+  const showSuccessSnackbar = (itemName, qty, price) => {
     if (typeof window !== 'undefined' && 'vibrate' in navigator) {
       try {
         navigator.vibrate([40, 30, 40]);
       } catch {
-        // quiet
+        // silent
       }
     }
-    // Trigger visual scan flash on camera frame
     setScanFlash(true);
-    setTimeout(() => setScanFlash(false), 600);
+    setTimeout(() => setScanFlash(false), 500);
 
-    setToastMessage(`Added +1 "${productName}" to stack`);
-    setTimeout(() => setToastMessage(''), 2500);
+    const subtotal = qty * price;
+    setSnackbar({
+      id: Date.now(),
+      title: `Added "${itemName}" to stack`,
+      subtitle: `+${qty} pcs @ ${formatCurrency(price, currency)} • Item total: ${formatCurrency(subtotal, currency)}`,
+    });
   };
 
-  const addItemToCart = (product, addQty = 1, priceOverride = null) => {
+  // Add QR Catalog Product to cart
+  const addProductToCart = (product, addQty = 1) => {
     const unitPrice =
-      priceOverride !== null && !isNaN(Number(priceOverride))
-        ? Number(priceOverride)
-        : txnType === 'SALE'
-        ? product.sellingPrice
-        : product.costPrice;
+      txnType === 'SALE' ? product.sellingPrice : product.costPrice;
 
     setCart((prev) => {
-      const existingIndex = prev.findIndex((item) => item.product._id === product._id);
+      const existingIndex = prev.findIndex(
+        (item) => !item.isManual && item.product?._id === product._id
+      );
       if (existingIndex > -1) {
         const updated = [...prev];
         const newQty = updated[existingIndex].quantity + addQty;
@@ -146,7 +120,11 @@ export const QRScanPage = () => {
         return [
           ...prev,
           {
+            cartId: `prod-${product._id}`,
+            isManual: false,
             product,
+            productName: product.name,
+            sku: product.sku,
             quantity: addQty,
             unitPrice,
           },
@@ -154,27 +132,109 @@ export const QRScanPage = () => {
       }
     });
 
-    triggerScanFeedback(product.name);
+    showSuccessSnackbar(product.name, addQty, unitPrice);
   };
 
-  const handleQRDetected = async (rawCode) => {
-    if (!rawCode) return;
-    const now = Date.now();
-    if (lastScannedTime.current[rawCode] && now - lastScannedTime.current[rawCode] < 1800) {
+  // Add Manual / Non-Catalog Item to cart
+  const addManualItemToCart = () => {
+    let finalPrice = 0;
+    try {
+      const sanitized = String(manualAmount).replace(/×/g, '*').replace(/÷/g, '/');
+      const evaluated = Function(`'use strict'; return (${sanitized})`)();
+      if (!isNaN(evaluated) && evaluated >= 0) {
+        finalPrice = Math.round(evaluated * 100) / 100;
+      }
+    } catch {
+      finalPrice = Number(manualAmount) || 0;
+    }
+
+    if (finalPrice <= 0) {
+      setError('Please calculate or enter an amount greater than 0');
       return;
     }
-    lastScannedTime.current[rawCode] = now;
+
+    const qty = Math.max(1, Number(manualQty) || 1);
+    const cleanName =
+      manualItemName.trim() ||
+      (txnType === 'SALE' ? 'General Sale Item' : 'General Purchase Item');
+
+    const newItem = {
+      cartId: `manual-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      isManual: true,
+      product: null,
+      productName: cleanName,
+      sku: 'MANUAL',
+      quantity: qty,
+      unitPrice: finalPrice,
+    };
+
+    setCart((prev) => [...prev, newItem]);
+    showSuccessSnackbar(cleanName, qty, finalPrice);
+
+    // Reset manual form
+    setManualAmount('0');
+    setManualQty(1);
+    setManualItemName('');
+    setError('');
+  };
+
+  // Handle QR Detection with ANTI-LOOP Protection
+  const handleQRDetected = async (rawCode) => {
+    if (!rawCode) return;
+    const cleanCode = String(rawCode).trim();
+
+    // 1. Prevent concurrent frame resolution
+    if (isProcessingRef.current) return;
+
+    // 2. PREVENT LOOP SCANNING: If the camera is still viewing the same QR code, IGNORE it!
+    if (lastScannedCodeRef.current === cleanCode) {
+      return;
+    }
 
     try {
-      const product = await productService.getProductByQR(rawCode);
-      addItemToCart(product, 1);
+      isProcessingRef.current = true;
+      lastScannedCodeRef.current = cleanCode;
+
+      const product = await productService.getProductByQR(cleanCode);
+      addProductToCart(product, 1);
       setError('');
+
+      setScannedPill({
+        name: product.name,
+        code: cleanCode,
+      });
+
+      // Clear existing reset timer
+      if (lastScannedCooldownTimer.current) {
+        clearTimeout(lastScannedCooldownTimer.current);
+      }
+      // Allow re-scanning the same code after 6 seconds or if moved away
+      lastScannedCooldownTimer.current = setTimeout(() => {
+        lastScannedCodeRef.current = null;
+        setScannedPill(null);
+      }, 6000);
     } catch (err) {
-      setError(err.message || `Unrecognized QR: "${rawCode}"`);
-      setTimeout(() => setError(''), 4000);
+      setError(err.message || `Unrecognized QR: "${cleanCode}"`);
+      lastScannedCodeRef.current = cleanCode;
+      setTimeout(() => {
+        setError('');
+        lastScannedCodeRef.current = null;
+      }, 3500);
+    } finally {
+      isProcessingRef.current = false;
     }
   };
 
+  // Force allow scanning the same item again immediately
+  const handleResetScanLock = () => {
+    lastScannedCodeRef.current = null;
+    setScannedPill(null);
+    if (lastScannedCooldownTimer.current) {
+      clearTimeout(lastScannedCooldownTimer.current);
+    }
+  };
+
+  // Handle file / photo upload QR scan
   const handleFileUploadScan = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -184,6 +244,7 @@ export const QRScanPage = () => {
       setError('');
       const html5QrCode = new Html5Qrcode('qr-temp-reader');
       const decodedText = await html5QrCode.scanFile(file, true);
+      lastScannedCodeRef.current = null; // reset lock for file scan
       await handleQRDetected(decodedText);
       html5QrCode.clear();
     } catch (err) {
@@ -194,6 +255,7 @@ export const QRScanPage = () => {
     }
   };
 
+  // Initialize camera scanner
   useEffect(() => {
     if (inputMethod !== 'qr') {
       if (scannerRef.current) {
@@ -222,79 +284,64 @@ export const QRScanPage = () => {
         scannerRef.current.clear().catch(() => {});
         scannerRef.current = null;
       }
+      if (lastScannedCooldownTimer.current) {
+        clearTimeout(lastScannedCooldownTimer.current);
+      }
     };
   }, [inputMethod, txnType]);
 
+  // Calculator button handler
   const handleCalcButton = (val) => {
     if (val === 'C') {
-      setCalcDisplay('0');
-      if (calcTarget === 'qty') setManualQty(1);
+      if (calcTarget === 'qty') {
+        setManualQty(1);
+      } else {
+        setManualAmount('0');
+      }
       return;
     }
 
     if (val === '⌫') {
-      const trimmed = calcDisplay.length > 1 ? calcDisplay.slice(0, -1) : '0';
-      setCalcDisplay(trimmed);
-      syncCalcToTarget(trimmed);
+      if (calcTarget === 'qty') {
+        const str = String(manualQty);
+        const trimmed = str.length > 1 ? str.slice(0, -1) : '1';
+        setManualQty(Math.max(1, Number(trimmed) || 1));
+      } else {
+        const trimmed = manualAmount.length > 1 ? manualAmount.slice(0, -1) : '0';
+        setManualAmount(trimmed);
+      }
       return;
     }
 
     if (val === '=') {
       try {
-        const sanitized = calcDisplay.replace(/×/g, '*').replace(/÷/g, '/');
+        const sanitized = manualAmount.replace(/×/g, '*').replace(/÷/g, '/');
         const evaluated = Function(`'use strict'; return (${sanitized})`)();
         const resultStr = String(Math.round(evaluated * 100) / 100);
-        setCalcDisplay(resultStr);
-        syncCalcToTarget(resultStr);
+        setManualAmount(resultStr);
       } catch {
-        // ignore
+        // expression incomplete
       }
       return;
     }
 
-    let nextStr = calcDisplay === '0' && !isNaN(val) ? String(val) : calcDisplay + val;
-    setCalcDisplay(nextStr);
-    syncCalcToTarget(nextStr);
-  };
-
-  const syncCalcToTarget = (strVal) => {
-    try {
-      const sanitized = strVal.replace(/×/g, '*').replace(/÷/g, '/');
-      const val = Function(`'use strict'; return (${sanitized})`)();
-      if (!isNaN(val) && val >= 0) {
-        if (calcTarget === 'qty') {
-          setManualQty(Math.max(1, Math.floor(val)));
-        } else {
-          setManualPrice(val);
-        }
+    if (calcTarget === 'qty') {
+      if (!isNaN(val)) {
+        const nextQty = Number(String(manualQty) + val);
+        setManualQty(Math.min(9999, Math.max(1, nextQty)));
       }
-    } catch {
-      // mid-expression
+    } else {
+      let nextStr = manualAmount === '0' && !isNaN(val) ? String(val) : manualAmount + val;
+      setManualAmount(nextStr);
     }
   };
 
-  const handleAddManualItem = () => {
-    const product = allProducts.find((p) => p._id === selectedProductId);
-    if (!product) {
-      setError('Please select a product');
-      return;
-    }
-
-    const qty = Number(manualQty);
-    if (qty <= 0) {
-      setError('Quantity must be greater than 0');
-      return;
-    }
-
-    addItemToCart(product, qty, Number(manualPrice));
-    setError('');
-  };
-
-  const updateCartQty = (productId, delta) => {
+  // Cart operations
+  const updateCartQty = (cartId, delta) => {
     setCart((prev) =>
       prev
         .map((item) => {
-          if (item.product._id === productId) {
+          if (item.cartId === cartId) {
             const newQty = item.quantity + delta;
             return newQty > 0 ? { ...item, quantity: newQty } : null;
           }
@@ -304,14 +351,15 @@ export const QRScanPage = () => {
     );
   };
 
-  const removeCartItem = (productId) => {
-    setCart((prev) => prev.filter((item) => item.product._id !== productId));
+  const removeCartItem = (cartId) => {
+    setCart((prev) => prev.filter((item) => item.cartId !== cartId));
   };
 
   const clearCart = () => {
     setCart([]);
   };
 
+  // Totals calculation
   const totals = useMemo(() => {
     let totalItems = 0;
     let totalAmount = 0;
@@ -322,19 +370,23 @@ export const QRScanPage = () => {
     return { totalItems, totalAmount, linesCount: cart.length };
   }, [cart]);
 
+  // Complete batch transaction
   const handleCompleteTransaction = async () => {
     if (cart.length === 0) {
-      setError('Your stack is empty. Scan QR or add manual items before completing.');
+      setError('Your stack is empty. Scan QR or enter amount before completing.');
       return;
     }
 
+    // Check stock only for catalog inventory items on SALE
     if (txnType === 'SALE') {
       for (const item of cart) {
-        if (item.product.currentStock < item.quantity) {
-          setError(
-            `Insufficient stock for "${item.product.name}". Available: ${item.product.currentStock} ${item.product.unit}, in stack: ${item.quantity}`
-          );
-          return;
+        if (!item.isManual && item.product) {
+          if (item.product.currentStock < item.quantity) {
+            setError(
+              `Insufficient stock for "${item.product.name}". Available: ${item.product.currentStock} ${item.product.unit}, in stack: ${item.quantity}`
+            );
+            return;
+          }
         }
       }
     }
@@ -346,13 +398,15 @@ export const QRScanPage = () => {
       const payload = {
         type: txnType,
         items: cart.map((item) => ({
-          productId: item.product._id,
+          productId: item.isManual ? null : item.product?._id,
+          productName: item.productName,
+          sku: item.sku,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
         })),
         paymentMethod,
         notes: notes.trim(),
-        scannedViaQR: inputMethod === 'qr',
+        scannedViaQR: cart.some((i) => !i.isManual),
       };
 
       const result = await transactionService.createTransaction(payload);
@@ -367,15 +421,43 @@ export const QRScanPage = () => {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-5">
-      {/* iOS-Style Top Segmented Control */}
+    <div className="space-y-4 sm:space-y-5 relative">
+      {/* iOS Dynamic Island Floating Snackbar */}
+      {snackbar && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-sm animate-in fade-in slide-in-from-top-4 duration-300 pointer-events-auto">
+          <div className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-zinc-900/95 dark:bg-zinc-800/95 text-white shadow-2xl backdrop-blur-xl border border-white/10 ring-1 ring-black/10">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                <CheckCircle2 className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-white truncate">
+                  {snackbar.title}
+                </p>
+                <p className="text-[11px] text-zinc-300 font-mono truncate">
+                  {snackbar.subtitle}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSnackbar(null)}
+              className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 active:scale-95 transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Top Header & Sale/Purchase Segmented Pill */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-zinc-200/60 dark:border-zinc-800/60">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
             QR Scanner & POS
           </h1>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-            Continuous camera multi-scan and integrated register
+            Continuous multi-scan register and fast manual amount calculator
           </p>
         </div>
 
@@ -406,22 +488,14 @@ export const QRScanPage = () => {
         </div>
       </div>
 
-      {/* Floating Dynamic Feedback Banner */}
-      {toastMessage && (
-        <div className="flex items-center gap-2 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 px-3.5 py-2.5 text-xs text-emerald-800 dark:text-emerald-300 font-medium animate-in fade-in slide-in-from-top-2">
-          <Sparkles className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
-
       {error && (
-        <div className="flex items-center gap-2 rounded-2xl bg-rose-50/80 border border-rose-200/80 p-3 text-xs text-rose-700 dark:bg-rose-950/30 dark:border-rose-900/40 dark:text-rose-400">
+        <div className="flex items-center gap-2 rounded-2xl bg-rose-50/90 border border-rose-200/80 p-3 text-xs text-rose-700 dark:bg-rose-950/40 dark:border-rose-900/50 dark:text-rose-400 animate-in fade-in">
           <AlertTriangle className="h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
-      {/* Input Selector: Camera Scanner vs Manual Keypad */}
+      {/* Main 2-Column POS Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5">
         <div className="lg:col-span-6 space-y-3.5">
           {/* iOS Segmented Input Switcher */}
@@ -449,159 +523,158 @@ export const QRScanPage = () => {
               }`}
             >
               <Calculator className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-              <span>Manual + Keypad</span>
+              <span>Manual Amount</span>
             </button>
           </div>
 
-          {/* VIEW 1: Camera Scanner with Sleek iOS Viewfinder and Laser Animation */}
+          {/* VIEW 1: Camera Scanner with Anti-Loop & Laser Animation */}
           {inputMethod === 'qr' && (
-            <div className="space-y-3">
-              {/* Insecure Context (HTTP) Warning for Mobile Users */}
-              {!isSecure && (
-                <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3.5 text-xs text-amber-800 dark:text-amber-300 space-y-2.5">
-                  <div className="flex items-start gap-2.5">
-                    <AlertTriangle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
-                    <div className="space-y-1">
-                      <p className="font-semibold text-zinc-900 dark:text-zinc-100">
-                        Insecure Connection (HTTP)
-                      </p>
-                      <p className="text-[11px] leading-relaxed text-zinc-600 dark:text-zinc-400">
-                        Mobile browsers block live camera video over insecure HTTP. Switch to HTTPS for real-time scanning, or use the photo button below.
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    onClick={handleSwitchToHttps}
-                    className="w-full text-xs font-semibold py-1.5"
-                  >
-                    Switch to HTTPS
-                  </Button>
+            <Card compact className="relative overflow-hidden p-3.5 rounded-2xl">
+              <div className="flex items-center justify-between mb-2 px-1">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-800 dark:text-zinc-200">
+                  <ScanLine className="h-3.5 w-3.5 text-emerald-500" />
+                  <span>Aim Camera at QR Label</span>
                 </div>
-              )}
-
-              <Card compact className="relative overflow-hidden p-3.5 rounded-2xl">
-                <div className="flex items-center justify-between mb-2 px-1">
-                  <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-800 dark:text-zinc-200">
-                    <ScanLine className="h-3.5 w-3.5 text-emerald-500" />
-                    <span>Aim Camera at QR Label</span>
-                  </div>
-                  <Badge variant={isSecure ? 'accent' : 'warning'} size="sm" dot>
-                    {isSecure ? 'Live View' : 'Requires HTTPS'}
-                  </Badge>
-                </div>
-
-                {/* Viewfinder Container with Animated Laser & Corner Brackets */}
-                <div className="relative rounded-2xl overflow-hidden bg-black aspect-square max-h-[300px] flex items-center justify-center border border-zinc-200/20 shadow-inner">
-                  {/* HTML5 QR Code Video Target */}
-                  <div id="mobile-qr-reader" className="w-full h-full"></div>
-
-                  {/* iOS Viewfinder Overlay Frame */}
-                  <div
-                    className={`pointer-events-none absolute inset-6 sm:inset-10 rounded-2xl border border-white/20 transition-all duration-300 ${
-                      scanFlash ? 'ring-4 ring-emerald-400/80 bg-emerald-500/10' : ''
-                    }`}
-                  >
-                    {/* 4 iOS-style corner target brackets */}
-                    <div className="absolute -top-1 -left-1 w-6 h-6 border-t-3 border-l-3 border-emerald-500 rounded-tl-lg" />
-                    <div className="absolute -top-1 -right-1 w-6 h-6 border-t-3 border-r-3 border-emerald-500 rounded-tr-lg" />
-                    <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-3 border-l-3 border-emerald-500 rounded-bl-lg" />
-                    <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-3 border-r-3 border-emerald-500 rounded-br-lg" />
-
-                    {/* Laser Scanning Beam with Gradient Trail & Glow */}
-                    <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_12px_#10b981] animate-laser">
-                      <div className="h-10 w-full bg-gradient-to-b from-emerald-500/20 to-transparent -translate-y-full pointer-events-none" />
-                    </div>
-                  </div>
-
-                  {/* Scanning hint badge */}
-                  <div className="pointer-events-none absolute bottom-3 z-10 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-[10px] font-medium text-white/90 border border-white/10">
-                    Multiple items auto-stack in cart
-                  </div>
-                </div>
-
-                {/* Photo & Image Fallback Action Bar */}
-                <div className="mt-3 pt-2.5 border-t border-zinc-200/60 dark:border-zinc-800/60 flex items-center justify-between gap-2">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    capture="environment"
-                    onChange={handleFileUploadScan}
-                    className="hidden"
-                  />
-                  <div id="qr-temp-reader" className="hidden" />
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isScanningFile}
-                    className="w-full flex items-center justify-center gap-2 text-xs py-2 rounded-xl"
-                  >
-                    <Upload className="h-3.5 w-3.5 text-zinc-500" />
-                    <span>{isScanningFile ? 'Scanning Image...' : 'Snap Photo / Select Image'}</span>
-                  </Button>
-                </div>
-              </Card>
-            </div>
-          )}
-
-          {/* VIEW 2: Manual Selector + iOS Style Keypad Calculator */}
-          {inputMethod === 'manual' && (
-            <Card compact className="space-y-3 p-3.5 rounded-2xl">
-              <div>
-                <label className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">
-                  Catalog Product
-                </label>
-                <select
-                  value={selectedProductId}
-                  onChange={(e) => setSelectedProductId(e.target.value)}
-                  className="w-full rounded-xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 focus:border-emerald-600 focus:outline-none"
-                >
-                  {allProducts.map((p) => (
-                    <option key={p._id} value={p._id}>
-                      {p.name} ({p.sku}) • Avail: {p.currentStock} {p.unit}
-                    </option>
-                  ))}
-                </select>
+                <Badge variant="accent" size="sm" dot>
+                  Live View
+                </Badge>
               </div>
 
-              {/* Inset iOS Targets */}
+              {/* Viewfinder Container */}
+              <div className="relative rounded-2xl overflow-hidden bg-black aspect-square max-h-[300px] flex items-center justify-center border border-zinc-200/20 shadow-inner">
+                <div id="mobile-qr-reader" className="w-full h-full"></div>
+
+                {/* iOS Viewfinder Overlay Frame */}
+                <div
+                  className={`pointer-events-none absolute inset-6 sm:inset-10 rounded-2xl border border-white/20 transition-all duration-300 ${
+                    scanFlash ? 'ring-4 ring-emerald-400/80 bg-emerald-500/10' : ''
+                  }`}
+                >
+                  {/* Corner Target Brackets */}
+                  <div className="absolute -top-1 -left-1 w-6 h-6 border-t-3 border-l-3 border-emerald-500 rounded-tl-lg" />
+                  <div className="absolute -top-1 -right-1 w-6 h-6 border-t-3 border-r-3 border-emerald-500 rounded-tr-lg" />
+                  <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-3 border-l-3 border-emerald-500 rounded-bl-lg" />
+                  <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-3 border-r-3 border-emerald-500 rounded-br-lg" />
+
+                  {/* Laser Scanning Beam */}
+                  <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_12px_#10b981] animate-laser">
+                    <div className="h-10 w-full bg-gradient-to-b from-emerald-500/20 to-transparent -translate-y-full pointer-events-none" />
+                  </div>
+                </div>
+
+                {/* Loop Prevention Pill / Next Scan Hint */}
+                {scannedPill ? (
+                  <div className="absolute bottom-3 z-10 px-3 py-1.5 rounded-full bg-zinc-900/90 backdrop-blur-md text-[11px] font-semibold text-emerald-300 border border-emerald-500/40 flex items-center gap-2 shadow-lg">
+                    <span>✓ Scanned: {scannedPill.name}</span>
+                    <button
+                      type="button"
+                      onClick={handleResetScanLock}
+                      className="px-2 py-0.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 text-[10px] font-bold transition-colors inline-flex items-center gap-1 active:scale-95"
+                    >
+                      <RefreshCw className="h-2.5 w-2.5" /> Scan Again
+                    </button>
+                  </div>
+                ) : (
+                  <div className="pointer-events-none absolute bottom-3 z-10 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-[10px] font-medium text-white/90 border border-white/10">
+                    Auto-stacks items into cart • No loop scanning
+                  </div>
+                )}
+              </div>
+
+              {/* Photo & Image Fallback Action */}
+              <div className="mt-3 pt-2.5 border-t border-zinc-200/60 dark:border-zinc-800/60 flex items-center justify-between gap-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleFileUploadScan}
+                  className="hidden"
+                />
+                <div id="qr-temp-reader" className="hidden" />
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isScanningFile}
+                  className="w-full flex items-center justify-center gap-2 text-xs py-2 rounded-xl"
+                >
+                  <Upload className="h-3.5 w-3.5 text-zinc-500" />
+                  <span>{isScanningFile ? 'Scanning Image...' : 'Snap Photo / Choose Image'}</span>
+                </Button>
+              </div>
+            </Card>
+          )}
+
+          {/* VIEW 2: Fast Manual POS Amount Calculator */}
+          {inputMethod === 'manual' && (
+            <Card compact className="space-y-3 p-3.5 rounded-2xl">
+              {/* Item Name / Description Input */}
+              <div>
+                <label className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">
+                  Item Description or Note (Optional)
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={manualItemName}
+                    onChange={(e) => setManualItemName(e.target.value)}
+                    placeholder={
+                      txnType === 'SALE'
+                        ? 'e.g. General Item, Custom Sale, Service'
+                        : 'e.g. Supplies, Inventory Restock, Expense'
+                    }
+                    className="w-full rounded-xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3.5 py-2.5 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 focus:border-emerald-600 focus:outline-none placeholder:text-zinc-400"
+                  />
+                </div>
+
+                {/* Fast One-Tap Preset Chips */}
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  {['General Item', 'Custom Sale', 'Repair / Service', 'Beverages', 'Miscellaneous'].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setManualItemName(preset)}
+                      className="text-[10px] px-2.5 py-1 rounded-lg bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 font-medium transition-colors active:scale-95"
+                    >
+                      + {preset}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Amount and Quantity Selectors */}
               <div className="grid grid-cols-2 gap-2">
                 <div
-                  onClick={() => {
-                    setCalcTarget('qty');
-                    setCalcDisplay(String(manualQty));
-                  }}
+                  onClick={() => setCalcTarget('amount')}
+                  className={`p-2.5 rounded-xl border cursor-pointer transition-all active:scale-98 ${
+                    calcTarget === 'amount'
+                      ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-300 ring-1 ring-emerald-500/20'
+                      : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400'
+                  }`}
+                >
+                  <span className="text-[10px] uppercase font-bold tracking-wider block">
+                    Amount ({currency})
+                  </span>
+                  <span className="text-base font-bold font-mono">
+                    {manualAmount || '0'}
+                  </span>
+                </div>
+
+                <div
+                  onClick={() => setCalcTarget('qty')}
                   className={`p-2.5 rounded-xl border cursor-pointer transition-all active:scale-98 ${
                     calcTarget === 'qty'
                       ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-300 ring-1 ring-emerald-500/20'
                       : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400'
                   }`}
                 >
-                  <span className="text-[10px] uppercase font-bold tracking-wider block">Quantity</span>
-                  <span className="text-base font-bold font-mono">{manualQty}</span>
-                </div>
-
-                <div
-                  onClick={() => {
-                    setCalcTarget('price');
-                    setCalcDisplay(String(manualPrice || '0'));
-                  }}
-                  className={`p-2.5 rounded-xl border cursor-pointer transition-all active:scale-98 ${
-                    calcTarget === 'price'
-                      ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-300 ring-1 ring-emerald-500/20'
-                      : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400'
-                  }`}
-                >
-                  <span className="text-[10px] uppercase font-bold tracking-wider block">Unit Price</span>
-                  <span className="text-base font-bold font-mono">
-                    {formatCurrency(manualPrice || 0, currency)}
+                  <span className="text-[10px] uppercase font-bold tracking-wider block">
+                    Quantity
                   </span>
+                  <span className="text-base font-bold font-mono">{manualQty}</span>
                 </div>
               </div>
 
@@ -610,10 +683,10 @@ export const QRScanPage = () => {
                 {/* LCD Display */}
                 <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 shadow-inner">
                   <span className="text-[10px] uppercase font-semibold text-zinc-400">
-                    {calcTarget === 'qty' ? 'Set Quantity' : 'Set Price'}:
+                    {calcTarget === 'qty' ? 'Set Quantity:' : 'Set Amount:'}
                   </span>
                   <span className="text-lg font-bold font-mono text-zinc-900 dark:text-zinc-100">
-                    {calcDisplay}
+                    {calcTarget === 'qty' ? manualQty : manualAmount}
                   </span>
                 </div>
 
@@ -683,20 +756,21 @@ export const QRScanPage = () => {
                 </div>
               </div>
 
+              {/* Add to Stack Action Button */}
               <Button
                 variant="primary"
                 size="md"
-                onClick={handleAddManualItem}
+                onClick={addManualItemToCart}
                 className="w-full py-2.5 rounded-xl font-semibold"
               >
                 <Plus className="h-4 w-4 mr-1" />
-                Add Item ({manualQty}x @ {formatCurrency(manualPrice || 0, currency)})
+                Add to Stack ({manualQty}x @ {formatCurrency(Number(manualAmount) || 0, currency)})
               </Button>
             </Card>
           )}
         </div>
 
-        {/* Right: Stacked Order Register */}
+        {/* Right: Stacked Register (Cart) */}
         <div className="lg:col-span-6">
           <Card compact className="flex flex-col justify-between h-full rounded-2xl">
             <div>
@@ -729,27 +803,38 @@ export const QRScanPage = () => {
               </div>
 
               {/* Items List */}
-              <div className="divide-y divide-zinc-100 dark:divide-zinc-800/60 my-2 max-h-[300px] overflow-y-auto pr-1">
+              <div className="divide-y divide-zinc-100 dark:divide-zinc-800/60 my-2 max-h-[320px] overflow-y-auto pr-1">
                 {cart.length > 0 ? (
                   cart.map((item) => {
                     const subtotal = item.quantity * item.unitPrice;
                     return (
                       <div
-                        key={item.product._id}
+                        key={item.cartId}
                         className="py-2.5 flex items-center justify-between gap-3 text-xs"
                       >
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-zinc-900 dark:text-zinc-100 truncate">
-                            {item.product.name}
-                          </h4>
+                          <div className="flex items-center gap-1.5">
+                            <h4 className="font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                              {item.productName}
+                            </h4>
+                            {item.isManual && (
+                              <Badge variant="neutral" size="sm">
+                                Manual
+                              </Badge>
+                            )}
+                          </div>
                           <div className="flex items-center gap-2 text-[11px] text-zinc-400 font-mono mt-0.5">
-                            <span>{item.product.sku}</span>
+                            <span>{item.sku}</span>
                             <span>•</span>
                             <span>{formatCurrency(item.unitPrice, currency)}</span>
-                            <span>•</span>
-                            <span className="text-zinc-500">
-                              Avail: {item.product.currentStock}
-                            </span>
+                            {!item.isManual && item.product && (
+                              <>
+                                <span>•</span>
+                                <span className="text-zinc-500">
+                                  Avail: {item.product.currentStock}
+                                </span>
+                              </>
+                            )}
                           </div>
                         </div>
 
@@ -758,7 +843,7 @@ export const QRScanPage = () => {
                           <div className="flex items-center border border-zinc-200 dark:border-zinc-750 rounded-lg overflow-hidden bg-zinc-50 dark:bg-zinc-850">
                             <button
                               type="button"
-                              onClick={() => updateCartQty(item.product._id, -1)}
+                              onClick={() => updateCartQty(item.cartId, -1)}
                               className="px-2 py-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 active:scale-95"
                             >
                               <Minus className="h-3 w-3" />
@@ -768,7 +853,7 @@ export const QRScanPage = () => {
                             </span>
                             <button
                               type="button"
-                              onClick={() => updateCartQty(item.product._id, 1)}
+                              onClick={() => updateCartQty(item.cartId, 1)}
                               className="px-2 py-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 active:scale-95"
                             >
                               <Plus className="h-3 w-3" />
@@ -781,7 +866,7 @@ export const QRScanPage = () => {
 
                           <button
                             type="button"
-                            onClick={() => removeCartItem(item.product._id)}
+                            onClick={() => removeCartItem(item.cartId)}
                             className="p-1 text-zinc-400 hover:text-rose-600 active:scale-90"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -795,7 +880,7 @@ export const QRScanPage = () => {
                     <Package className="h-7 w-7 mx-auto text-zinc-300 dark:text-zinc-700 mb-1.5" />
                     <p className="text-xs font-medium">Cart is currently empty</p>
                     <p className="text-[11px] text-zinc-400 mt-0.5">
-                      Items will stack here in real-time as you scan QR tags
+                      Items stack here as you scan QR tags or add manual amounts
                     </p>
                   </div>
                 )}
@@ -923,4 +1008,5 @@ export const QRScanPage = () => {
     </div>
   );
 };
+
 export default QRScanPage;

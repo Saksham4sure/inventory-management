@@ -6,15 +6,18 @@ const transactionItemSchema = new mongoose.Schema(
     product: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Product',
-      required: true,
+      required: false,
+      default: null,
     },
     productName: {
       type: String,
       required: true,
+      default: 'Manual Item',
     },
     sku: {
       type: String,
-      required: true,
+      required: false,
+      default: 'MANUAL',
     },
     quantity: {
       type: Number,
