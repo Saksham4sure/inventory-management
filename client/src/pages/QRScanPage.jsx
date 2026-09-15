@@ -7,7 +7,7 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Modal } from '../components/ui/Modal';
-import { formatCurrency, formatDate } from '../utils/formatters';
+import { formatCurrency } from '../utils/formatters';
 import {
   ScanLine,
   Camera,
@@ -20,7 +20,6 @@ import {
   ShoppingCart,
   TrendingDown,
   TrendingUp,
-  Receipt,
   RotateCcw,
   Sparkles,
   Package,
@@ -31,16 +30,16 @@ export const QRScanPage = () => {
   const currency = business?.currency || 'USD';
 
   // Transaction Mode: SALE or PURCHASE
-  const [txnType, setTxnType] = useState('SALE'); // 'SALE' or 'PURCHASE'
+  const [txnType, setTxnType] = useState('SALE');
 
   // Input Method: 'qr' or 'manual'
   const [inputMethod, setInputMethod] = useState('qr');
 
-  // Products catalog for fast manual selection & QR matching
+  // Products catalog
   const [allProducts, setAllProducts] = useState([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
 
-  // Stacked Cart items: array of { product, quantity, unitPrice }
+  // Stacked Cart items
   const [cart, setCart] = useState([]);
 
   // General state
@@ -48,6 +47,7 @@ export const QRScanPage = () => {
   const [toastMessage, setToastMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [completedTxn, setCompletedTxn] = useState(null);
+  const [scanFlash, setScanFlash] = useState(false);
 
   // Transaction options
   const [paymentMethod, setPaymentMethod] = useState('CASH');
@@ -60,11 +60,10 @@ export const QRScanPage = () => {
   // Manual & Calculator state
   const [selectedProductId, setSelectedProductId] = useState('');
   const [calcDisplay, setCalcDisplay] = useState('1');
-  const [calcTarget, setCalcTarget] = useState('qty'); // 'qty' or 'price'
+  const [calcTarget, setCalcTarget] = useState('qty');
   const [manualQty, setManualQty] = useState(1);
   const [manualPrice, setManualPrice] = useState('');
 
-  // Fetch all products once
   useEffect(() => {
     const fetchCatalog = async () => {
       try {
@@ -86,7 +85,6 @@ export const QRScanPage = () => {
     fetchCatalog();
   }, []);
 
-  // Sync manual price when product or txnType changes
   useEffect(() => {
     const prod = allProducts.find((p) => p._id === selectedProductId);
     if (prod) {
@@ -94,20 +92,22 @@ export const QRScanPage = () => {
     }
   }, [selectedProductId, txnType, allProducts]);
 
-  // Haptic feedback & sound
   const triggerScanFeedback = (productName) => {
     if (typeof window !== 'undefined' && 'vibrate' in navigator) {
       try {
         navigator.vibrate([40, 30, 40]);
       } catch {
-        // quiet ignore
+        // quiet
       }
     }
+    // Trigger visual scan flash on camera frame
+    setScanFlash(true);
+    setTimeout(() => setScanFlash(false), 600);
+
     setToastMessage(`Added +1 "${productName}" to stack`);
     setTimeout(() => setToastMessage(''), 2500);
   };
 
-  // Add or increment item in stacked cart
   const addItemToCart = (product, addQty = 1, priceOverride = null) => {
     const unitPrice =
       priceOverride !== null && !isNaN(Number(priceOverride))
@@ -142,11 +142,9 @@ export const QRScanPage = () => {
     triggerScanFeedback(product.name);
   };
 
-  // QR Scanning Engine
   const handleQRDetected = async (rawCode) => {
     if (!rawCode) return;
     const now = Date.now();
-    // Debounce duplicate scans of same code within 1.8 seconds
     if (lastScannedTime.current[rawCode] && now - lastScannedTime.current[rawCode] < 1800) {
       return;
     }
@@ -157,12 +155,11 @@ export const QRScanPage = () => {
       addItemToCart(product, 1);
       setError('');
     } catch (err) {
-      setError(err.message || `Unrecognized QR tag: "${rawCode}"`);
+      setError(err.message || `Unrecognized QR: "${rawCode}"`);
       setTimeout(() => setError(''), 4000);
     }
   };
 
-  // Mount html5-qrcode scanner when in 'qr' tab
   useEffect(() => {
     if (inputMethod !== 'qr') {
       if (scannerRef.current) {
@@ -176,8 +173,8 @@ export const QRScanPage = () => {
     const scanner = new Html5QrcodeScanner(
       scannerId,
       {
-        fps: 12,
-        qrbox: { width: 220, height: 220 },
+        fps: 15,
+        qrbox: { width: 230, height: 230 },
         aspectRatio: 1.0,
       },
       false
@@ -194,7 +191,6 @@ export const QRScanPage = () => {
     };
   }, [inputMethod, txnType]);
 
-  // Calculator Logic
   const handleCalcButton = (val) => {
     if (val === 'C') {
       setCalcDisplay('0');
@@ -209,22 +205,19 @@ export const QRScanPage = () => {
       return;
     }
 
-    // Evaluate on '='
     if (val === '=') {
       try {
-        // Safe evaluation of simple math expressions (+, -, *, /)
         const sanitized = calcDisplay.replace(/×/g, '*').replace(/÷/g, '/');
         const evaluated = Function(`'use strict'; return (${sanitized})`)();
         const resultStr = String(Math.round(evaluated * 100) / 100);
         setCalcDisplay(resultStr);
         syncCalcToTarget(resultStr);
       } catch {
-        // ignore syntax error in calculator
+        // ignore
       }
       return;
     }
 
-    // Append number or operator
     let nextStr = calcDisplay === '0' && !isNaN(val) ? String(val) : calcDisplay + val;
     setCalcDisplay(nextStr);
     syncCalcToTarget(nextStr);
@@ -242,7 +235,7 @@ export const QRScanPage = () => {
         }
       }
     } catch {
-      // mid-expression, do not update yet
+      // mid-expression
     }
   };
 
@@ -263,7 +256,6 @@ export const QRScanPage = () => {
     setError('');
   };
 
-  // Cart Management
   const updateCartQty = (productId, delta) => {
     setCart((prev) =>
       prev
@@ -286,7 +278,6 @@ export const QRScanPage = () => {
     setCart([]);
   };
 
-  // Totals calculation
   const totals = useMemo(() => {
     let totalItems = 0;
     let totalAmount = 0;
@@ -297,14 +288,12 @@ export const QRScanPage = () => {
     return { totalItems, totalAmount, linesCount: cart.length };
   }, [cart]);
 
-  // Submit stacked transaction at once
   const handleCompleteTransaction = async () => {
     if (cart.length === 0) {
       setError('Your stack is empty. Scan QR or add manual items before completing.');
       return;
     }
 
-    // Pre-validate stock for sales
     if (txnType === 'SALE') {
       for (const item of cart) {
         if (item.product.currentStock < item.quantity) {
@@ -344,160 +333,170 @@ export const QRScanPage = () => {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Top Bar: Title & Mode Toggle */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-200/60 dark:border-zinc-800/60">
+    <div className="space-y-4 sm:space-y-5">
+      {/* iOS-Style Top Segmented Control */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-zinc-200/60 dark:border-zinc-800/60">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-              QR POS & Multi-Stack Register
-            </h1>
-            <Badge variant={txnType === 'SALE' ? 'accent' : 'default'} dot>
-              {txnType === 'SALE' ? 'Sales Mode' : 'Purchase Mode'}
-            </Badge>
-          </div>
-          <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
-            Scan multiple products or use manual calculator to stack items and record at once
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+            QR Scanner & POS
+          </h1>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+            Continuous camera multi-scan and integrated register
           </p>
         </div>
 
-        {/* Transaction Mode Selector: Sale vs Purchase */}
-        <div className="inline-flex rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-zinc-100/70 dark:bg-zinc-900 p-1">
+        {/* iOS Segmented Pill: SALE vs PURCHASE */}
+        <div className="flex p-1 rounded-full bg-zinc-200/70 dark:bg-zinc-850 self-start sm:self-auto shadow-inner">
           <button
             type="button"
             onClick={() => setTxnType('SALE')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 active:scale-95 ${
               txnType === 'SALE'
-                ? 'bg-white text-emerald-700 shadow-xs dark:bg-zinc-800 dark:text-emerald-400'
-                : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
+                ? 'bg-white text-emerald-700 shadow-sm dark:bg-zinc-700 dark:text-emerald-400'
+                : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400'
             }`}
           >
-            <TrendingDown className="h-3.5 w-3.5" /> Sale (Stock-Out)
+            <TrendingDown className="h-3.5 w-3.5" /> Sale
           </button>
           <button
             type="button"
             onClick={() => setTxnType('PURCHASE')}
-            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 active:scale-95 ${
               txnType === 'PURCHASE'
-                ? 'bg-white text-blue-700 shadow-xs dark:bg-zinc-800 dark:text-blue-400'
-                : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
+                ? 'bg-white text-blue-700 shadow-sm dark:bg-zinc-700 dark:text-blue-400'
+                : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400'
             }`}
           >
-            <TrendingUp className="h-3.5 w-3.5" /> Purchase (Stock-In)
+            <TrendingUp className="h-3.5 w-3.5" /> Purchase
           </button>
         </div>
       </div>
 
-      {/* Notifications / Feedback */}
+      {/* Floating Dynamic Feedback Banner */}
       {toastMessage && (
-        <div className="flex items-center gap-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 p-3 text-xs text-emerald-800 dark:text-emerald-300 font-medium animate-in fade-in slide-in-from-top-2">
+        <div className="flex items-center gap-2 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 px-3.5 py-2.5 text-xs text-emerald-800 dark:text-emerald-300 font-medium animate-in fade-in slide-in-from-top-2">
           <Sparkles className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
           <span>{toastMessage}</span>
         </div>
       )}
 
       {error && (
-        <div className="flex items-center gap-2 rounded-xl bg-rose-50/80 border border-rose-200/80 p-3 text-xs text-rose-700 dark:bg-rose-950/30 dark:border-rose-900/40 dark:text-rose-400">
+        <div className="flex items-center gap-2 rounded-2xl bg-rose-50/80 border border-rose-200/80 p-3 text-xs text-rose-700 dark:bg-rose-950/30 dark:border-rose-900/40 dark:text-rose-400">
           <AlertTriangle className="h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
-      {/* Main Grid: Input Column (QR or Manual + Calc) & Stacked Cart Column */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Left: Input Selection (QR / Manual Calculator) */}
-        <div className="lg:col-span-6 space-y-4">
-          {/* Sub-tab pills: QR vs Manual Calculator */}
-          <div className="grid grid-cols-2 gap-2 p-1 rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-zinc-100/60 dark:bg-zinc-900">
+      {/* Input Selector: Camera Scanner vs Manual Keypad */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5">
+        <div className="lg:col-span-6 space-y-3.5">
+          {/* iOS Segmented Input Switcher */}
+          <div className="grid grid-cols-2 p-1 rounded-2xl bg-zinc-200/60 dark:bg-zinc-850 shadow-inner">
             <button
               type="button"
               onClick={() => setInputMethod('qr')}
-              className={`flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-semibold transition-all duration-200 active:scale-98 ${
                 inputMethod === 'qr'
-                  ? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-800 dark:text-zinc-100'
+                  ? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-700 dark:text-white'
                   : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
               }`}
             >
               <Camera className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-              <span>Camera QR Scanner</span>
+              <span>Camera Multi-QR</span>
             </button>
 
             <button
               type="button"
               onClick={() => setInputMethod('manual')}
-              className={`flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-semibold transition-all duration-200 active:scale-98 ${
                 inputMethod === 'manual'
-                  ? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-800 dark:text-zinc-100'
+                  ? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-700 dark:text-white'
                   : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
               }`}
             >
               <Calculator className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-              <span>Manual + Calculator</span>
+              <span>Manual + Keypad</span>
             </button>
           </div>
 
-          {/* Tab Content A: QR Scanner */}
+          {/* VIEW 1: Camera Scanner with Sleek iOS Viewfinder and Laser Animation */}
           {inputMethod === 'qr' && (
-            <Card compact className="space-y-3">
-              <div className="flex items-center justify-between">
+            <Card compact className="relative overflow-hidden p-3.5 rounded-2xl">
+              <div className="flex items-center justify-between mb-2 px-1">
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-800 dark:text-zinc-200">
-                  <ScanLine className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                  <span>Continuous Multi-QR Scanner</span>
+                  <ScanLine className="h-3.5 w-3.5 text-emerald-500" />
+                  <span>Aim Camera at QR Label</span>
                 </div>
                 <Badge variant="accent" size="sm" dot>
-                  Scanning Live
+                  Live View
                 </Badge>
               </div>
 
-              <div
-                id="mobile-qr-reader"
-                className="rounded-xl overflow-hidden border border-zinc-200/90 dark:border-zinc-800 bg-zinc-100/40 dark:bg-zinc-950 min-h-[260px]"
-              ></div>
+              {/* Viewfinder Container with Animated Laser & Corner Brackets */}
+              <div className="relative rounded-2xl overflow-hidden bg-black aspect-square max-h-[300px] flex items-center justify-center border border-zinc-200/20 shadow-inner">
+                {/* HTML5 QR Code Video Target */}
+                <div id="mobile-qr-reader" className="w-full h-full"></div>
 
-              <div className="rounded-lg bg-zinc-50 dark:bg-zinc-850 p-2.5 text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center justify-between">
-                <span>Scan labels one by one. Items automatically stack in the cart.</span>
-                <span className="font-semibold text-emerald-600 dark:text-emerald-400 font-mono">
-                  {cart.length} items
-                </span>
+                {/* iOS Viewfinder Overlay Frame */}
+                <div
+                  className={`pointer-events-none absolute inset-6 sm:inset-10 rounded-2xl border border-white/20 transition-all duration-300 ${
+                    scanFlash ? 'ring-4 ring-emerald-400/80 bg-emerald-500/10' : ''
+                  }`}
+                >
+                  {/* 4 iOS-style corner target brackets */}
+                  <div className="absolute -top-1 -left-1 w-6 h-6 border-t-3 border-l-3 border-emerald-500 rounded-tl-lg" />
+                  <div className="absolute -top-1 -right-1 w-6 h-6 border-t-3 border-r-3 border-emerald-500 rounded-tr-lg" />
+                  <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-3 border-l-3 border-emerald-500 rounded-bl-lg" />
+                  <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-3 border-r-3 border-emerald-500 rounded-br-lg" />
+
+                  {/* Laser Scanning Beam with Gradient Trail & Glow */}
+                  <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_12px_#10b981] animate-laser">
+                    <div className="h-10 w-full bg-gradient-to-b from-emerald-500/20 to-transparent -translate-y-full pointer-events-none" />
+                  </div>
+                </div>
+
+                {/* Scanning hint badge */}
+                <div className="pointer-events-none absolute bottom-3 z-10 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-[10px] font-medium text-white/90 border border-white/10">
+                  Multiple items auto-stack in cart
+                </div>
               </div>
             </Card>
           )}
 
-          {/* Tab Content B: Manual Selector + Embedded Calculator */}
+          {/* VIEW 2: Manual Selector + iOS Style Keypad Calculator */}
           {inputMethod === 'manual' && (
-            <Card compact className="space-y-3.5">
-              {/* Product Selector */}
+            <Card compact className="space-y-3 p-3.5 rounded-2xl">
               <div>
-                <label className="block text-[11px] font-medium tracking-wide uppercase text-zinc-400 mb-1">
-                  Select Product Item
+                <label className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">
+                  Catalog Product
                 </label>
                 <select
                   value={selectedProductId}
                   onChange={(e) => setSelectedProductId(e.target.value)}
-                  className="w-full rounded-lg border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15"
+                  className="w-full rounded-xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 focus:border-emerald-600 focus:outline-none"
                 >
                   {allProducts.map((p) => (
                     <option key={p._id} value={p._id}>
-                      {p.name} ({p.sku}) — Stock: {p.currentStock} {p.unit}
+                      {p.name} ({p.sku}) • Avail: {p.currentStock} {p.unit}
                     </option>
                   ))}
                 </select>
               </div>
 
-              {/* Target & Value display */}
+              {/* Inset iOS Targets */}
               <div className="grid grid-cols-2 gap-2">
                 <div
                   onClick={() => {
                     setCalcTarget('qty');
                     setCalcDisplay(String(manualQty));
                   }}
-                  className={`p-2 rounded-lg border cursor-pointer transition-all ${
+                  className={`p-2.5 rounded-xl border cursor-pointer transition-all active:scale-98 ${
                     calcTarget === 'qty'
-                      ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-300'
+                      ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-300 ring-1 ring-emerald-500/20'
                       : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400'
                   }`}
                 >
-                  <span className="text-[10px] uppercase font-semibold block">Quantity Target</span>
+                  <span className="text-[10px] uppercase font-bold tracking-wider block">Quantity</span>
                   <span className="text-base font-bold font-mono">{manualQty}</span>
                 </div>
 
@@ -506,75 +505,75 @@ export const QRScanPage = () => {
                     setCalcTarget('price');
                     setCalcDisplay(String(manualPrice || '0'));
                   }}
-                  className={`p-2 rounded-lg border cursor-pointer transition-all ${
+                  className={`p-2.5 rounded-xl border cursor-pointer transition-all active:scale-98 ${
                     calcTarget === 'price'
-                      ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-300'
+                      ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 text-emerald-900 dark:text-emerald-300 ring-1 ring-emerald-500/20'
                       : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400'
                   }`}
                 >
-                  <span className="text-[10px] uppercase font-semibold block">Unit Price Target</span>
+                  <span className="text-[10px] uppercase font-bold tracking-wider block">Unit Price</span>
                   <span className="text-base font-bold font-mono">
                     {formatCurrency(manualPrice || 0, currency)}
                   </span>
                 </div>
               </div>
 
-              {/* Calculator Keypad */}
-              <div className="rounded-xl border border-zinc-200/90 dark:border-zinc-800 bg-zinc-100/60 dark:bg-zinc-900 p-2.5 space-y-2">
-                {/* Calculator Screen */}
-                <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-white dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800">
+              {/* iOS Calculator Surface */}
+              <div className="rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-zinc-100/70 dark:bg-zinc-900 p-2.5 space-y-2">
+                {/* LCD Display */}
+                <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 shadow-inner">
                   <span className="text-[10px] uppercase font-semibold text-zinc-400">
-                    Input for {calcTarget === 'qty' ? 'Quantity' : 'Unit Price'}:
+                    {calcTarget === 'qty' ? 'Set Quantity' : 'Set Price'}:
                   </span>
                   <span className="text-lg font-bold font-mono text-zinc-900 dark:text-zinc-100">
                     {calcDisplay}
                   </span>
                 </div>
 
-                {/* Keypad Buttons Grid */}
-                <div className="grid grid-cols-4 gap-1.5 text-sm font-semibold">
-                  {['7', '8', '9', '÷'].map((btn) => (
+                {/* Keypad */}
+                <div className="grid grid-cols-4 gap-1.5 text-sm font-semibold select-none">
+                  {['7', '8', '9', '÷'].map((b) => (
                     <button
-                      key={btn}
+                      key={b}
                       type="button"
-                      onClick={() => handleCalcButton(btn)}
-                      className="py-2.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50 active:scale-95 transition-all"
+                      onClick={() => handleCalcButton(b)}
+                      className="py-2.5 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 active:opacity-60 transition-opacity shadow-2xs"
                     >
-                      {btn}
+                      {b}
                     </button>
                   ))}
-                  {['4', '5', '6', '×'].map((btn) => (
+                  {['4', '5', '6', '×'].map((b) => (
                     <button
-                      key={btn}
+                      key={b}
                       type="button"
-                      onClick={() => handleCalcButton(btn)}
-                      className="py-2.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50 active:scale-95 transition-all"
+                      onClick={() => handleCalcButton(b)}
+                      className="py-2.5 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 active:opacity-60 transition-opacity shadow-2xs"
                     >
-                      {btn}
+                      {b}
                     </button>
                   ))}
-                  {['1', '2', '3', '-'].map((btn) => (
+                  {['1', '2', '3', '-'].map((b) => (
                     <button
-                      key={btn}
+                      key={b}
                       type="button"
-                      onClick={() => handleCalcButton(btn)}
-                      className="py-2.5 rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50 active:scale-95 transition-all"
+                      onClick={() => handleCalcButton(b)}
+                      className="py-2.5 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 active:opacity-60 transition-opacity shadow-2xs"
                     >
-                      {btn}
+                      {b}
                     </button>
                   ))}
-                  {['C', '0', '.', '+'].map((btn) => (
+                  {['C', '0', '.', '+'].map((b) => (
                     <button
-                      key={btn}
+                      key={b}
                       type="button"
-                      onClick={() => handleCalcButton(btn)}
-                      className={`py-2.5 rounded-lg border active:scale-95 transition-all ${
-                        btn === 'C'
+                      onClick={() => handleCalcButton(b)}
+                      className={`py-2.5 rounded-xl border active:opacity-60 transition-opacity shadow-2xs ${
+                        b === 'C'
                           ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-900/50'
-                          : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200 hover:bg-zinc-50'
+                          : 'bg-white dark:bg-zinc-800 border-zinc-200 dark:border-zinc-700 text-zinc-800 dark:text-zinc-200'
                       }`}
                     >
-                      {btn}
+                      {b}
                     </button>
                   ))}
                 </div>
@@ -583,39 +582,38 @@ export const QRScanPage = () => {
                   <button
                     type="button"
                     onClick={() => handleCalcButton('⌫')}
-                    className="py-2 rounded-lg bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-200 text-xs font-semibold hover:bg-zinc-300 active:scale-95"
+                    className="py-2 rounded-xl bg-zinc-200/80 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-semibold active:opacity-60"
                   >
-                    Backspace ⌫
+                    Delete ⌫
                   </button>
                   <button
                     type="button"
                     onClick={() => handleCalcButton('=')}
-                    className="py-2 rounded-lg bg-emerald-600 text-white dark:bg-emerald-500 dark:text-zinc-950 text-xs font-semibold hover:bg-emerald-500 active:scale-95"
+                    className="py-2 rounded-xl bg-emerald-600 text-white dark:bg-emerald-500 dark:text-zinc-950 text-xs font-semibold active:opacity-75"
                   >
                     Calculate =
                   </button>
                 </div>
               </div>
 
-              {/* Add to Stack Button */}
               <Button
                 variant="primary"
                 size="md"
                 onClick={handleAddManualItem}
-                className="w-full py-2.5"
+                className="w-full py-2.5 rounded-xl font-semibold"
               >
-                <Plus className="h-4 w-4 mr-1.5" />
-                Add Item to Stack ({manualQty}x @ {formatCurrency(manualPrice || 0, currency)})
+                <Plus className="h-4 w-4 mr-1" />
+                Add Item ({manualQty}x @ {formatCurrency(manualPrice || 0, currency)})
               </Button>
             </Card>
           )}
         </div>
 
-        {/* Right: Stacked Cart / Complete at Once */}
-        <div className="lg:col-span-6 space-y-4">
-          <Card compact className="flex flex-col justify-between h-full">
+        {/* Right: Stacked Order Register */}
+        <div className="lg:col-span-6">
+          <Card compact className="flex flex-col justify-between h-full rounded-2xl">
             <div>
-              {/* Stack Header */}
+              {/* Card Header */}
               <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800/80">
                 <div className="flex items-center gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
@@ -623,7 +621,7 @@ export const QRScanPage = () => {
                   </div>
                   <div>
                     <h3 className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
-                      Stacked Register Cart
+                      Stacked Order List
                     </h3>
                     <span className="text-[11px] text-zinc-400">
                       {totals.linesCount} line {totals.linesCount === 1 ? 'item' : 'items'} •{' '}
@@ -636,7 +634,7 @@ export const QRScanPage = () => {
                   <button
                     type="button"
                     onClick={clearCart}
-                    className="text-[11px] font-medium text-rose-600 dark:text-rose-400 hover:underline inline-flex items-center gap-1"
+                    className="text-[11px] font-medium text-rose-600 dark:text-rose-400 hover:underline inline-flex items-center gap-1 active:opacity-70"
                   >
                     <RotateCcw className="h-3 w-3" /> Clear
                   </button>
@@ -644,7 +642,7 @@ export const QRScanPage = () => {
               </div>
 
               {/* Items List */}
-              <div className="divide-y divide-zinc-100 dark:divide-zinc-800/60 my-2 max-h-[340px] overflow-y-auto pr-1">
+              <div className="divide-y divide-zinc-100 dark:divide-zinc-800/60 my-2 max-h-[300px] overflow-y-auto pr-1">
                 {cart.length > 0 ? (
                   cart.map((item) => {
                     const subtotal = item.quantity * item.unitPrice;
@@ -660,7 +658,7 @@ export const QRScanPage = () => {
                           <div className="flex items-center gap-2 text-[11px] text-zinc-400 font-mono mt-0.5">
                             <span>{item.product.sku}</span>
                             <span>•</span>
-                            <span>{formatCurrency(item.unitPrice, currency)} / ea</span>
+                            <span>{formatCurrency(item.unitPrice, currency)}</span>
                             <span>•</span>
                             <span className="text-zinc-500">
                               Avail: {item.product.currentStock}
@@ -668,13 +666,13 @@ export const QRScanPage = () => {
                           </div>
                         </div>
 
-                        {/* Stepper buttons & subtotal */}
+                        {/* Quantity Stepper & Subtotal */}
                         <div className="flex items-center gap-2 shrink-0">
                           <div className="flex items-center border border-zinc-200 dark:border-zinc-750 rounded-lg overflow-hidden bg-zinc-50 dark:bg-zinc-850">
                             <button
                               type="button"
                               onClick={() => updateCartQty(item.product._id, -1)}
-                              className="px-2 py-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300"
+                              className="px-2 py-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 active:scale-95"
                             >
                               <Minus className="h-3 w-3" />
                             </button>
@@ -684,7 +682,7 @@ export const QRScanPage = () => {
                             <button
                               type="button"
                               onClick={() => updateCartQty(item.product._id, 1)}
-                              className="px-2 py-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300"
+                              className="px-2 py-1 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-600 dark:text-zinc-300 active:scale-95"
                             >
                               <Plus className="h-3 w-3" />
                             </button>
@@ -697,7 +695,7 @@ export const QRScanPage = () => {
                           <button
                             type="button"
                             onClick={() => removeCartItem(item.product._id)}
-                            className="p-1 text-zinc-400 hover:text-rose-600"
+                            className="p-1 text-zinc-400 hover:text-rose-600 active:scale-90"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
@@ -706,20 +704,19 @@ export const QRScanPage = () => {
                     );
                   })
                 ) : (
-                  <div className="py-12 text-center text-zinc-400 dark:text-zinc-500">
-                    <Package className="h-8 w-8 mx-auto text-zinc-300 dark:text-zinc-700 mb-2" />
+                  <div className="py-10 text-center text-zinc-400 dark:text-zinc-500">
+                    <Package className="h-7 w-7 mx-auto text-zinc-300 dark:text-zinc-700 mb-1.5" />
                     <p className="text-xs font-medium">Cart is currently empty</p>
                     <p className="text-[11px] text-zinc-400 mt-0.5">
-                      Scan QR labels or add items with the manual calculator on the left
+                      Items will stack here in real-time as you scan QR tags
                     </p>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Cart Footer: Summary & Complete Action */}
+            {/* Footer Form & Action */}
             <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800/80 space-y-3">
-              {/* Payment & Notes */}
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="block text-[10px] font-medium uppercase text-zinc-400 mb-1">
@@ -728,7 +725,7 @@ export const QRScanPage = () => {
                   <select
                     value={paymentMethod}
                     onChange={(e) => setPaymentMethod(e.target.value)}
-                    className="w-full rounded-lg border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-900 dark:text-zinc-100"
+                    className="w-full rounded-xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-900 dark:text-zinc-100"
                   >
                     <option value="CASH">Cash</option>
                     <option value="CARD">Card / POS</option>
@@ -743,15 +740,15 @@ export const QRScanPage = () => {
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Counter sale #104"
+                    placeholder="e.g. In-store customer"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    className="w-full rounded-lg border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-900 dark:text-zinc-100"
+                    className="w-full rounded-xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-900 dark:text-zinc-100"
                   />
                 </div>
               </div>
 
-              {/* Total Row */}
+              {/* Total Due */}
               <div className="flex items-baseline justify-between py-1">
                 <div>
                   <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
@@ -766,14 +763,14 @@ export const QRScanPage = () => {
                 </div>
               </div>
 
-              {/* Complete Transaction at once */}
+              {/* Complete Action Button */}
               <Button
                 variant="primary"
                 size="lg"
                 loading={submitting}
                 disabled={cart.length === 0}
                 onClick={handleCompleteTransaction}
-                className="w-full py-3 text-sm font-bold shadow-sm"
+                className="w-full py-3 text-sm font-bold rounded-2xl shadow-sm active:scale-[0.98]"
               >
                 <CheckCircle2 className="h-4 w-4 mr-2" />
                 {txnType === 'SALE'
@@ -785,7 +782,7 @@ export const QRScanPage = () => {
         </div>
       </div>
 
-      {/* Success Receipt Modal */}
+      {/* iOS-Style Success Receipt Modal */}
       <Modal
         isOpen={Boolean(completedTxn)}
         onClose={() => setCompletedTxn(null)}
@@ -795,7 +792,7 @@ export const QRScanPage = () => {
         {completedTxn && (
           <div className="space-y-4">
             <div className="text-center py-2">
-              <div className="h-11 w-11 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-2">
+              <div className="h-12 w-12 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto mb-2 shadow-xs">
                 <CheckCircle2 className="h-6 w-6" />
               </div>
               <h4 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
@@ -806,7 +803,7 @@ export const QRScanPage = () => {
               </p>
             </div>
 
-            <div className="border border-zinc-200 dark:border-zinc-800 rounded-xl p-3 bg-zinc-50/60 dark:bg-zinc-850/60 space-y-2 max-h-48 overflow-y-auto">
+            <div className="border border-zinc-200 dark:border-zinc-800 rounded-2xl p-3 bg-zinc-50/60 dark:bg-zinc-850/60 space-y-2 max-h-48 overflow-y-auto">
               {completedTxn.items?.map((it, idx) => (
                 <div key={idx} className="flex justify-between text-xs">
                   <span className="font-medium text-zinc-800 dark:text-zinc-200">
@@ -828,7 +825,7 @@ export const QRScanPage = () => {
 
             <Button
               variant="primary"
-              className="w-full"
+              className="w-full rounded-2xl"
               onClick={() => setCompletedTxn(null)}
             >
               Start New Order / Scan

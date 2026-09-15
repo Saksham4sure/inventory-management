@@ -5,10 +5,119 @@
 @layer base {
   :root {
     color-scheme: light dark;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
-    @apply bg-zinc-50 text-zinc-900 antialiased min-h-screen selection:bg-emerald-500/20 selection:text-emerald-800 dark:bg-zinc-950 dark:text-zinc-100 dark:selection:bg-emerald-500/30 dark:selection:text-emerald-300;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    @apply bg-zinc-100/70 text-zinc-900 antialiased min-h-screen dark:bg-black dark:text-zinc-100;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", -apple-system, system-ui, sans-serif;
+    letter-spacing: -0.011em;
   }
+}
+
+/* iOS Laser Scanning Beam Animation */
+@keyframes laser-sweep {
+  0% {
+    top: 6%;
+    opacity: 0.2;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    top: 94%;
+    opacity: 0.2;
+  }
+}
+
+.animate-laser {
+  animation: laser-sweep 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+}
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.98);
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2.5s ease-in-out infinite;
+}
+
+/* html5-qrcode iOS Restyling */
+#mobile-qr-reader,
+#qr-reader-container {
+  border: none !important;
+  background: transparent !important;
+}
+
+#mobile-qr-reader video,
+#qr-reader-container video {
+  border-radius: 1.25rem !important;
+  object-fit: cover !important;
+  width: 100% !important;
+  max-height: 280px !important;
+}
+
+#mobile-qr-reader__scan_region,
+#qr-reader-container__scan_region {
+  border-radius: 1.25rem !important;
+  overflow: hidden !important;
+  border: none !important;
+}
+
+#mobile-qr-reader__dashboard_section_csr span,
+#mobile-qr-reader__dashboard_section_fsr span,
+#mobile-qr-reader__header_message {
+  font-size: 11px !important;
+  color: #71717a !important;
+}
+
+#mobile-qr-reader__dashboard button,
+#qr-reader-container__dashboard button {
+  background-color: rgb(24 24 27) !important;
+  color: white !important;
+  border-radius: 9999px !important;
+  padding: 6px 14px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  border: none !important;
+  cursor: pointer !important;
+  margin: 4px 2px !important;
+  transition: opacity 0.15s ease !important;
+}
+
+#mobile-qr-reader__dashboard button:active,
+#qr-reader-container__dashboard button:active {
+  opacity: 0.7 !important;
+}
+
+.dark #mobile-qr-reader__dashboard button,
+.dark #qr-reader-container__dashboard button {
+  background-color: rgb(244 244 245) !important;
+  color: rgb(24 24 27) !important;
+}
+
+#mobile-qr-reader__dashboard select,
+#qr-reader-container__dashboard select {
+  background-color: white !important;
+  border: 1px solid #e4e4e7 !important;
+  border-radius: 0.5rem !important;
+  font-size: 12px !important;
+  padding: 4px 8px !important;
+}
+
+.dark #mobile-qr-reader__dashboard select,
+.dark #qr-reader-container__dashboard select {
+  background-color: #18181b !important;
+  border-color: #27272a !important;
+  color: white !important;
 }
