@@ -10,8 +10,8 @@ export const ProtectedRoute = () => {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-slate-50">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent"></div>
-          <p className="text-sm font-medium text-slate-600">Verifying session...</p>
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-900 border-t-transparent dark:border-white"></div>
+          <p className="text-xs font-medium text-zinc-500">Verifying session...</p>
         </div>
       </div>
     );

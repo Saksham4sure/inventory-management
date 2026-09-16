@@ -30,7 +30,7 @@ export const AppRoutes = () => {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-[#F4F5F7] dark:bg-[#0f1117]">
         <div className="flex flex-col items-center gap-2.5">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent"></div>
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-900 dark:border-white border-t-transparent"></div>
           <p className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Loading StockPulse...</p>
         </div>
       </div>

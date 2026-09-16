@@ -231,7 +231,7 @@ export const PurchasesPage = () => {
             placeholder="Search purchases..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 pl-8 pr-3 py-1 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:border-emerald-600 focus:outline-none"
+            className="w-full rounded-lg border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 pl-8 pr-3 py-1 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:border-purple-500 focus:outline-none"
           />
         </div>
       </div>
@@ -256,7 +256,7 @@ export const PurchasesPage = () => {
                           {txn.referenceNumber}
                         </span>
                         {txn.scannedViaQR && (
-                          <span className="inline-flex items-center text-[10px] text-emerald-600">
+                          <span className="inline-flex items-center text-[10px] text-purple-600 dark:text-purple-400">
                             <QrCode className="h-3 w-3" />
                           </span>
                         )}

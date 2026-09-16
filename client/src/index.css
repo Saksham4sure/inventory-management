@@ -31,7 +31,7 @@
   }
 
   body {
-    @apply bg-[#F4F5F7] text-zinc-900 antialiased min-h-screen dark:bg-[#0f1117] dark:text-zinc-100 selection:bg-emerald-500/20 selection:text-emerald-700 dark:selection:text-emerald-300;
+    @apply bg-[#F4F5F7] text-zinc-900 antialiased min-h-screen dark:bg-[#0f1117] dark:text-zinc-100 selection:bg-purple-500/20 selection:text-purple-700 dark:selection:text-purple-300;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", -apple-system, system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif;
     letter-spacing: -0.015em;
     -webkit-font-smoothing: antialiased;
@@ -128,9 +128,7 @@
   right: 0;
   height: 380px;
   pointer-events: none;
-  background: radial-gradient(circle at 50% -20%, rgba(16, 185, 129, 0.08), transparent 70%),
-              radial-gradient(circle at 85% 10%, rgba(59, 130, 246, 0.04), transparent 50%),
-              radial-gradient(circle at 15% 20%, rgba(168, 85, 247, 0.04), transparent 50%);
+  background: radial-gradient(circle at 50% -20%, rgba(0, 0, 0, 0.02), transparent 70%);
   z-index: -10;
   -webkit-transform: translate3d(0, 0, 0);
   transform: translateZ(0);
@@ -138,9 +136,7 @@
 }
 
 .dark .app-ambient-glow {
-  background: radial-gradient(circle at 50% -20%, rgba(16, 185, 129, 0.14), transparent 70%),
-              radial-gradient(circle at 85% 10%, rgba(59, 130, 246, 0.08), transparent 50%),
-              radial-gradient(circle at 15% 20%, rgba(168, 85, 247, 0.07), transparent 50%);
+  background: radial-gradient(circle at 50% -20%, rgba(255, 255, 255, 0.02), transparent 70%);
 }
 
 /* Laser Scanning Beam Animation */

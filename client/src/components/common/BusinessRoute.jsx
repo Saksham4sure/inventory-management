@@ -14,8 +14,8 @@ export const BusinessRoute = () => {
   if (!hasBusiness) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center p-4">
-        <div className="max-w-md w-full text-center space-y-4 rounded-3xl border border-black/[0.06] dark:border-white/[0.08] bg-white/75 dark:bg-[#181b22]/75 backdrop-blur-2xl p-6 sm:p-8 shadow-sm">
-          <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-md mx-auto">
+        <div className="max-w-md w-full text-center space-y-4 rounded-3xl border border-black/[0.06] dark:border-white/[0.08] bg-white/80 dark:bg-[#181b22]/80 backdrop-blur-xl p-6 sm:p-8 shadow-sm">
+          <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 shadow-md mx-auto">
             <Building2 className="h-7 w-7" />
           </div>
           <h2 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">

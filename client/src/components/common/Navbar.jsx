@@ -30,7 +30,7 @@ export const Navbar = ({ onOpenMobileMenu }) => {
             className="flex items-center gap-2.5 p-1 -m-1 rounded-2xl hover:bg-black/[0.03] dark:hover:bg-white/[0.05] transition-all active:scale-[0.98]"
           >
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-black/[0.04] dark:bg-white/[0.08] text-zinc-800 dark:text-zinc-200 font-bold border border-black/[0.06] dark:border-white/[0.08] shadow-2xs">
-              <Building2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              <Building2 className="h-4 w-4 text-purple-600 dark:text-purple-400" />
             </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
@@ -52,9 +52,9 @@ export const Navbar = ({ onOpenMobileMenu }) => {
             title="Set up Business Profile"
             className="flex items-center gap-2 text-xs font-semibold tracking-tight text-zinc-700 dark:text-zinc-300 hover:opacity-80 transition-opacity"
           >
-            <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+            <span className="h-2 w-2 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.6)]" />
             StockPulse
-            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-normal underline ml-1">
+            <span className="text-[10px] text-purple-600 dark:text-purple-400 font-normal underline ml-1">
               (Setup Business)
             </span>
           </Link>
@@ -79,7 +79,7 @@ export const Navbar = ({ onOpenMobileMenu }) => {
               {user?.email || ''}
             </span>
           </div>
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-tr from-emerald-600 to-teal-400 text-white font-semibold text-xs shadow-xs">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-tr from-purple-600 to-fuchsia-600 text-white font-semibold text-xs shadow-xs">
             {user?.name ? user.name[0].toUpperCase() : 'U'}
           </div>
         </Link>

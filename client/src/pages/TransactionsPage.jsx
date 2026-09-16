@@ -96,7 +96,7 @@ export const TransactionsPage = () => {
               placeholder="Search reference # (e.g. SAL-146698)..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-lg border border-zinc-200/90 bg-white dark:bg-zinc-900 dark:border-zinc-800 pl-9 pr-4 py-1.5 sm:py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15"
+              className="w-full rounded-lg border border-zinc-200/90 bg-white dark:bg-zinc-900 dark:border-zinc-800 pl-9 pr-4 py-1.5 sm:py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/15"
             />
           </div>
 
@@ -119,7 +119,7 @@ export const TransactionsPage = () => {
                 onClick={() => setTypeFilter('SALE')}
                 className={`px-3 py-1 rounded-md transition-all ${
                   typeFilter === 'SALE'
-                    ? 'bg-white text-emerald-700 shadow-xs dark:bg-zinc-800 dark:text-emerald-400'
+                    ? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-800 dark:text-zinc-100 font-semibold'
                     : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
                 }`}
               >
@@ -130,7 +130,7 @@ export const TransactionsPage = () => {
                 onClick={() => setTypeFilter('PURCHASE')}
                 className={`px-3 py-1 rounded-md transition-all ${
                   typeFilter === 'PURCHASE'
-                    ? 'bg-white text-blue-700 shadow-xs dark:bg-zinc-800 dark:text-blue-400'
+                    ? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-800 dark:text-zinc-100 font-semibold'
                     : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
                 }`}
               >
@@ -171,7 +171,7 @@ export const TransactionsPage = () => {
                           {txn.referenceNumber}
                         </div>
                         {txn.scannedViaQR && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.2 rounded mt-0.5 dark:text-emerald-400">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-purple-700 bg-purple-500/10 border border-purple-500/20 px-1.5 py-0.2 rounded mt-0.5 dark:text-purple-400">
                             <QrCode className="h-2.5 w-2.5" /> QR Verified
                           </span>
                         )}

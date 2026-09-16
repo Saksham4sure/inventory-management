@@ -226,7 +226,7 @@ export const SalesPage = () => {
             placeholder="Search sales..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 pl-8 pr-3 py-1 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:border-emerald-600 focus:outline-none"
+            className="w-full rounded-lg border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 pl-8 pr-3 py-1 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:border-purple-500 focus:outline-none"
           />
         </div>
       </div>
@@ -251,7 +251,7 @@ export const SalesPage = () => {
                           {txn.referenceNumber}
                         </span>
                         {txn.scannedViaQR && (
-                          <span className="inline-flex items-center text-[10px] text-emerald-600 dark:text-emerald-400">
+                          <span className="inline-flex items-center text-[10px] text-purple-600 dark:text-purple-400">
                             <QrCode className="h-3 w-3" />
                           </span>
                         )}
@@ -270,7 +270,7 @@ export const SalesPage = () => {
                         className={`font-mono font-bold text-xs sm:text-sm ${
                           isReturn
                             ? 'text-amber-600 dark:text-amber-400'
-                            : 'text-emerald-600 dark:text-emerald-400'
+                            : 'text-zinc-900 dark:text-zinc-100'
                         }`}
                       >
                         {isReturn ? '-' : '+'}
@@ -331,7 +331,7 @@ export const SalesPage = () => {
                           className={`px-4 py-3.5 font-bold font-mono text-xs ${
                             isReturn
                               ? 'text-amber-600 dark:text-amber-400'
-                              : 'text-emerald-600 dark:text-emerald-400'
+                              : 'text-zinc-900 dark:text-zinc-100'
                           }`}
                         >
                           {isReturn ? '-' : '+'}
@@ -382,7 +382,7 @@ export const SalesPage = () => {
             <span className="text-[10px] uppercase font-semibold text-zinc-400 block">
               Gross Sales Revenue
             </span>
-            <div className="text-xl sm:text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400 mt-1">
+            <div className="text-xl sm:text-2xl font-black font-mono text-zinc-900 dark:text-zinc-100 mt-1">
               {formatCurrency(summary.grossSales, currency)}
             </div>
             <span className="text-[11px] text-zinc-400 mt-1 block">

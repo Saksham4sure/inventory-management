@@ -115,9 +115,9 @@ export const BusinessProfilePage = () => {
       </div>
 
       {!business && (
-        <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-4 sm:p-5 backdrop-blur-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.04] p-4 sm:p-5 backdrop-blur-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-sm">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 shadow-sm">
               <Building2 className="h-5 w-5" />
             </div>
             <div>
@@ -133,7 +133,7 @@ export const BusinessProfilePage = () => {
       )}
 
       {success && (
-        <div className="flex items-center gap-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 p-4 text-xs text-emerald-700 dark:text-emerald-300 backdrop-blur-md">
+        <div className="flex items-center gap-2.5 rounded-2xl bg-purple-500/10 border border-purple-500/20 p-4 text-xs text-purple-700 dark:text-purple-300 backdrop-blur-md">
           <CheckCircle2 className="h-4 w-4 shrink-0" />
           <span>{success}</span>
         </div>
@@ -150,7 +150,7 @@ export const BusinessProfilePage = () => {
         {/* Left Column: Business Badge & Status Card */}
         <div className="md:col-span-4 space-y-4">
           <Card className="text-center p-6 flex flex-col items-center">
-            <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white font-bold text-2xl shadow-md ring-4 ring-black/[0.04] dark:ring-white/[0.06] mb-3.5">
+            <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-bold text-2xl shadow-md ring-4 ring-black/[0.04] dark:ring-white/[0.06] mb-3.5">
               <Building2 className="h-9 w-9" />
             </div>
             <h2 className="text-base font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
@@ -172,11 +172,11 @@ export const BusinessProfilePage = () => {
             <div className="w-full mt-6 pt-5 border-t border-black/[0.05] dark:border-white/[0.08] text-left space-y-2.5 text-xs text-zinc-500 dark:text-zinc-400">
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1.5"><QrCode className="h-3.5 w-3.5 text-zinc-400" /> QR Label Engine</span>
-                <span className="text-emerald-600 dark:text-emerald-400 font-medium">Active</span>
+                <span className="text-zinc-700 dark:text-zinc-300 font-medium">Active</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-zinc-400" /> Audit Logging</span>
-                <span className="text-emerald-600 dark:text-emerald-400 font-medium">Enabled</span>
+                <span className="text-zinc-700 dark:text-zinc-300 font-medium">Enabled</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1.5"><Coins className="h-3.5 w-3.5 text-zinc-400" /> Currency</span>
@@ -190,7 +190,7 @@ export const BusinessProfilePage = () => {
         <div className="md:col-span-8">
           <Card className="space-y-4">
             <div className="flex items-center gap-2.5 pb-3 border-b border-black/[0.05] dark:border-white/[0.08]">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200">
                 <Building2 className="h-4 w-4" />
               </div>
               <div>
@@ -223,7 +223,7 @@ export const BusinessProfilePage = () => {
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full rounded-xl border border-black/[0.08] bg-black/[0.025] px-3.5 py-2.5 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 dark:bg-[#181b22] dark:border-white/[0.09] focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/15 transition-all"
+                    className="w-full rounded-xl border border-black/[0.08] bg-black/[0.025] px-3.5 py-2.5 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 dark:bg-[#181b22] dark:border-white/[0.09] focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-500/10 transition-all"
                   >
                     {categories.map((c) => (
                       <option key={c} value={c} className="dark:bg-[#181b22]">
@@ -240,7 +240,7 @@ export const BusinessProfilePage = () => {
                   <select
                     value={formData.currency}
                     onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                    className="w-full rounded-xl border border-black/[0.08] bg-black/[0.025] px-3.5 py-2.5 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 dark:bg-[#181b22] dark:border-white/[0.09] focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/15 transition-all"
+                    className="w-full rounded-xl border border-black/[0.08] bg-black/[0.025] px-3.5 py-2.5 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 dark:bg-[#181b22] dark:border-white/[0.09] focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-500/10 transition-all"
                   >
                     {currencies.map((curr) => (
                       <option key={curr.code} value={curr.code} className="dark:bg-[#181b22]">

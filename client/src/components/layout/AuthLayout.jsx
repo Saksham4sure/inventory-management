@@ -16,7 +16,7 @@ export const AuthLayout = () => {
       <div className="relative z-10 w-full max-w-sm sm:max-w-md">
         {/* Brand header */}
         <div className="text-center mb-6 sm:mb-8">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-[0_4px_16px_rgba(16,185,129,0.35)] ring-4 ring-white/60 dark:ring-white/[0.05] mb-3.5">
+          <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 shadow-md ring-4 ring-black/[0.04] dark:ring-white/[0.06] mb-3.5">
             <QrCode className="h-6 w-6" />
           </div>
           <h2 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">

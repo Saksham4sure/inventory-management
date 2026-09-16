@@ -120,7 +120,7 @@ export const RegisterPage = () => {
             type="checkbox"
             checked={skipBusiness}
             onChange={(e) => setSkipBusiness(e.target.checked)}
-            className="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4 accent-emerald-500"
+            className="rounded text-zinc-900 focus:ring-purple-500 h-4 w-4 accent-zinc-900 dark:accent-white"
           />
           <span className="font-medium text-zinc-700 dark:text-zinc-300">
             Skip business profile setup for now (configure later)
@@ -144,7 +144,7 @@ export const RegisterPage = () => {
         Already registered?{' '}
         <Link
           to={ROUTES.LOGIN}
-          className="font-medium text-emerald-600 dark:text-emerald-400 hover:underline"
+          className="font-semibold text-zinc-900 dark:text-zinc-100 hover:underline"
         >
           Sign in
         </Link>

@@ -18,7 +18,7 @@ export const Sidebar = ({ isMobileOpen, onClose }) => {
   const mainNavItems = [
     { label: 'Dashboard', path: ROUTES.DASHBOARD, icon: LayoutDashboard },
     { label: 'Products & Stock', path: ROUTES.PRODUCTS, icon: Boxes },
-    { label: 'Scan & POS Register', path: ROUTES.SCAN, icon: ScanLine, highlight: true },
+    { label: 'Scan & Register', path: ROUTES.SCAN, icon: ScanLine, highlight: true },
     { label: 'Sales & Returns', path: ROUTES.SALES, icon: TrendingUp },
     { label: 'Purchases & Stock In', path: ROUTES.PURCHASES, icon: ShoppingCart },
     { label: 'Full Audit Trail', path: ROUTES.TRANSACTIONS, icon: ArrowLeftRight },
@@ -42,7 +42,7 @@ export const Sidebar = ({ isMobileOpen, onClose }) => {
               isActive
                 ? 'bg-zinc-900 text-white shadow-[0_4px_14px_rgba(0,0,0,0.15)] dark:bg-white dark:text-zinc-950 dark:shadow-[0_4px_16px_rgba(255,255,255,0.15)] font-semibold'
                 : item.highlight
-                ? 'text-emerald-700 bg-emerald-500/10 hover:bg-emerald-500/18 dark:text-emerald-300 dark:bg-emerald-500/12 dark:hover:bg-emerald-500/22 border border-emerald-500/20'
+                ? 'text-purple-700 bg-purple-500/10 hover:bg-purple-500/18 dark:text-purple-300 dark:bg-purple-500/12 dark:hover:bg-purple-500/22 border border-purple-500/20'
                 : 'text-zinc-600 hover:text-zinc-900 hover:bg-black/[0.04] dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-white/[0.06]'
             }`
           }
@@ -55,14 +55,14 @@ export const Sidebar = ({ isMobileOpen, onClose }) => {
                     isActive
                       ? 'text-white dark:text-zinc-950'
                       : item.highlight
-                      ? 'text-emerald-600 dark:text-emerald-400'
+                      ? 'text-purple-600 dark:text-purple-400'
                       : 'text-zinc-500 dark:text-zinc-400'
                   }`}
                 />
                 <span>{item.label}</span>
               </div>
               {item.highlight && (
-                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30">
+                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-800 dark:text-purple-300 border border-purple-500/30">
                   Scan
                 </span>
               )}
@@ -78,7 +78,7 @@ export const Sidebar = ({ isMobileOpen, onClose }) => {
         {/* Brand header */}
         <div className="flex h-12 items-center justify-between px-2 mb-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-[0_2px_10px_rgba(16,185,129,0.3)]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-gradient-to-tr from-purple-600 to-fuchsia-600 text-white shadow-[0_2px_10px_rgba(168,85,247,0.3)]">
               <QrCode className="h-5 w-5" />
             </div>
             <div>
@@ -86,7 +86,7 @@ export const Sidebar = ({ isMobileOpen, onClose }) => {
                 <span className="font-bold text-md tracking-tight text-zinc-900 dark:text-zinc-100">
                   StockPulse
                 </span>
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.7)]" />
+                <span className="inline-block h-1.5 w-1.5 rounded-full bg-purple-500 shadow-[0_0_6px_rgba(168,85,247,0.7)]" />
               </div>
             </div>
           </div>
@@ -124,7 +124,7 @@ export const Sidebar = ({ isMobileOpen, onClose }) => {
       {/* Subscription info badge card */}
       <div className="rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-white/70 dark:bg-[#181b22]/70 p-4 shadow-2xs backdrop-blur-xl">
         <div className="flex items-center gap-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-purple-500/15 text-purple-600 dark:text-purple-400">
             <ShieldCheck className="h-3.5 w-3.5" />
           </div>
           <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight">

@@ -86,7 +86,7 @@ export const LoginPage = () => {
         New to StockPulse?{' '}
         <Link
           to={ROUTES.REGISTER}
-          className="font-medium text-emerald-600 dark:text-emerald-400 hover:underline"
+          className="font-semibold text-zinc-900 dark:text-zinc-100 hover:underline"
         >
           Create account
         </Link>

@@ -75,7 +75,7 @@ export const BusinessSetupPage = () => {
       <div className="relative z-10 w-full max-w-lg">
         {/* Header */}
         <div className="text-center mb-6 sm:mb-8">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-[0_4px_16px_rgba(16,185,129,0.35)] ring-4 ring-white/60 dark:ring-white/[0.05] mb-3.5">
+          <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 shadow-md ring-4 ring-black/[0.04] dark:ring-white/[0.06] mb-3.5">
             <Building2 className="h-6 w-6" />
           </div>
           <h2 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
@@ -89,7 +89,7 @@ export const BusinessSetupPage = () => {
         <div className="rounded-[28px] border border-black/[0.06] dark:border-white/[0.08] bg-white/80 dark:bg-[#181b22]/75 backdrop-blur-2xl p-6 sm:p-8 shadow-[0_8px_32px_-4px_rgba(0,0,0,0.06)] dark:shadow-[0_16px_48px_-8px_rgba(0,0,0,0.4)] ring-1 ring-white/80 dark:ring-white/[0.05] transition-all">
           {/* Subtle subscription plan notice */}
           <div className="mb-5 rounded-2xl bg-black/[0.03] dark:bg-white/[0.05] border border-black/[0.06] dark:border-white/[0.08] p-3.5 flex items-start gap-2.5 backdrop-blur-md">
-            <ShieldCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+            <ShieldCheck className="h-4 w-4 text-zinc-700 dark:text-zinc-300 shrink-0 mt-0.5" />
             <div className="text-[11px] leading-relaxed text-zinc-600 dark:text-zinc-300">
               <span className="font-semibold text-zinc-900 dark:text-zinc-100">
                 Tier: Standard Business Trial.
@@ -126,7 +126,7 @@ export const BusinessSetupPage = () => {
                 <select
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full rounded-xl border border-black/[0.08] bg-black/[0.025] px-3.5 py-2.5 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 dark:bg-zinc-900 dark:border-white/[0.09] focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/15 transition-all"
+                  className="w-full rounded-xl border border-black/[0.08] bg-black/[0.025] px-3.5 py-2.5 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 dark:bg-zinc-900 dark:border-white/[0.09] focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-500/10 transition-all"
                 >
                   {categories.map((cat) => (
                     <option key={cat} value={cat} className="dark:bg-zinc-900">
@@ -143,7 +143,7 @@ export const BusinessSetupPage = () => {
                 <select
                   value={formData.currency}
                   onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                  className="w-full rounded-xl border border-black/[0.08] bg-black/[0.025] px-3.5 py-2.5 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 dark:bg-zinc-900 dark:border-white/[0.09] focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/15 transition-all"
+                  className="w-full rounded-xl border border-black/[0.08] bg-black/[0.025] px-3.5 py-2.5 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 dark:bg-zinc-900 dark:border-white/[0.09] focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-500/10 transition-all"
                 >
                   {currencies.map((curr) => (
                     <option key={curr.code} value={curr.code} className="dark:bg-zinc-900">

@@ -26,5 +26,5 @@ export const formatStockBadge = (currentStock, minStockLevel) => {
   if (currentStock <= minStockLevel) {
     return { label: 'Low Stock', color: 'bg-amber-100 text-amber-700 border-amber-200' };
   }
-  return { label: 'In Stock', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' };
+  return { label: 'In Stock', color: 'bg-zinc-100 text-zinc-700 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700' };
 };

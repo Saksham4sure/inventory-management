@@ -90,7 +90,7 @@ export const QRViewerModal = ({ isOpen, onClose, product, currency = 'USD' }) =>
             <span className="inline-flex items-center gap-1 font-mono text-xs font-medium px-2.5 py-0.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] text-zinc-700 dark:text-zinc-300 border border-black/[0.06] dark:border-white/[0.08]">
               <Tag className="h-3 w-3" /> {product.sku}
             </span>
-            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 font-mono">
+            <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 font-mono">
               {formatCurrency(product.sellingPrice, currency)}
             </span>
           </div>

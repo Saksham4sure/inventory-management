@@ -105,7 +105,7 @@ export const ProfilePage = () => {
         {/* Left Column: Account Badge & Quick Summary */}
         <div className="md:col-span-4 space-y-4">
           <Card className="text-center p-6 flex flex-col items-center">
-            <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-tr from-emerald-600 to-teal-400 text-white font-bold text-2xl shadow-md ring-4 ring-black/[0.04] dark:ring-white/[0.06] mb-3.5">
+            <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-bold text-2xl shadow-md ring-4 ring-black/[0.04] dark:ring-white/[0.06] mb-3.5">
               {user?.name ? user.name[0].toUpperCase() : 'U'}
             </div>
             <h2 className="text-base font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
@@ -146,7 +146,7 @@ export const ProfilePage = () => {
           {/* Personal Info Card */}
           <Card className="space-y-4">
             <div className="flex items-center gap-2.5 pb-3 border-b border-black/[0.05] dark:border-white/[0.08]">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-zinc-100 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200">
                 <User className="h-4 w-4" />
               </div>
               <div>
@@ -160,7 +160,7 @@ export const ProfilePage = () => {
             </div>
 
             {profileSuccess && (
-              <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs text-emerald-700 dark:text-emerald-300">
+              <div className="flex items-center gap-2 rounded-xl bg-purple-500/10 border border-purple-500/20 p-3 text-xs text-purple-700 dark:text-purple-300">
                 <CheckCircle2 className="h-4 w-4 shrink-0" />
                 <span>{profileSuccess}</span>
               </div>
@@ -223,7 +223,7 @@ export const ProfilePage = () => {
             </div>
 
             {passwordSuccess && (
-              <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs text-emerald-700 dark:text-emerald-300">
+              <div className="flex items-center gap-2 rounded-xl bg-purple-500/10 border border-purple-500/20 p-3 text-xs text-purple-700 dark:text-purple-300">
                 <CheckCircle2 className="h-4 w-4 shrink-0" />
                 <span>{passwordSuccess}</span>
               </div>

@@ -9,11 +9,11 @@ export const Badge = ({
     default:
       'bg-zinc-500/10 text-zinc-700 border-zinc-500/15 dark:bg-zinc-500/15 dark:text-zinc-300 dark:border-zinc-500/20',
     accent:
-      'bg-emerald-500/10 text-emerald-700 border-emerald-500/25 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/30',
+      'bg-purple-500/10 text-purple-700 border-purple-500/25 dark:bg-purple-500/15 dark:text-purple-300 dark:border-purple-500/30',
     primary:
-      'bg-emerald-500/10 text-emerald-700 border-emerald-500/25 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/30',
+      'bg-purple-500/10 text-purple-700 border-purple-500/25 dark:bg-purple-500/15 dark:text-purple-300 dark:border-purple-500/30',
     success:
-      'bg-emerald-500/10 text-emerald-700 border-emerald-500/25 dark:bg-emerald-500/15 dark:text-emerald-300 dark:border-emerald-500/30',
+      'bg-purple-500/10 text-purple-700 border-purple-500/25 dark:bg-purple-500/15 dark:text-purple-300 dark:border-purple-500/30',
     warning:
       'bg-amber-500/10 text-amber-800 border-amber-500/25 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30',
     danger:
@@ -21,18 +21,21 @@ export const Badge = ({
     neutral:
       'bg-black/[0.04] text-zinc-600 border-black/[0.06] dark:bg-white/[0.06] dark:text-zinc-300 dark:border-white/[0.08]',
     blue:
-      'bg-sky-500/10 text-sky-700 border-sky-500/25 dark:bg-sky-500/15 dark:text-sky-300 dark:border-sky-500/30',
+      'bg-purple-500/10 text-purple-700 border-purple-500/25 dark:bg-purple-500/15 dark:text-purple-300 dark:border-purple-500/30',
+    purple:
+      'bg-purple-500/10 text-purple-700 border-purple-500/25 dark:bg-purple-500/15 dark:text-purple-300 dark:border-purple-500/30',
   };
 
   const dotColors = {
     default: 'bg-zinc-400 dark:bg-zinc-500',
-    accent: 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]',
-    primary: 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]',
-    success: 'bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]',
+    accent: 'bg-purple-500 shadow-[0_0_6px_rgba(168,85,247,0.5)]',
+    primary: 'bg-purple-500 shadow-[0_0_6px_rgba(168,85,247,0.5)]',
+    success: 'bg-purple-500 shadow-[0_0_6px_rgba(168,85,247,0.5)]',
     warning: 'bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.5)]',
     danger: 'bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.5)]',
     neutral: 'bg-zinc-400',
-    blue: 'bg-sky-500 shadow-[0_0_6px_rgba(14,165,233,0.5)]',
+    blue: 'bg-purple-500 shadow-[0_0_6px_rgba(168,85,247,0.5)]',
+    purple: 'bg-purple-500 shadow-[0_0_6px_rgba(168,85,247,0.5)]',
   };
 
   const sizes = {

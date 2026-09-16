@@ -102,9 +102,6 @@ export const DashboardPage = () => {
     <div className="space-y-6 sm:space-y-8">
       {/* Hero Welcome Header */}
       <div className="relative overflow-hidden rounded-[26px] sm:rounded-[30px] border border-black/[0.06] dark:border-white/[0.08] bg-white/75 dark:bg-[#181b22]/75 backdrop-blur-2xl p-5 sm:p-7 shadow-[0_4px_24px_-2px_rgba(0,0,0,0.03)] dark:shadow-[0_12px_36px_-4px_rgba(0,0,0,0.4)] ring-1 ring-white/80 dark:ring-white/[0.05]">
-        <div className="absolute top-0 right-0 -mt-10 -mr-10 h-48 w-48 rounded-full bg-emerald-500/10 dark:bg-emerald-500/15 blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/3 -mb-10 h-40 w-40 rounded-full bg-sky-500/5 dark:bg-sky-500/10 blur-2xl pointer-events-none" />
-
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
           <div className="space-y-2 max-w-2xl">
             {/* Metadata chip bar */}
@@ -113,8 +110,8 @@ export const DashboardPage = () => {
                 <Calendar className="h-3 w-3 text-zinc-400 dark:text-zinc-400" />
                 {greetingData.dateFormatted}
               </span>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)] animate-pulse" />
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.06] dark:border-white/[0.08] px-2.5 py-0.5 text-[11px] font-medium text-zinc-700 dark:text-zinc-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-purple-500 shadow-[0_0_6px_rgba(168,85,247,0.7)]" />
                 {business?.name || 'StockPulse Workspace'}
               </span>
             </div>
@@ -133,7 +130,7 @@ export const DashboardPage = () => {
             {/* Quick status summary capsules */}
             <div className="flex flex-wrap items-center gap-2 pt-1">
               <div className="inline-flex items-center gap-1.5 text-[11px] font-medium text-zinc-500 dark:text-zinc-400 bg-black/[0.02] dark:bg-white/[0.04] rounded-full px-3 py-1 border border-black/[0.04] dark:border-white/[0.06]">
-                <Package className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                <Package className="h-3 w-3 text-zinc-500 dark:text-zinc-400" />
                 <span><strong className="text-zinc-800 dark:text-zinc-200 font-semibold">{metrics.totalProducts}</strong> active items</span>
               </div>
               <div className="inline-flex items-center gap-1.5 text-[11px] font-medium text-zinc-500 dark:text-zinc-400 bg-black/[0.02] dark:bg-white/[0.04] rounded-full px-3 py-1 border border-black/[0.04] dark:border-white/[0.06]">
@@ -146,7 +143,7 @@ export const DashboardPage = () => {
                   </>
                 ) : (
                   <>
-                    <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                    <CheckCircle2 className="h-3 w-3 text-zinc-500 dark:text-zinc-400" />
                     <span>All stock levels optimal</span>
                   </>
                 )}
@@ -178,9 +175,9 @@ export const DashboardPage = () => {
 
       {/* Onboarding Banner if Business Setup was Skipped */}
       {!hasBusiness && (
-        <Card className="border-emerald-500/25 bg-emerald-500/10 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <Card className="border-black/[0.06] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.04] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-start sm:items-center gap-3.5">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-sm">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 shadow-sm">
               <Building2 className="h-6 w-6" />
             </div>
             <div>
@@ -215,7 +212,7 @@ export const DashboardPage = () => {
             <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
               Total Catalog
             </span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-500/10 text-sky-600 dark:bg-sky-500/15 dark:text-sky-300 transition-transform duration-200 group-hover:scale-110">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 transition-transform duration-200 group-hover:scale-110">
               <Boxes className="h-4 w-4" />
             </div>
           </div>
@@ -225,7 +222,7 @@ export const DashboardPage = () => {
             </div>
             <Link
               to={ROUTES.PRODUCTS}
-              className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1 mt-1.5"
+              className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:underline inline-flex items-center gap-1 mt-1.5"
             >
               Browse catalog <ArrowRight className="h-3 w-3" />
             </Link>
@@ -258,17 +255,17 @@ export const DashboardPage = () => {
             <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
               Today's Sales
             </span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400 transition-transform duration-200 group-hover:scale-110">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 transition-transform duration-200 group-hover:scale-110">
               <TrendingUp className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-3">
-            <div className="text-2xl sm:text-3xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono">
+            <div className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 font-mono">
               {formatCurrency(metrics.todaySalesAmount, currency)}
             </div>
             <Link
               to={ROUTES.SALES}
-              className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1 mt-1.5"
+              className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:underline inline-flex items-center gap-1 mt-1.5"
             >
               View sales ledger <ArrowRight className="h-3 w-3" />
             </Link>
@@ -305,7 +302,7 @@ export const DashboardPage = () => {
         <Card className="lg:col-span-4 flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]" />
+              <span className="h-2 w-2 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.7)]" />
               <h3 className="font-semibold text-sm sm:text-base text-zinc-900 dark:text-zinc-100 tracking-tight">
                 Quick QR Operations
               </h3>
@@ -340,7 +337,7 @@ export const DashboardPage = () => {
             </div>
             <Link
               to={`${ROUTES.PRODUCTS}?lowStock=true`}
-              className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1"
+              className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:underline inline-flex items-center gap-1"
             >
               View all <ArrowRight className="h-3 w-3" />
             </Link>
@@ -413,7 +410,7 @@ export const DashboardPage = () => {
           </div>
           <Link
             to={ROUTES.TRANSACTIONS}
-            className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1"
+            className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:underline inline-flex items-center gap-1"
           >
             Full history <ArrowRight className="h-3 w-3" />
           </Link>

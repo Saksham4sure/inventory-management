@@ -166,7 +166,7 @@ export const ProductsPage = () => {
               placeholder="Search by name, SKU, or barcode..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-xl border border-black/[0.08] bg-black/[0.025] pl-10 pr-3 py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:bg-white/[0.05] dark:border-white/[0.08] focus:bg-white dark:focus:bg-zinc-900 focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/15 transition-all"
+              className="w-full rounded-xl border border-black/[0.08] bg-black/[0.025] pl-10 pr-3 py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:bg-white/[0.05] dark:border-white/[0.08] focus:bg-white dark:focus:bg-zinc-900 focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-500/10 transition-all"
             />
           </div>
 
@@ -176,7 +176,7 @@ export const ProductsPage = () => {
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full sm:w-auto rounded-xl border border-black/[0.08] bg-black/[0.025] dark:bg-zinc-900 dark:border-white/[0.08] px-3 py-2 text-xs text-zinc-700 dark:text-zinc-300 focus:border-emerald-500 focus:outline-none transition-all"
+                className="w-full sm:w-auto rounded-xl border border-black/[0.08] bg-black/[0.025] dark:bg-zinc-900 dark:border-white/[0.08] px-3 py-2 text-xs text-zinc-700 dark:text-zinc-300 focus:border-purple-500 focus:outline-none transition-all"
               >
                 {categories.map((c) => (
                   <option key={c} value={c} className="dark:bg-zinc-900">
@@ -191,7 +191,7 @@ export const ProductsPage = () => {
                 type="checkbox"
                 checked={showLowStockOnly}
                 onChange={(e) => setShowLowStockOnly(e.target.checked)}
-                className="rounded-md text-emerald-600 focus:ring-emerald-500 h-3.5 w-3.5 accent-emerald-500"
+                className="rounded-md text-zinc-900 focus:ring-purple-500 h-3.5 w-3.5 accent-zinc-900 dark:accent-white"
               />
               <span className="text-[11px] font-semibold">Low Stock</span>
             </label>
@@ -219,7 +219,7 @@ export const ProductsPage = () => {
                       setSelectedProductForQR(prod);
                     }}
                     title="View QR Label"
-                    className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-700/80 text-emerald-600 dark:text-emerald-400 shrink-0"
+                    className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800 border border-zinc-200/80 dark:border-zinc-700/80 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white shrink-0"
                   >
                     <QrCode className="h-5 w-5" />
                   </button>
@@ -324,7 +324,7 @@ export const ProductsPage = () => {
                             e.stopPropagation();
                             setSelectedProductForQR(prod);
                           }}
-                          className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-500/10 hover:bg-emerald-500/20 dark:text-emerald-400 dark:bg-emerald-500/15 px-2.5 py-1 rounded-md border border-emerald-500/20 transition-all"
+                          className="inline-flex items-center gap-1 text-[11px] font-medium text-zinc-700 bg-black/[0.04] hover:bg-black/[0.08] dark:text-zinc-300 dark:bg-white/[0.06] dark:hover:bg-white/[0.1] px-2.5 py-1 rounded-md border border-black/[0.06] dark:border-white/[0.08] transition-all"
                         >
                           <QrCode className="h-3.5 w-3.5" /> View QR
                         </button>
@@ -368,7 +368,7 @@ export const ProductsPage = () => {
             {/* Top header strip */}
             <div className="flex items-start justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800/80">
               <div>
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
                   {activeDetailProduct.category}
                 </span>
                 <h3 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-zinc-100 mt-0.5">
@@ -414,7 +414,7 @@ export const ProductsPage = () => {
                 <span className="text-[10px] uppercase font-medium text-zinc-400 block">
                   Selling Price
                 </span>
-                <div className="text-base font-bold font-mono text-emerald-600 dark:text-emerald-400 mt-0.5">
+                <div className="text-base font-bold font-mono text-zinc-900 dark:text-zinc-100 mt-0.5">
                   {formatCurrency(activeDetailProduct.sellingPrice, currency)}
                 </div>
                 <span className="text-[10px] text-zinc-400 mt-0.5 block">
@@ -455,18 +455,19 @@ export const ProductsPage = () => {
         )}
       </Modal>
 
-      {/* Add Product Modal */}
+      {/* CREATE / EDIT PRODUCT MODAL */}
       <Modal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        title="Add Inventory Item"
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        title={isEditing ? 'Edit Product' : 'Add New Product'}
         maxWidth="max-w-lg"
       >
-        <form onSubmit={handleCreateProduct} className="space-y-3.5">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <Input
             label="Product Name"
-            id="pname"
-            placeholder="e.g. Wireless Barcode Scanner"
+            id="name"
+            type="text"
+            placeholder="e.g. Wireless Mouse"
             required
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -476,12 +477,12 @@ export const ProductsPage = () => {
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="block text-[11px] font-medium tracking-wide uppercase text-zinc-500 dark:text-zinc-400">
-                  SKU <span className="text-emerald-600">*</span>
+                  SKU <span className="text-purple-500">*</span>
                 </label>
                 <button
                   type="button"
                   onClick={handleAutoSKU}
-                  className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 hover:underline"
+                  className="text-[10px] font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:underline"
                 >
                   Generate
                 </button>
@@ -492,7 +493,7 @@ export const ProductsPage = () => {
                 placeholder="e.g. SCAN-101"
                 value={formData.sku}
                 onChange={(e) => setFormData({ ...formData, sku: e.target.value.toUpperCase() })}
-                className="w-full uppercase font-mono rounded-lg border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15"
+                className="w-full uppercase font-mono rounded-lg border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/15"
               />
             </div>
 
@@ -505,7 +506,7 @@ export const ProductsPage = () => {
                 placeholder="e.g. Electronics"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full rounded-lg border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15"
+                className="w-full rounded-lg border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/15"
               />
             </div>
           </div>
