@@ -422,10 +422,10 @@ export const QRScanPage = () => {
 
   return (
     <div className="space-y-4 sm:space-y-5 relative">
-      {/* iOS Dynamic Island Floating Snackbar */}
+      {/* Floating Status Snackbar */}
       {snackbar && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-sm animate-in fade-in slide-in-from-top-4 duration-300 pointer-events-auto">
-          <div className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-zinc-900/95 dark:bg-zinc-800/95 text-white shadow-2xl backdrop-blur-xl border border-white/10 ring-1 ring-black/10">
+          <div className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-zinc-900/95 dark:bg-[#181b22]/95 text-white shadow-2xl backdrop-blur-xl border border-white/10 ring-1 ring-black/10">
             <div className="flex items-center gap-3 min-w-0">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                 <CheckCircle2 className="h-5 w-5" />
@@ -461,7 +461,7 @@ export const QRScanPage = () => {
           </p>
         </div>
 
-        {/* iOS Segmented Pill: SALE vs PURCHASE */}
+        {/* Segmented Pill: SALE vs PURCHASE */}
         <div className="flex p-1 rounded-full bg-zinc-200/70 dark:bg-zinc-850 self-start sm:self-auto shadow-inner">
           <button
             type="button"
@@ -498,7 +498,7 @@ export const QRScanPage = () => {
       {/* Main 2-Column POS Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5">
         <div className="lg:col-span-6 space-y-3.5">
-          {/* iOS Segmented Input Switcher */}
+          {/* Segmented Input Switcher */}
           <div className="grid grid-cols-2 p-1 rounded-2xl bg-zinc-200/60 dark:bg-zinc-850 shadow-inner">
             <button
               type="button"
@@ -544,7 +544,7 @@ export const QRScanPage = () => {
               <div className="relative rounded-2xl overflow-hidden bg-black aspect-square max-h-[300px] flex items-center justify-center border border-zinc-200/20 shadow-inner">
                 <div id="mobile-qr-reader" className="w-full h-full"></div>
 
-                {/* iOS Viewfinder Overlay Frame */}
+                {/* Viewfinder Overlay Frame */}
                 <div
                   className={`pointer-events-none absolute inset-6 sm:inset-10 rounded-2xl border border-white/20 transition-all duration-300 ${
                     scanFlash ? 'ring-4 ring-emerald-400/80 bg-emerald-500/10' : ''
@@ -678,10 +678,10 @@ export const QRScanPage = () => {
                 </div>
               </div>
 
-              {/* iOS Calculator Surface */}
+              {/* Calculator Surface */}
               <div className="rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-zinc-100/70 dark:bg-zinc-900 p-2.5 space-y-2">
                 {/* LCD Display */}
-                <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-white dark:bg-black border border-zinc-200 dark:border-zinc-800 shadow-inner">
+                <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-white dark:bg-[#181b22] border border-zinc-200 dark:border-zinc-800 shadow-inner">
                   <span className="text-[10px] uppercase font-semibold text-zinc-400">
                     {calcTarget === 'qty' ? 'Set Quantity:' : 'Set Amount:'}
                   </span>
@@ -954,7 +954,7 @@ export const QRScanPage = () => {
         </div>
       </div>
 
-      {/* iOS-Style Success Receipt Modal */}
+      {/* Transaction Success Receipt Modal */}
       <Modal
         isOpen={Boolean(completedTxn)}
         onClose={() => setCompletedTxn(null)}

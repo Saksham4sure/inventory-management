@@ -4,7 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { ROUTES } from '../constants/routes';
-import { UserPlus, AlertCircle } from 'lucide-react';
+import { UserPlus, AlertCircle, ArrowRight } from 'lucide-react';
 
 export const RegisterPage = () => {
   const navigate = useNavigate();
@@ -16,6 +16,7 @@ export const RegisterPage = () => {
     password: '',
     confirmPassword: '',
   });
+  const [skipBusiness, setSkipBusiness] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -41,7 +42,12 @@ export const RegisterPage = () => {
         email: formData.email,
         password: formData.password,
       });
-      navigate(ROUTES.BUSINESS_SETUP, { replace: true });
+
+      if (skipBusiness) {
+        navigate(ROUTES.DASHBOARD, { replace: true });
+      } else {
+        navigate(ROUTES.BUSINESS_SETUP, { replace: true });
+      }
     } catch (err) {
       setError(err.message || 'Registration failed');
     } finally {
@@ -56,12 +62,12 @@ export const RegisterPage = () => {
           Create Account
         </h3>
         <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-          Step 1: Sign up, then configure your business inventory
+          Sign up to access your personal workspace and inventory
         </p>
       </div>
 
       {error && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg bg-rose-50/80 p-3 text-xs text-rose-700 border border-rose-200/80 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-900/40">
+        <div className="mb-4 flex items-center gap-2 rounded-xl bg-rose-500/10 p-3 text-xs text-rose-700 dark:text-rose-300 border border-rose-500/20">
           <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>
@@ -108,8 +114,29 @@ export const RegisterPage = () => {
           onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
         />
 
+        {/* Skip business creation option */}
+        <label className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-400 cursor-pointer select-none pt-1">
+          <input
+            type="checkbox"
+            checked={skipBusiness}
+            onChange={(e) => setSkipBusiness(e.target.checked)}
+            className="rounded text-emerald-600 focus:ring-emerald-500 h-4 w-4 accent-emerald-500"
+          />
+          <span className="font-medium text-zinc-700 dark:text-zinc-300">
+            Skip business profile setup for now (configure later)
+          </span>
+        </label>
+
         <Button type="submit" variant="primary" loading={loading} className="w-full mt-2">
-          <UserPlus className="h-3.5 w-3.5 mr-1" /> Create Account & Setup Business
+          {skipBusiness ? (
+            <>
+              Create Account & Go to Dashboard <ArrowRight className="h-3.5 w-3.5 ml-1" />
+            </>
+          ) : (
+            <>
+              <UserPlus className="h-3.5 w-3.5 mr-1" /> Create Account & Setup Business
+            </>
+          )}
         </Button>
       </form>
 

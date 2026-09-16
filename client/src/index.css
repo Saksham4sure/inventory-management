@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+@theme {
+  --color-zinc-850: #181b22;
+  --color-zinc-750: #262a35;
+}
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
@@ -8,14 +13,112 @@
     -webkit-tap-highlight-color: transparent;
   }
 
+  * {
+    border-color: rgba(0, 0, 0, 0.08);
+  }
+
+  .dark * {
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
   body {
-    @apply bg-zinc-100/70 text-zinc-900 antialiased min-h-screen dark:bg-black dark:text-zinc-100;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", -apple-system, system-ui, sans-serif;
-    letter-spacing: -0.011em;
+    @apply bg-[#F4F5F7] text-zinc-900 antialiased min-h-screen dark:bg-[#0f1117] dark:text-zinc-100 selection:bg-emerald-500/20 selection:text-emerald-700 dark:selection:text-emerald-300;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", -apple-system, system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif;
+    letter-spacing: -0.015em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Thin Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 9999px;
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.18);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.25);
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
   }
 }
 
-/* iOS Laser Scanning Beam Animation */
+/* Translucent Glass Utility Styles */
+.app-glass {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(24px) saturate(190%);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03), inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
+}
+
+.dark .app-glass {
+  background: rgba(24, 27, 34, 0.72);
+  backdrop-filter: blur(24px) saturate(190%);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.35), inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+}
+
+.app-glass-subtle {
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+}
+
+.dark .app-glass-subtle {
+  background: rgba(24, 27, 34, 0.5);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Tactile Micro-Interactions */
+.app-press {
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease;
+}
+
+.app-press:active {
+  transform: scale(0.965);
+}
+
+/* Ambient Mesh Glow Behind Main Canvas */
+.app-ambient-glow {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 380px;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% -20%, rgba(16, 185, 129, 0.08), transparent 70%),
+              radial-gradient(circle at 85% 10%, rgba(59, 130, 246, 0.04), transparent 50%),
+              radial-gradient(circle at 15% 20%, rgba(168, 85, 247, 0.04), transparent 50%);
+  z-index: -10;
+}
+
+.dark .app-ambient-glow {
+  background: radial-gradient(circle at 50% -20%, rgba(16, 185, 129, 0.14), transparent 70%),
+              radial-gradient(circle at 85% 10%, rgba(59, 130, 246, 0.08), transparent 50%),
+              radial-gradient(circle at 15% 20%, rgba(168, 85, 247, 0.07), transparent 50%);
+}
+
+/* Laser Scanning Beam Animation */
 @keyframes laser-sweep {
   0% {
     top: 6%;
@@ -52,7 +155,7 @@
   animation: pulse-subtle 2.5s ease-in-out infinite;
 }
 
-/* html5-qrcode iOS Restyling */
+/* html5-qrcode Restyling */
 #mobile-qr-reader,
 #qr-reader-container {
   border: none !important;
@@ -61,15 +164,16 @@
 
 #mobile-qr-reader video,
 #qr-reader-container video {
-  border-radius: 1.25rem !important;
+  border-radius: 1.5rem !important;
   object-fit: cover !important;
   width: 100% !important;
   max-height: 280px !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15) !important;
 }
 
 #mobile-qr-reader__scan_region,
 #qr-reader-container__scan_region {
-  border-radius: 1.25rem !important;
+  border-radius: 1.5rem !important;
   overflow: hidden !important;
   border: none !important;
 }
@@ -78,46 +182,50 @@
 #mobile-qr-reader__dashboard_section_fsr span,
 #mobile-qr-reader__header_message {
   font-size: 11px !important;
-  color: #71717a !important;
+  color: #94a3b8 !important;
+  font-weight: 500 !important;
 }
 
 #mobile-qr-reader__dashboard button,
 #qr-reader-container__dashboard button {
-  background-color: rgb(24 24 27) !important;
+  background-color: rgb(30 41 59) !important;
   color: white !important;
   border-radius: 9999px !important;
-  padding: 6px 14px !important;
+  padding: 7px 16px !important;
   font-size: 12px !important;
   font-weight: 600 !important;
   border: none !important;
   cursor: pointer !important;
   margin: 4px 2px !important;
-  transition: opacity 0.15s ease !important;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
 }
 
 #mobile-qr-reader__dashboard button:active,
 #qr-reader-container__dashboard button:active {
-  opacity: 0.7 !important;
+  transform: scale(0.96) !important;
+  opacity: 0.8 !important;
 }
 
 .dark #mobile-qr-reader__dashboard button,
 .dark #qr-reader-container__dashboard button {
-  background-color: rgb(244 244 245) !important;
-  color: rgb(24 24 27) !important;
+  background-color: rgb(241 245 249) !important;
+  color: rgb(15 23 42) !important;
 }
 
 #mobile-qr-reader__dashboard select,
 #qr-reader-container__dashboard select {
-  background-color: white !important;
-  border: 1px solid #e4e4e7 !important;
-  border-radius: 0.5rem !important;
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  border-radius: 0.75rem !important;
   font-size: 12px !important;
-  padding: 4px 8px !important;
+  padding: 5px 10px !important;
+  backdrop-filter: blur(10px) !important;
 }
 
 .dark #mobile-qr-reader__dashboard select,
 .dark #qr-reader-container__dashboard select {
-  background-color: #18181b !important;
-  border-color: #27272a !important;
+  background-color: rgba(30, 34, 43, 0.95) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
   color: white !important;
 }

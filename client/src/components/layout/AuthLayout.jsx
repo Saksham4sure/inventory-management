@@ -4,28 +4,31 @@ import { ThemeToggle } from '../ui/ThemeToggle';
 
 export const AuthLayout = () => {
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-zinc-950 p-4 transition-colors">
+    <div className="relative flex min-h-screen items-center justify-center bg-[#F4F5F7] dark:bg-[#0f1117] p-4 transition-colors duration-300">
+      {/* Ambient Light Glow Layer */}
+      <div className="app-ambient-glow" />
+
       {/* Top right theme toggle */}
-      <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
+      <div className="absolute top-5 right-5 sm:top-7 sm:right-7 z-20">
         <ThemeToggle />
       </div>
 
-      <div className="w-full max-w-sm sm:max-w-md">
+      <div className="relative z-10 w-full max-w-sm sm:max-w-md">
         {/* Brand header */}
         <div className="text-center mb-6 sm:mb-8">
-          <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 shadow-xs mb-3">
-            <QrCode className="h-5 w-5 text-emerald-400 dark:text-emerald-600" />
+          <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-[0_4px_16px_rgba(16,185,129,0.35)] ring-4 ring-white/60 dark:ring-white/[0.05] mb-3.5">
+            <QrCode className="h-6 w-6" />
           </div>
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+          <h2 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
             StockPulse
           </h2>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-            Minimal, modern QR-tracked inventory management
+            Minimal modern inventory & QR management
           </p>
         </div>
 
-        {/* Auth form card */}
-        <div className="rounded-2xl border border-zinc-200/80 bg-white p-6 sm:p-8 shadow-xs dark:border-zinc-800 dark:bg-zinc-900 transition-all">
+        {/* Auth form frosted glass card */}
+        <div className="rounded-[28px] border border-black/[0.06] dark:border-white/[0.08] bg-white/80 dark:bg-[#181b22]/75 backdrop-blur-2xl p-6 sm:p-8 shadow-[0_8px_32px_-4px_rgba(0,0,0,0.06)] dark:shadow-[0_16px_48px_-8px_rgba(0,0,0,0.4)] ring-1 ring-white/80 dark:ring-white/[0.05] transition-all">
           <Outlet />
         </div>
       </div>

@@ -3,17 +3,22 @@ export const Card = ({
   className = '',
   hoverEffect = false,
   compact = false,
+  glass = true,
   ...props
 }) => {
+  const surfaceStyle = glass
+    ? 'bg-white/80 dark:bg-[#181b22]/75 backdrop-blur-2xl border border-black/[0.06] dark:border-white/[0.08] shadow-[0_4px_24px_-2px_rgba(0,0,0,0.03)] dark:shadow-[0_10px_32px_-4px_rgba(0,0,0,0.35)] ring-1 ring-white/80 dark:ring-white/[0.05]'
+    : 'bg-white dark:bg-[#181b22] border border-zinc-200/80 dark:border-zinc-800 shadow-xs';
+
+  const hoverStyle = hoverEffect
+    ? 'hover:-translate-y-0.5 hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_14px_40px_-4px_rgba(0,0,0,0.5)] hover:border-black/[0.1] dark:hover:border-white/[0.15] transition-all duration-300 ease-out'
+    : 'transition-colors duration-200';
+
   return (
     <div
-      className={`rounded-xl border border-zinc-200/80 bg-white dark:border-zinc-800/80 dark:bg-zinc-900/80 text-zinc-900 dark:text-zinc-100 shadow-xs transition-all duration-150 ${
-        compact ? 'p-3.5 sm:p-4' : 'p-4 sm:p-5'
-      } ${
-        hoverEffect
-          ? 'hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-sm'
-          : ''
-      } ${className}`}
+      className={`rounded-2xl sm:rounded-[22px] text-zinc-900 dark:text-zinc-100 ${surfaceStyle} ${
+        compact ? 'p-3.5 sm:p-4' : 'p-4.5 sm:p-6'
+      } ${hoverStyle} ${className}`}
       {...props}
     >
       {children}

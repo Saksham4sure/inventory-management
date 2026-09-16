@@ -8,20 +8,25 @@ export const DashboardLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <div className="flex min-h-screen bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 antialiased transition-colors">
+    <div className="relative flex min-h-screen bg-[#F4F5F7] dark:bg-[#0f1117] text-zinc-900 dark:text-zinc-100 antialiased selection:bg-emerald-500/20 selection:text-emerald-700 dark:selection:text-emerald-300 transition-colors duration-300">
+      {/* Ambient Light Glow Layer */}
+      <div className="app-ambient-glow" />
+
+      {/* Sidebar navigation */}
       <Sidebar
         isMobileOpen={isMobileMenuOpen}
         onClose={() => setIsMobileMenuOpen(false)}
       />
 
-      <div className="flex flex-1 flex-col min-w-0">
+      {/* Main content viewport: natural stacking context so modals port comfortably */}
+      <div className="relative flex flex-1 flex-col min-w-0">
         <Navbar onOpenMobileMenu={() => setIsMobileMenuOpen(true)} />
-        <main className="flex-1 w-full max-w-7xl mx-auto px-3.5 py-4 sm:px-6 sm:py-7 lg:px-8 pb-24 lg:pb-8">
+        <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-5 sm:px-6 sm:py-8 lg:px-8 pb-28 lg:pb-12">
           <Outlet />
         </main>
       </div>
 
-      {/* Native-like Mobile Bottom Nav Bar */}
+      {/* Mobile Bottom Navigation Bar */}
       <BottomNav />
     </div>
   );

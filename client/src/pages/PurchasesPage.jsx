@@ -18,6 +18,7 @@ import {
   AlertCircle,
   QrCode,
   Truck,
+  Trash2,
 } from 'lucide-react';
 
 export const PurchasesPage = () => {
@@ -63,6 +64,20 @@ export const PurchasesPage = () => {
   useEffect(() => {
     fetchPurchases();
   }, [fetchPurchases]);
+
+  const handleDeleteTransaction = async (e, id, refNum) => {
+    if (e) e.stopPropagation();
+    if (!window.confirm(`Delete purchase audit record #${refNum}?`)) return;
+    try {
+      await transactionService.deleteTransaction(id);
+      setTransactions((prev) => prev.filter((t) => t._id !== id));
+      if (selectedTxn?._id === id) {
+        setSelectedTxn(null);
+      }
+    } catch (err) {
+      alert(err.message || 'Failed to delete transaction record');
+    }
+  };
 
   // Load products for returns modal
   useEffect(() => {
@@ -287,7 +302,7 @@ export const PurchasesPage = () => {
                     <th className="px-4 py-3">Total Spend</th>
                     <th className="px-4 py-3">Method</th>
                     <th className="px-4 py-3">Date</th>
-                    <th className="px-6 py-3 text-right">Receipt</th>
+                    <th className="px-6 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
@@ -297,7 +312,7 @@ export const PurchasesPage = () => {
                       <tr
                         key={txn._id}
                         onClick={() => setSelectedTxn(txn)}
-                        className="hover:bg-zinc-50/60 dark:hover:bg-zinc-850/60 transition-colors cursor-pointer"
+                        className="hover:bg-black/[0.03] dark:hover:bg-white/[0.06] transition-colors duration-150 cursor-pointer"
                       >
                         <td className="px-6 py-3.5 font-mono font-semibold text-xs text-zinc-900 dark:text-zinc-100">
                           {txn.referenceNumber}
@@ -318,16 +333,28 @@ export const PurchasesPage = () => {
                           {formatDate(txn.createdAt)}
                         </td>
                         <td className="px-6 py-3.5 text-right">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedTxn(txn);
-                            }}
-                            className="p-1 rounded text-zinc-400 hover:text-zinc-900"
-                          >
-                            <FileText className="h-4 w-4" />
-                          </button>
+                          <div className="inline-flex items-center gap-1 justify-end">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedTxn(txn);
+                              }}
+                              className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-900 hover:bg-black/[0.04] dark:hover:bg-white/[0.08] dark:hover:text-zinc-200 transition-colors active:scale-90"
+                              title="View Details"
+                            >
+                              <FileText className="h-4 w-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => handleDeleteTransaction(e, txn._id, txn.referenceNumber)}
+                              className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-600 hover:bg-rose-500/10 dark:hover:text-rose-400 dark:hover:bg-rose-500/15 transition-colors active:scale-90"
+                              title="Delete Audit Record"
+                              aria-label={`Delete record ${txn.referenceNumber}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -500,9 +527,25 @@ export const PurchasesPage = () => {
               </span>
             </div>
 
-            <Button variant="secondary" size="sm" className="w-full" onClick={() => setSelectedTxn(null)}>
-              Close
-            </Button>
+            {selectedTxn.notes && (
+              <p className="text-xs text-zinc-500 bg-zinc-50 dark:bg-zinc-800/50 p-2 rounded">
+                {selectedTxn.notes}
+              </p>
+            )}
+
+            <div className="flex gap-2 pt-1">
+              <Button
+                variant="danger"
+                size="sm"
+                className="flex-1"
+                onClick={(e) => handleDeleteTransaction(e, selectedTxn._id, selectedTxn.referenceNumber)}
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete Record
+              </Button>
+              <Button variant="secondary" size="sm" className="flex-1" onClick={() => setSelectedTxn(null)}>
+                Close
+              </Button>
+            </div>
           </div>
         )}
       </Modal>

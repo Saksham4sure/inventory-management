@@ -72,6 +72,11 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateUser = (updatedUser) => {
+    setUser(updatedUser);
+    storage.setUser(updatedUser);
+  };
+
   const value = {
     user,
     token,
@@ -83,6 +88,7 @@ export const AuthProvider = ({ children }) => {
     logout,
     checkAuth,
     setBusinessConfigured,
+    updateUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -157,16 +157,16 @@ export const ProductsPage = () => {
       )}
 
       {/* Filter and Search Bar */}
-      <Card compact className="p-3">
+      <Card compact className="p-3.5">
         <div className="flex flex-col sm:flex-row items-center gap-2.5">
           <div className="relative flex-1 w-full">
-            <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-zinc-400" />
+            <Search className="absolute left-3.5 top-3 h-4 w-4 text-zinc-400" />
             <input
               type="text"
               placeholder="Search by name, SKU, or barcode..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-lg border border-zinc-200/90 bg-white dark:bg-zinc-900 dark:border-zinc-800 pl-9 pr-3 py-1.5 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/15"
+              className="w-full rounded-xl border border-black/[0.08] bg-black/[0.025] pl-10 pr-3 py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:bg-white/[0.05] dark:border-white/[0.08] focus:bg-white dark:focus:bg-zinc-900 focus:border-emerald-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/15 transition-all"
             />
           </div>
 
@@ -176,24 +176,24 @@ export const ProductsPage = () => {
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full sm:w-auto rounded-lg border border-zinc-200/90 bg-white dark:bg-zinc-900 dark:border-zinc-800 px-2.5 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 focus:border-emerald-600 focus:outline-none"
+                className="w-full sm:w-auto rounded-xl border border-black/[0.08] bg-black/[0.025] dark:bg-zinc-900 dark:border-white/[0.08] px-3 py-2 text-xs text-zinc-700 dark:text-zinc-300 focus:border-emerald-500 focus:outline-none transition-all"
               >
                 {categories.map((c) => (
-                  <option key={c} value={c}>
+                  <option key={c} value={c} className="dark:bg-zinc-900">
                     {c}
                   </option>
                 ))}
               </select>
             </div>
 
-            <label className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-300 cursor-pointer select-none bg-zinc-100/70 dark:bg-zinc-850 px-2.5 py-1.5 rounded-lg border border-zinc-200/80 dark:border-zinc-800 shrink-0">
+            <label className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-300 cursor-pointer select-none bg-black/[0.03] dark:bg-white/[0.06] px-3 py-2 rounded-xl border border-black/[0.06] dark:border-white/[0.08] shrink-0 transition-colors">
               <input
                 type="checkbox"
                 checked={showLowStockOnly}
                 onChange={(e) => setShowLowStockOnly(e.target.checked)}
-                className="rounded text-emerald-600 focus:ring-emerald-500 h-3.5 w-3.5"
+                className="rounded-md text-emerald-600 focus:ring-emerald-500 h-3.5 w-3.5 accent-emerald-500"
               />
-              <span className="text-[11px] font-medium">Low Stock</span>
+              <span className="text-[11px] font-semibold">Low Stock</span>
             </label>
           </div>
         </div>
@@ -283,7 +283,7 @@ export const ProductsPage = () => {
                     <tr
                       key={prod._id}
                       onClick={() => setActiveDetailProduct(prod)}
-                      className="hover:bg-zinc-50/60 dark:hover:bg-zinc-850/60 transition-colors cursor-pointer"
+                      className="hover:bg-black/[0.03] dark:hover:bg-white/[0.06] transition-colors duration-150 cursor-pointer"
                     >
                       <td className="px-6 py-3.5">
                         <div className="font-semibold text-zinc-900 dark:text-zinc-100">

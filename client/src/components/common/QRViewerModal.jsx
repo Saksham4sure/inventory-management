@@ -68,29 +68,29 @@ export const QRViewerModal = ({ isOpen, onClose, product, currency = 'USD' }) =>
     <Modal isOpen={isOpen} onClose={onClose} title="Product QR Code Label" maxWidth="max-w-md">
       <div className="flex flex-col items-center text-center space-y-4">
         {/* Crisp high-contrast QR display frame */}
-        <div className="rounded-xl border border-zinc-200/80 bg-white p-5 shadow-xs dark:border-zinc-800">
+        <div className="rounded-2xl border border-black/[0.08] bg-white p-5 shadow-[0_4px_20px_rgba(0,0,0,0.06)] dark:border-white/[0.1]">
           {product.qrCodeImage ? (
             <img
               src={product.qrCodeImage}
               alt={`QR code for ${product.name}`}
-              className="h-48 w-48 object-contain rounded-lg"
+              className="h-48 w-48 object-contain rounded-xl"
             />
           ) : (
-            <div className="h-48 w-48 flex items-center justify-center text-zinc-400 text-xs">
-              No QR available
+            <div className="h-48 w-48 flex items-center justify-center text-zinc-400 text-xs font-medium">
+              No QR code available
             </div>
           )}
         </div>
 
         <div>
-          <h4 className="text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+          <h4 className="text-base font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
             {product.name}
           </h4>
           <div className="flex items-center justify-center gap-2 mt-1.5">
-            <span className="inline-flex items-center gap-1 font-mono text-xs font-medium px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-750">
+            <span className="inline-flex items-center gap-1 font-mono text-xs font-medium px-2.5 py-0.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] text-zinc-700 dark:text-zinc-300 border border-black/[0.06] dark:border-white/[0.08]">
               <Tag className="h-3 w-3" /> {product.sku}
             </span>
-            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+            <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 font-mono">
               {formatCurrency(product.sellingPrice, currency)}
             </span>
           </div>
@@ -100,10 +100,10 @@ export const QRViewerModal = ({ isOpen, onClose, product, currency = 'USD' }) =>
         </div>
 
         <div className="flex w-full gap-2.5 pt-2">
-          <Button variant="secondary" className="flex-1" onClick={handleDownload}>
+          <Button variant="secondary" className="flex-1 rounded-xl" onClick={handleDownload}>
             <Download className="h-3.5 w-3.5 mr-1" /> Download
           </Button>
-          <Button variant="primary" className="flex-1" onClick={handlePrint}>
+          <Button variant="primary" className="flex-1 rounded-xl" onClick={handlePrint}>
             <Printer className="h-3.5 w-3.5 mr-1" /> Print Label
           </Button>
         </div>

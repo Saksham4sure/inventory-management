@@ -13,6 +13,7 @@ import {
   RefreshCw,
   QrCode,
   FileText,
+  Trash2,
 } from 'lucide-react';
 
 export const TransactionsPage = () => {
@@ -46,6 +47,19 @@ export const TransactionsPage = () => {
   useEffect(() => {
     fetchTransactions();
   }, [fetchTransactions]);
+
+  const handleDeleteTransaction = async (id, refNum) => {
+    if (!window.confirm(`Delete audit record #${refNum}?`)) return;
+    try {
+      await transactionService.deleteTransaction(id);
+      setTransactions((prev) => prev.filter((t) => t._id !== id));
+      if (selectedTxn?._id === id) {
+        setSelectedTxn(null);
+      }
+    } catch (err) {
+      setError(err.message || 'Failed to delete transaction record');
+    }
+  };
 
   return (
     <div className="space-y-5 sm:space-y-6">
@@ -140,7 +154,7 @@ export const TransactionsPage = () => {
                 <th className="px-4 py-3">Method</th>
                 <th className="px-4 py-3">Logged By</th>
                 <th className="px-4 py-3">Date</th>
-                <th className="px-4 sm:px-6 py-3 text-right">Receipt</th>
+                <th className="px-4 sm:px-6 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
@@ -150,7 +164,7 @@ export const TransactionsPage = () => {
                   return (
                     <tr
                       key={txn._id}
-                      className="hover:bg-zinc-50/60 dark:hover:bg-zinc-850/60 transition-colors"
+                      className="hover:bg-black/[0.03] dark:hover:bg-white/[0.06] transition-colors duration-150"
                     >
                       <td className="px-4 sm:px-6 py-3.5">
                         <div className="font-mono font-semibold text-zinc-900 dark:text-zinc-100">
@@ -188,14 +202,26 @@ export const TransactionsPage = () => {
                         {formatDate(txn.createdAt)}
                       </td>
                       <td className="px-4 sm:px-6 py-3.5 text-right">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedTxn(txn)}
-                          className="rounded-lg p-1 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 transition-colors"
-                          title="View Details"
-                        >
-                          <FileText className="h-4 w-4" />
-                        </button>
+                        <div className="inline-flex items-center gap-1 justify-end">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedTxn(txn)}
+                            className="rounded-lg p-1.5 text-zinc-400 hover:text-zinc-900 hover:bg-black/[0.04] dark:hover:bg-white/[0.08] dark:hover:text-zinc-200 transition-colors active:scale-90"
+                            title="View Receipt Details"
+                            aria-label={`View details for ${txn.referenceNumber}`}
+                          >
+                            <FileText className="h-4 w-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteTransaction(txn._id, txn.referenceNumber)}
+                            className="rounded-lg p-1.5 text-zinc-400 hover:text-rose-600 hover:bg-rose-500/10 dark:hover:text-rose-400 dark:hover:bg-rose-500/15 transition-colors active:scale-90"
+                            title="Delete Audit Record"
+                            aria-label={`Delete record ${txn.referenceNumber}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -298,9 +324,19 @@ export const TransactionsPage = () => {
               </div>
             )}
 
-            <Button variant="secondary" size="sm" className="w-full" onClick={() => setSelectedTxn(null)}>
-              Close
-            </Button>
+            <div className="flex gap-2 pt-1">
+              <Button
+                variant="danger"
+                size="sm"
+                className="flex-1"
+                onClick={() => handleDeleteTransaction(selectedTxn._id, selectedTxn.referenceNumber)}
+              >
+                <Trash2 className="h-3.5 w-3.5 mr-1" /> Delete Record
+              </Button>
+              <Button variant="secondary" size="sm" className="flex-1" onClick={() => setSelectedTxn(null)}>
+                Close
+              </Button>
+            </div>
           </div>
         )}
       </Modal>

@@ -96,16 +96,39 @@ export const getMe = asyncHandler(async (req, res) => {
 });
 
 export const updateProfile = asyncHandler(async (req, res) => {
-  const { name } = req.body;
+  const { name, currentPassword, newPassword } = req.body;
   if (!name || !name.trim()) {
     throw new ApiError(400, 'Name is required');
   }
 
-  const user = await User.findByIdAndUpdate(
-    req.user._id,
-    { name: name.trim() },
-    { new: true }
-  );
+  const user = await User.findById(req.user._id).select('+password');
+  if (!user) {
+    throw new ApiError(404, 'User not found');
+  }
 
-  res.status(200).json(new ApiResponse(200, { user: sanitizeUser(user) }, 'Profile updated successfully'));
+  user.name = name.trim();
+
+  // If user wants to change password
+  if (newPassword) {
+    if (!currentPassword) {
+      throw new ApiError(400, 'Current password is required to set a new password');
+    }
+
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      throw new ApiError(400, 'Current password does not match');
+    }
+
+    if (newPassword.length < 6) {
+      throw new ApiError(400, 'New password must be at least 6 characters');
+    }
+
+    user.password = newPassword;
+  }
+
+  await user.save();
+
+  res.status(200).json(
+    new ApiResponse(200, { user: sanitizeUser(user) }, 'Profile updated successfully')
+  );
 });

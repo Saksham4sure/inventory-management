@@ -1,73 +1,95 @@
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useBusiness } from '../../hooks/useBusiness';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { LogOut, Building2, Menu } from 'lucide-react';
 import { Badge } from '../ui/Badge';
+import { ROUTES } from '../../constants/routes';
 
 export const Navbar = ({ onOpenMobileMenu }) => {
   const { user, logout } = useAuth();
   const { business } = useBusiness();
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 sm:h-16 w-full items-center justify-between border-b border-zinc-200/80 bg-white/80 px-4 sm:px-6 backdrop-blur-md dark:border-zinc-800/80 dark:bg-zinc-950/80 transition-colors">
+    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-black/[0.06] dark:border-white/[0.08] bg-white/75 dark:bg-[#12141a]/80 px-4 sm:px-6 backdrop-blur-2xl transition-colors">
       <div className="flex items-center gap-3">
         {/* Mobile menu button */}
         <button
           type="button"
           onClick={onOpenMobileMenu}
-          aria-label="Open sidebar menu"
-          className="inline-flex lg:hidden h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 transition-colors"
+          aria-label="Open navigation menu"
+          className="inline-flex lg:hidden h-9 w-9 items-center justify-center rounded-xl border border-black/[0.06] bg-black/[0.03] text-zinc-700 hover:bg-black/[0.06] dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-zinc-300 dark:hover:bg-white/[0.1] transition-all duration-200 active:scale-90"
         >
           <Menu className="h-4 w-4" />
         </button>
 
         {business ? (
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 font-bold border border-zinc-200/60 dark:border-zinc-700/60">
-              <Building2 className="h-4 w-4" />
+          <Link
+            to={ROUTES.BUSINESS_PROFILE}
+            title="Manage Business Profile"
+            className="flex items-center gap-2.5 p-1 -m-1 rounded-2xl hover:bg-black/[0.03] dark:hover:bg-white/[0.05] transition-all active:scale-[0.98]"
+          >
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-black/[0.04] dark:bg-white/[0.08] text-zinc-800 dark:text-zinc-200 font-bold border border-black/[0.06] dark:border-white/[0.08] shadow-2xs">
+              <Building2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div className="flex flex-col">
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <span className="font-semibold text-xs sm:text-sm tracking-tight text-zinc-900 dark:text-zinc-100">
                   {business.name}
                 </span>
                 <Badge variant="accent" size="sm" dot>
-                  {business.subscription?.plan?.replace('_', ' ') || 'Free Trial'}
+                  {business.subscription?.plan?.replace('_', ' ') || 'Pro Plan'}
                 </Badge>
               </div>
               <span className="text-[11px] text-zinc-400 dark:text-zinc-500 hidden sm:inline">
                 {business.category || 'Inventory Store'}
               </span>
             </div>
-          </div>
+          </Link>
         ) : (
-          <div className="text-xs font-semibold tracking-tight text-zinc-500">
-            StockPulse QR
-          </div>
+          <Link
+            to={ROUTES.BUSINESS_SETUP}
+            title="Set up Business Profile"
+            className="flex items-center gap-2 text-xs font-semibold tracking-tight text-zinc-700 dark:text-zinc-300 hover:opacity-80 transition-opacity"
+          >
+            <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
+            StockPulse
+            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-normal underline ml-1">
+              (Setup Business)
+            </span>
+          </Link>
         )}
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3">
-        {/* Dynamic Light/Dark Mode Switcher */}
+        {/* Dynamic Theme Switcher */}
         <ThemeToggle />
 
         {/* User profile capsule */}
-        <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-zinc-200 dark:border-zinc-800 text-right">
-          <div className="flex flex-col text-right leading-tight">
-            <span className="text-xs font-medium text-zinc-800 dark:text-zinc-200">{user?.name}</span>
-            <span className="text-[10px] text-zinc-400 dark:text-zinc-500">{user?.email}</span>
+        <Link
+          to={ROUTES.PROFILE}
+          title="Manage User Profile"
+          className="hidden sm:flex items-center gap-2.5 pl-2 py-1 pr-1.5 rounded-full bg-black/[0.03] dark:bg-white/[0.06] border border-black/[0.06] dark:border-white/[0.08] backdrop-blur-md hover:bg-black/[0.06] dark:hover:bg-white/[0.1] transition-all active:scale-[0.98]"
+        >
+          <div className="flex flex-col text-right leading-tight pl-2">
+            <span className="text-xs font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+              {user?.name || 'User'}
+            </span>
+            <span className="text-[10px] text-zinc-400 dark:text-zinc-500 max-w-[120px] truncate">
+              {user?.email || ''}
+            </span>
           </div>
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-semibold text-xs">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-tr from-emerald-600 to-teal-400 text-white font-semibold text-xs shadow-xs">
             {user?.name ? user.name[0].toUpperCase() : 'U'}
           </div>
-        </div>
+        </Link>
 
         {/* Sign out button */}
         <button
           onClick={logout}
           title="Sign out"
           aria-label="Sign out"
-          className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200/80 text-zinc-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200/80 dark:border-zinc-800 dark:text-zinc-400 dark:hover:bg-rose-950/30 dark:hover:text-rose-400 dark:hover:border-rose-900/50 transition-colors active:scale-95"
+          className="flex h-9 w-9 items-center justify-center rounded-xl border border-black/[0.06] bg-black/[0.03] text-zinc-500 hover:bg-rose-500/10 hover:text-rose-600 hover:border-rose-500/20 dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-zinc-400 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 dark:hover:border-rose-800/40 transition-all duration-200 active:scale-90"
         >
           <LogOut className="h-4 w-4" />
         </button>

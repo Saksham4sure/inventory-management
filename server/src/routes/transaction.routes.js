@@ -3,6 +3,7 @@ import {
   createTransaction,
   getTransactions,
   getDashboardSummary,
+  deleteTransaction,
 } from '../controllers/transaction.controller.js';
 import { authenticate } from '../middlewares/auth.middleware.js';
 import { requireBusiness } from '../middlewares/business.middleware.js';
@@ -14,5 +15,6 @@ router.use(authenticate, requireBusiness);
 router.get('/dashboard', getDashboardSummary);
 router.get('/', getTransactions);
 router.post('/', createTransaction);
+router.delete('/:id', deleteTransaction);
 
 export default router;

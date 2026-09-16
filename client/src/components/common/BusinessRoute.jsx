@@ -1,6 +1,8 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Link, Outlet } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { ROUTES } from '../../constants/routes';
+import { Building2, ArrowRight } from 'lucide-react';
+import { Button } from '../ui/Button';
 
 export const BusinessRoute = () => {
   const { hasBusiness, isLoading } = useAuth();
@@ -10,8 +12,35 @@ export const BusinessRoute = () => {
   }
 
   if (!hasBusiness) {
-    return <Navigate to={ROUTES.BUSINESS_SETUP} replace />;
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center p-4">
+        <div className="max-w-md w-full text-center space-y-4 rounded-3xl border border-black/[0.06] dark:border-white/[0.08] bg-white/75 dark:bg-[#181b22]/75 backdrop-blur-2xl p-6 sm:p-8 shadow-sm">
+          <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white shadow-md mx-auto">
+            <Building2 className="h-7 w-7" />
+          </div>
+          <h2 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+            Business Profile Required
+          </h2>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+            You skipped business setup during registration. Configure your store or warehouse profile to unlock product catalogs, QR label tracking, and point-of-sale features.
+          </p>
+          <div className="pt-2 flex flex-col sm:flex-row gap-2.5 justify-center">
+            <Link to={ROUTES.BUSINESS_PROFILE}>
+              <Button variant="primary" className="w-full sm:w-auto">
+                Set Up Business <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+              </Button>
+            </Link>
+            <Link to={ROUTES.DASHBOARD}>
+              <Button variant="secondary" className="w-full sm:w-auto">
+                Back to Dashboard
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return <Outlet />;
 };
+export default BusinessRoute;

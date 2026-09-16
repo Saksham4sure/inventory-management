@@ -15,4 +15,9 @@ export const transactionService = {
     const response = await api.get('/transactions/dashboard');
     return response.data.data;
   },
+
+  deleteTransaction: async (id) => {
+    const response = await api.delete(`/transactions/${id}`);
+    return response.data.data;
+  },
 };

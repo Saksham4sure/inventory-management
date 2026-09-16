@@ -290,3 +290,22 @@ export const getDashboardSummary = asyncHandler(async (req, res) => {
     )
   );
 });
+
+export const deleteTransaction = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const transaction = await Transaction.findOne({
+    _id: id,
+    businessId: req.user.businessId,
+  });
+
+  if (!transaction) {
+    throw new ApiError(404, 'Transaction audit record not found');
+  }
+
+  await Transaction.findByIdAndDelete(id);
+
+  res.status(200).json(
+    new ApiResponse(200, { deletedId: id }, 'Transaction record deleted successfully')
+  );
+});

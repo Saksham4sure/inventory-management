@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 import { useBusiness } from '../hooks/useBusiness';
 import { transactionService } from '../services/transactionService';
 import { Card } from '../components/ui/Card';
@@ -16,16 +17,28 @@ import {
   Plus,
   ArrowRight,
   RefreshCw,
-  TrendingDown,
+  Calendar,
+  CheckCircle2,
+  Package,
+  Trash2,
+  Building2,
 } from 'lucide-react';
 
 export const DashboardPage = () => {
+  const { user } = useAuth();
   const { business } = useBusiness();
+  const hasBusiness = Boolean(user?.businessId || business?._id);
+
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const fetchDashboardData = async () => {
+    if (!hasBusiness) {
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -40,7 +53,20 @@ export const DashboardPage = () => {
 
   useEffect(() => {
     fetchDashboardData();
-  }, []);
+  }, [hasBusiness]);
+
+  const handleDeleteTransaction = async (id, refNum) => {
+    if (!window.confirm(`Delete audit record #${refNum}?`)) return;
+    try {
+      await transactionService.deleteTransaction(id);
+      setData((prev) => ({
+        ...prev,
+        recentTransactions: prev?.recentTransactions?.filter((t) => t._id !== id) || [],
+      }));
+    } catch (err) {
+      alert(err.message || 'Failed to delete audit record');
+    }
+  };
 
   const currency = business?.currency || 'USD';
   const metrics = data?.metrics || {
@@ -52,122 +78,222 @@ export const DashboardPage = () => {
     totalPurchasesCount: 0,
   };
 
-  return (
-    <div className="space-y-6 sm:space-y-7">
-      {/* Header section */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-zinc-200/60 dark:border-zinc-800/60">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-            Inventory Overview
-          </h1>
-          <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
-            Real-time stock counters and QR audit trail for {business?.name}
-          </p>
-        </div>
+  // Dynamic time-of-day greeting
+  const greetingData = useMemo(() => {
+    const hour = new Date().getHours();
+    let timeGreeting = 'Good day';
+    if (hour >= 5 && hour < 12) timeGreeting = 'Good morning';
+    else if (hour >= 12 && hour < 17) timeGreeting = 'Good afternoon';
+    else if (hour >= 17 && hour < 22) timeGreeting = 'Good evening';
+    else timeGreeting = 'Good night';
 
-        <div className="flex items-center gap-2">
-          <Button variant="secondary" size="sm" onClick={fetchDashboardData} disabled={loading}>
-            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">Refresh</span>
-          </Button>
-          <Link to={ROUTES.SCAN}>
-            <Button variant="primary" size="sm">
-              <ScanLine className="h-3.5 w-3.5 mr-1" />
-              <span>Scan QR</span>
+    const dateFormatted = new Date().toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'short',
+      day: 'numeric',
+    });
+
+    return { timeGreeting, dateFormatted };
+  }, []);
+
+  const firstName = user?.name ? user.name.split(' ')[0] : 'Store Owner';
+
+  return (
+    <div className="space-y-6 sm:space-y-8">
+      {/* Hero Welcome Header */}
+      <div className="relative overflow-hidden rounded-[26px] sm:rounded-[30px] border border-black/[0.06] dark:border-white/[0.08] bg-white/75 dark:bg-[#181b22]/75 backdrop-blur-2xl p-5 sm:p-7 shadow-[0_4px_24px_-2px_rgba(0,0,0,0.03)] dark:shadow-[0_12px_36px_-4px_rgba(0,0,0,0.4)] ring-1 ring-white/80 dark:ring-white/[0.05]">
+        <div className="absolute top-0 right-0 -mt-10 -mr-10 h-48 w-48 rounded-full bg-emerald-500/10 dark:bg-emerald-500/15 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 -mb-10 h-40 w-40 rounded-full bg-sky-500/5 dark:bg-sky-500/10 blur-2xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+          <div className="space-y-2 max-w-2xl">
+            {/* Metadata chip bar */}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.06] dark:border-white/[0.08] px-2.5 py-0.5 text-[11px] font-medium text-zinc-600 dark:text-zinc-300 backdrop-blur-md">
+                <Calendar className="h-3 w-3 text-zinc-400 dark:text-zinc-400" />
+                {greetingData.dateFormatted}
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-[11px] font-medium text-emerald-700 dark:text-emerald-300">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.8)] animate-pulse" />
+                {business?.name || 'StockPulse Workspace'}
+              </span>
+            </div>
+
+            {/* Hello and User Name */}
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-zinc-900 dark:text-white">
+                Hello, {firstName} <span className="inline-block">👋</span>
+              </h1>
+              {/* Description */}
+              <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
+                Welcome to your inventory command center. Here is your real-time stock pulse, low-stock threshold alerts, and instant QR camera audit movements.
+              </p>
+            </div>
+
+            {/* Quick status summary capsules */}
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <div className="inline-flex items-center gap-1.5 text-[11px] font-medium text-zinc-500 dark:text-zinc-400 bg-black/[0.02] dark:bg-white/[0.04] rounded-full px-3 py-1 border border-black/[0.04] dark:border-white/[0.06]">
+                <Package className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                <span><strong className="text-zinc-800 dark:text-zinc-200 font-semibold">{metrics.totalProducts}</strong> active items</span>
+              </div>
+              <div className="inline-flex items-center gap-1.5 text-[11px] font-medium text-zinc-500 dark:text-zinc-400 bg-black/[0.02] dark:bg-white/[0.04] rounded-full px-3 py-1 border border-black/[0.04] dark:border-white/[0.06]">
+                {metrics.lowStockCount > 0 ? (
+                  <>
+                    <AlertTriangle className="h-3 w-3 text-amber-500" />
+                    <span className="text-amber-700 dark:text-amber-400 font-medium">
+                      {metrics.lowStockCount} items require restock
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                    <span>All stock levels optimal</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Quick action buttons */}
+          <div className="flex items-center gap-2.5 self-start lg:self-center shrink-0">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={fetchDashboardData}
+              disabled={loading || !hasBusiness}
+              className="rounded-2xl"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Refresh</span>
             </Button>
-          </Link>
+            <Link to={ROUTES.SCAN}>
+              <Button variant="primary" size="sm" className="rounded-2xl">
+                <ScanLine className="h-4 w-4 mr-1.5" />
+                <span>Scan QR</span>
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
 
+      {/* Onboarding Banner if Business Setup was Skipped */}
+      {!hasBusiness && (
+        <Card className="border-emerald-500/25 bg-emerald-500/10 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-sm">
+              <Building2 className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="text-sm sm:text-base font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight">
+                Complete Your Business Setup
+              </h3>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+                Configure your business profile to generate QR labels, track inventory, and record sales transactions.
+              </p>
+            </div>
+          </div>
+          <Link to={ROUTES.BUSINESS_PROFILE} className="shrink-0">
+            <Button variant="primary" size="sm" className="rounded-xl whitespace-nowrap">
+              Set Up Business <ArrowRight className="h-3.5 w-3.5 ml-1" />
+            </Button>
+          </Link>
+        </Card>
+      )}
+
       {error && (
-        <div className="rounded-xl bg-rose-50/80 border border-rose-200/80 p-3.5 text-xs text-rose-700 dark:bg-rose-950/30 dark:border-rose-900/40 dark:text-rose-400">
-          {error}
+        <div className="rounded-2xl bg-rose-500/10 border border-rose-500/20 p-4 text-xs text-rose-700 dark:text-rose-300 backdrop-blur-md flex items-center gap-2.5">
+          <AlertTriangle className="h-4 w-4 shrink-0 text-rose-500" />
+          <span>{error}</span>
         </div>
       )}
 
-      {/* Compact Metrics Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <Card compact hoverEffect className="flex flex-col justify-between">
+      {/* Overview Metrics Widgets Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-5">
+        {/* Total Catalog Card */}
+        <Card hoverEffect className="flex flex-col justify-between group">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
               Total Catalog
             </span>
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
-              <Boxes className="h-3.5 w-3.5" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-500/10 text-sky-600 dark:bg-sky-500/15 dark:text-sky-300 transition-transform duration-200 group-hover:scale-110">
+              <Boxes className="h-4 w-4" />
             </div>
           </div>
-          <div className="mt-2.5">
-            <div className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+          <div className="mt-3">
+            <div className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
               {metrics.totalProducts}
             </div>
             <Link
               to={ROUTES.PRODUCTS}
-              className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1 mt-1"
+              className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1 mt-1.5"
             >
-              Browse catalog <ArrowRight className="h-2.5 w-2.5" />
+              Browse catalog <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
         </Card>
 
-        <Card compact hoverEffect className="flex flex-col justify-between">
+        {/* Low Stock Alerts Card */}
+        <Card hoverEffect className="flex flex-col justify-between group">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
               Low Stock Alerts
             </span>
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400">
-              <AlertTriangle className="h-3.5 w-3.5" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-500/10 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400 transition-transform duration-200 group-hover:scale-110">
+              <AlertTriangle className="h-4 w-4" />
             </div>
           </div>
-          <div className="mt-2.5">
-            <div className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+          <div className="mt-3">
+            <div className={`text-2xl sm:text-3xl font-bold tracking-tight ${metrics.lowStockCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-zinc-900 dark:text-zinc-100'}`}>
               {metrics.lowStockCount}
             </div>
-            <span className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1 block">
-              {metrics.lowStockCount > 0 ? 'Requires restock' : 'All items optimal'}
+            <span className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1.5 block">
+              {metrics.lowStockCount > 0 ? 'Requires restock attention' : 'All items optimal'}
             </span>
           </div>
         </Card>
 
-        <Card compact hoverEffect className="flex flex-col justify-between">
+        {/* Today's Sales Card */}
+        <Card hoverEffect className="flex flex-col justify-between group">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
               Today's Sales
             </span>
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400">
-              <TrendingUp className="h-3.5 w-3.5" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400 transition-transform duration-200 group-hover:scale-110">
+              <TrendingUp className="h-4 w-4" />
             </div>
           </div>
-          <div className="mt-2.5">
-            <div className="text-xl sm:text-2xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono">
+          <div className="mt-3">
+            <div className="text-2xl sm:text-3xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 font-mono">
               {formatCurrency(metrics.todaySalesAmount, currency)}
             </div>
             <Link
               to={ROUTES.SALES}
-              className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1 mt-1"
+              className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1 mt-1.5"
             >
-              View sales ledger <ArrowRight className="h-2.5 w-2.5" />
+              View sales ledger <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
         </Card>
 
-        <Card compact hoverEffect className="flex flex-col justify-between">
+        {/* Total Purchases Card */}
+        <Card hoverEffect className="flex flex-col justify-between group">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
               Total Purchases
             </span>
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300">
-              <ShoppingCart className="h-3.5 w-3.5" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-zinc-500/10 text-zinc-700 dark:bg-zinc-500/15 dark:text-zinc-300 transition-transform duration-200 group-hover:scale-110">
+              <ShoppingCart className="h-4 w-4" />
             </div>
           </div>
-          <div className="mt-2.5">
-            <div className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 font-mono">
+          <div className="mt-3">
+            <div className="text-2xl sm:text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 font-mono">
               {formatCurrency(metrics.totalPurchasesAmount, currency)}
             </div>
             <Link
               to={ROUTES.PURCHASES}
-              className="text-[11px] font-medium text-zinc-600 dark:text-zinc-400 hover:underline inline-flex items-center gap-1 mt-1"
+              className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400 hover:underline inline-flex items-center gap-1 mt-1.5"
             >
-              View procurement <ArrowRight className="h-2.5 w-2.5" />
+              View procurement <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
         </Card>
@@ -176,29 +302,28 @@ export const DashboardPage = () => {
       {/* Action Strip & Low Stock Warnings */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
         {/* Quick QR Stock Hub */}
-        <Card className="lg:col-span-4 flex flex-col justify-between border-zinc-200/80 dark:border-zinc-800">
+        <Card className="lg:col-span-4 flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <div className="h-2 w-2 rounded-full bg-emerald-500" />
-              <h3 className="font-semibold text-sm sm:text-base text-zinc-900 dark:text-zinc-100">
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)]" />
+              <h3 className="font-semibold text-sm sm:text-base text-zinc-900 dark:text-zinc-100 tracking-tight">
                 Quick QR Operations
               </h3>
             </div>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              Scan product labels using your phone camera or barcode gun to execute quick sales or
-              vendor restocks without navigation delays.
+              Scan product barcodes or QR labels using your camera to execute lightning-fast sales checkouts or supplier restocks without typing.
             </p>
           </div>
 
-          <div className="mt-5 space-y-2">
+          <div className="mt-6 space-y-2.5">
             <Link to={ROUTES.SCAN} className="block">
-              <Button variant="primary" className="w-full">
-                <ScanLine className="h-3.5 w-3.5 mr-1" /> Open Live QR Scanner
+              <Button variant="primary" className="w-full rounded-xl">
+                <ScanLine className="h-4 w-4 mr-1.5" /> Open Live QR Scanner
               </Button>
             </Link>
             <Link to={ROUTES.PRODUCTS} className="block">
-              <Button variant="secondary" className="w-full">
-                <Plus className="h-3.5 w-3.5 mr-1" /> Add Product & Print Label
+              <Button variant="secondary" className="w-full rounded-xl">
+                <Plus className="h-4 w-4 mr-1.5" /> Add Product & Print Label
               </Button>
             </Link>
           </div>
@@ -206,10 +331,10 @@ export const DashboardPage = () => {
 
         {/* Low Stock Alerts Table */}
         <Card className="lg:col-span-8 p-0 overflow-hidden">
-          <div className="flex items-center justify-between p-4 border-b border-zinc-100 dark:border-zinc-800/80">
+          <div className="flex items-center justify-between p-4 sm:p-5 border-b border-black/[0.05] dark:border-white/[0.08]">
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-amber-500" />
-              <h3 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">
+              <h3 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100 tracking-tight">
                 Low Stock Threshold Warnings
               </h3>
             </div>
@@ -217,7 +342,7 @@ export const DashboardPage = () => {
               to={`${ROUTES.PRODUCTS}?lowStock=true`}
               className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1"
             >
-              View all <ArrowRight className="h-2.5 w-2.5" />
+              View all <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
 
@@ -225,33 +350,33 @@ export const DashboardPage = () => {
             {data?.lowStockAlerts && data.lowStockAlerts.length > 0 ? (
               <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="border-b border-zinc-100 dark:border-zinc-800/80 text-zinc-400 font-medium uppercase tracking-wider text-[10px]">
-                    <th className="px-4 py-2.5">Product</th>
-                    <th className="px-4 py-2.5">SKU</th>
-                    <th className="px-4 py-2.5">Stock</th>
-                    <th className="px-4 py-2.5">Threshold</th>
-                    <th className="px-4 py-2.5 text-right">Quick Restock</th>
+                  <tr className="border-b border-black/[0.04] dark:border-white/[0.06] text-zinc-400 dark:text-zinc-500 font-semibold uppercase tracking-wider text-[10px]">
+                    <th className="px-5 py-3">Product</th>
+                    <th className="px-5 py-3">SKU</th>
+                    <th className="px-5 py-3">Stock</th>
+                    <th className="px-5 py-3">Threshold</th>
+                    <th className="px-5 py-3 text-right">Quick Restock</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
+                <tbody className="divide-y divide-black/[0.03] dark:divide-white/[0.04]">
                   {data.lowStockAlerts.map((prod) => (
                     <tr
                       key={prod._id}
-                      className="hover:bg-zinc-50/60 dark:hover:bg-zinc-850/60 transition-colors"
+                      className="hover:bg-black/[0.03] dark:hover:bg-white/[0.06] transition-colors duration-150"
                     >
-                      <td className="px-4 py-3 font-medium text-zinc-800 dark:text-zinc-200">
+                      <td className="px-5 py-3.5 font-medium text-zinc-800 dark:text-zinc-200">
                         {prod.name}
                       </td>
-                      <td className="px-4 py-3 font-mono text-zinc-400 dark:text-zinc-500 text-[11px]">
+                      <td className="px-5 py-3.5 font-mono text-zinc-400 dark:text-zinc-500 text-[11px]">
                         {prod.sku}
                       </td>
-                      <td className="px-4 py-3 font-bold text-rose-600 dark:text-rose-400 font-mono">
+                      <td className="px-5 py-3.5 font-bold text-rose-600 dark:text-rose-400 font-mono">
                         {prod.currentStock} {prod.unit}
                       </td>
-                      <td className="px-4 py-3 text-zinc-500 dark:text-zinc-400 font-mono text-[11px]">
+                      <td className="px-5 py-3.5 text-zinc-500 dark:text-zinc-400 font-mono text-[11px]">
                         {prod.minStockLevel} {prod.unit}
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-5 py-3.5 text-right">
                         <Link to={ROUTES.SCAN}>
                           <Badge variant="accent" className="cursor-pointer hover:opacity-80">
                             + Restock
@@ -263,30 +388,34 @@ export const DashboardPage = () => {
                 </tbody>
               </table>
             ) : (
-              <div className="py-8 text-center text-zinc-400 dark:text-zinc-500">
-                <p className="text-xs">All inventory items are currently above minimum stock thresholds.</p>
+              <div className="py-10 text-center text-zinc-400 dark:text-zinc-500">
+                <p className="text-xs">
+                  {hasBusiness
+                    ? 'All inventory items are currently above minimum stock thresholds.'
+                    : 'Configure your business profile to start tracking inventory thresholds.'}
+                </p>
               </div>
             )}
           </div>
         </Card>
       </div>
 
-      {/* Recent Transactions List */}
+      {/* Recent Transactions List with Delete Action */}
       <Card className="p-0 overflow-hidden">
-        <div className="flex items-center justify-between p-4 border-b border-zinc-100 dark:border-zinc-800/80">
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b border-black/[0.05] dark:border-white/[0.08]">
           <div>
-            <h3 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">
+            <h3 className="font-semibold text-sm text-zinc-900 dark:text-zinc-100 tracking-tight">
               Recent Inventory Activity
             </h3>
             <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-0.5">
-              Latest sales and purchase movements recorded in the system
+              Latest sales and purchase audit records recorded in the system
             </p>
           </div>
           <Link
             to={ROUTES.TRANSACTIONS}
             className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1"
           >
-            Full history <ArrowRight className="h-2.5 w-2.5" />
+            Full history <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
 
@@ -294,42 +423,54 @@ export const DashboardPage = () => {
           {data?.recentTransactions && data.recentTransactions.length > 0 ? (
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-zinc-100 dark:border-zinc-800/80 text-zinc-400 font-medium uppercase tracking-wider text-[10px]">
-                  <th className="px-4 py-2.5">Reference</th>
-                  <th className="px-4 py-2.5">Type</th>
-                  <th className="px-4 py-2.5">Items</th>
-                  <th className="px-4 py-2.5">Total Amount</th>
-                  <th className="px-4 py-2.5">Payment</th>
-                  <th className="px-4 py-2.5 text-right">Date</th>
+                <tr className="border-b border-black/[0.04] dark:border-white/[0.06] text-zinc-400 dark:text-zinc-500 font-semibold uppercase tracking-wider text-[10px]">
+                  <th className="px-5 py-3">Reference</th>
+                  <th className="px-5 py-3">Type</th>
+                  <th className="px-5 py-3">Items</th>
+                  <th className="px-5 py-3">Total Amount</th>
+                  <th className="px-5 py-3">Payment</th>
+                  <th className="px-5 py-3">Date</th>
+                  <th className="px-5 py-3 text-right">Action</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
+              <tbody className="divide-y divide-black/[0.03] dark:divide-white/[0.04]">
                 {data.recentTransactions.map((txn) => {
                   const isSale = txn.type === 'SALE';
                   return (
                     <tr
                       key={txn._id}
-                      className="hover:bg-zinc-50/60 dark:hover:bg-zinc-850/60 transition-colors"
+                      className="hover:bg-black/[0.03] dark:hover:bg-white/[0.06] transition-colors duration-150"
                     >
-                      <td className="px-4 py-3 font-mono font-medium text-zinc-800 dark:text-zinc-200">
+                      <td className="px-5 py-3.5 font-mono font-medium text-zinc-800 dark:text-zinc-200">
                         {txn.referenceNumber}
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-5 py-3.5">
                         <Badge variant={isSale ? 'accent' : 'default'} dot>
                           {isSale ? 'Sale' : 'Purchase'}
                         </Badge>
                       </td>
-                      <td className="px-4 py-3 text-zinc-600 dark:text-zinc-400">
+                      <td className="px-5 py-3.5 text-zinc-600 dark:text-zinc-400">
                         {txn.items?.length} {txn.items?.length === 1 ? 'line item' : 'line items'}
                       </td>
-                      <td className="px-4 py-3 font-semibold font-mono text-zinc-900 dark:text-zinc-100">
+                      <td className="px-5 py-3.5 font-semibold font-mono text-zinc-900 dark:text-zinc-100">
                         {formatCurrency(txn.totalAmount, currency)}
                       </td>
-                      <td className="px-4 py-3 text-zinc-500 dark:text-zinc-400 text-[11px]">
+                      <td className="px-5 py-3.5 text-zinc-500 dark:text-zinc-400 text-[11px]">
                         {txn.paymentMethod}
                       </td>
-                      <td className="px-4 py-3 text-right text-zinc-400 dark:text-zinc-500 text-[11px]">
+                      <td className="px-5 py-3.5 text-zinc-400 dark:text-zinc-500 text-[11px]">
                         {formatDate(txn.createdAt)}
+                      </td>
+                      <td className="px-5 py-3.5 text-right">
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteTransaction(txn._id, txn.referenceNumber)}
+                          title="Delete audit record"
+                          aria-label={`Delete record ${txn.referenceNumber}`}
+                          className="inline-flex items-center justify-center h-7 w-7 rounded-lg text-zinc-400 hover:text-rose-600 hover:bg-rose-500/10 dark:hover:text-rose-400 dark:hover:bg-rose-500/15 transition-colors active:scale-90"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
                       </td>
                     </tr>
                   );
@@ -337,8 +478,10 @@ export const DashboardPage = () => {
               </tbody>
             </table>
           ) : (
-            <div className="py-10 text-center text-zinc-400 dark:text-zinc-500">
-              <p className="text-xs">No transactions recorded yet.</p>
+            <div className="py-12 text-center text-zinc-400 dark:text-zinc-500">
+              <p className="text-xs">
+                {hasBusiness ? 'No transactions recorded yet.' : 'No audit records yet. Set up your business profile to get started.'}
+              </p>
             </div>
           )}
         </div>
