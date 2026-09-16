@@ -455,19 +455,18 @@ export const ProductsPage = () => {
         )}
       </Modal>
 
-      {/* CREATE / EDIT PRODUCT MODAL */}
+      {/* Add Product Modal */}
       <Modal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        title={isEditing ? 'Edit Product' : 'Add New Product'}
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        title="Add Inventory Item"
         maxWidth="max-w-lg"
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleCreateProduct} className="space-y-3.5">
           <Input
             label="Product Name"
-            id="name"
-            type="text"
-            placeholder="e.g. Wireless Mouse"
+            id="pname"
+            placeholder="e.g. Wireless Barcode Scanner"
             required
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
