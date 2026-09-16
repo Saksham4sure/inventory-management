@@ -8,7 +8,7 @@ export const DashboardLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <div className="relative flex min-h-screen bg-[#F4F5F7] dark:bg-[#0f1117] text-zinc-900 dark:text-zinc-100 antialiased selection:bg-emerald-500/20 selection:text-emerald-700 dark:selection:text-emerald-300 transition-colors duration-300">
+    <div className="relative flex min-h-screen bg-[#F4F5F7] dark:bg-[#0f1117] text-zinc-900 dark:text-zinc-100 antialiased selection:bg-emerald-500/20 selection:text-emerald-700 dark:selection:text-emerald-300">
       {/* Ambient Light Glow Layer */}
       <div className="app-ambient-glow" />
 

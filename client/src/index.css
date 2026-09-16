@@ -13,12 +13,21 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  * {
+  *,
+  ::before,
+  ::after {
     border-color: rgba(0, 0, 0, 0.08);
   }
 
-  .dark * {
+  .dark *,
+  .dark ::before,
+  .dark ::after {
     border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
@@ -27,7 +36,8 @@
     letter-spacing: -0.015em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
+    text-rendering: optimizeSpeed;
+    -webkit-overflow-scrolling: touch;
   }
 
   /* Thin Custom Scrollbar */
@@ -58,35 +68,47 @@
   }
 }
 
-/* Translucent Glass Utility Styles */
+/* Translucent Glass Utility Styles - Hardware accelerated & optimized blur radius */
 .app-glass {
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(24px) saturate(190%);
-  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
   border: 1px solid rgba(0, 0, 0, 0.06);
   box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.03), inset 0 1px 0 0 rgba(255, 255, 255, 0.8);
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 .dark .app-glass {
-  background: rgba(24, 27, 34, 0.72);
-  backdrop-filter: blur(24px) saturate(190%);
-  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  background: rgba(24, 27, 34, 0.8);
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.35), inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 .app-glass-subtle {
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(16px) saturate(160%);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(8px) saturate(140%);
+  -webkit-backdrop-filter: blur(8px) saturate(140%);
   border: 1px solid rgba(0, 0, 0, 0.04);
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translateZ(0);
 }
 
 .dark .app-glass-subtle {
-  background: rgba(24, 27, 34, 0.5);
-  backdrop-filter: blur(16px) saturate(160%);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  background: rgba(24, 27, 34, 0.55);
+  backdrop-filter: blur(8px) saturate(140%);
+  -webkit-backdrop-filter: blur(8px) saturate(140%);
   border: 1px solid rgba(255, 255, 255, 0.05);
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translateZ(0);
 }
 
 /* Tactile Micro-Interactions */
@@ -98,7 +120,7 @@
   transform: scale(0.965);
 }
 
-/* Ambient Mesh Glow Behind Main Canvas */
+/* Ambient Mesh Glow Behind Main Canvas - isolated to compositor layer */
 .app-ambient-glow {
   position: fixed;
   top: 0;
@@ -110,6 +132,9 @@
               radial-gradient(circle at 85% 10%, rgba(59, 130, 246, 0.04), transparent 50%),
               radial-gradient(circle at 15% 20%, rgba(168, 85, 247, 0.04), transparent 50%);
   z-index: -10;
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .dark .app-ambient-glow {
@@ -138,6 +163,8 @@
 
 .animate-laser {
   animation: laser-sweep 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite alternate;
+  will-change: top, opacity;
+  transform: translateZ(0);
 }
 
 @keyframes pulse-subtle {
@@ -155,27 +182,88 @@
   animation: pulse-subtle 2.5s ease-in-out infinite;
 }
 
-/* html5-qrcode Restyling */
+/* html5-qrcode Restyling & Perfect Viewfinder Centering */
 #mobile-qr-reader,
 #qr-reader-container {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: hidden !important;
   border: none !important;
   background: transparent !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 #mobile-qr-reader video,
 #qr-reader-container video {
-  border-radius: 1.5rem !important;
-  object-fit: cover !important;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
   width: 100% !important;
-  max-height: 280px !important;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15) !important;
+  height: 100% !important;
+  min-width: 100% !important;
+  min-height: 100% !important;
+  object-fit: cover !important;
+  object-position: center !important;
+  border-radius: 1rem !important;
+  display: block !important;
+  margin: 0 auto !important;
+}
+
+/* Hide internal decoding canvas completely - forcing it to display breaks the video layout */
+#mobile-qr-reader canvas,
+#qr-reader-container canvas {
+  display: none !important;
+}
+
+/* Hide intrusive offset shading so custom centered frame & laser beam are the clean guide */
+#mobile-qr-reader #qr-shaded-region,
+#qr-reader-container #qr-shaded-region {
+  display: none !important;
 }
 
 #mobile-qr-reader__scan_region,
 #qr-reader-container__scan_region {
-  border-radius: 1.5rem !important;
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
   overflow: hidden !important;
   border: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+#mobile-qr-reader__dashboard,
+#qr-reader-container__dashboard,
+#mobile-qr-reader__header_message {
+  display: none !important;
+}
+
+#mobile-qr-reader__dashboard,
+#qr-reader-container__dashboard {
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+  margin: 0 auto !important;
+}
+
+#mobile-qr-reader__dashboard_section,
+#mobile-qr-reader__dashboard_section_csr,
+#mobile-qr-reader__dashboard_section_fsr {
+  text-align: center !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  margin: 0 auto !important;
 }
 
 #mobile-qr-reader__dashboard_section_csr span,
@@ -184,6 +272,7 @@
   font-size: 11px !important;
   color: #94a3b8 !important;
   font-weight: 500 !important;
+  text-align: center !important;
 }
 
 #mobile-qr-reader__dashboard button,
@@ -196,7 +285,10 @@
   font-weight: 600 !important;
   border: none !important;
   cursor: pointer !important;
-  margin: 4px 2px !important;
+  margin: 4px auto !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
 }
@@ -221,6 +313,7 @@
   font-size: 12px !important;
   padding: 5px 10px !important;
   backdrop-filter: blur(10px) !important;
+  margin: 0 auto !important;
 }
 
 .dark #mobile-qr-reader__dashboard select,

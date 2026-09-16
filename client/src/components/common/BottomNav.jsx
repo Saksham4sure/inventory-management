@@ -18,7 +18,7 @@ export const BottomNav = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 lg:hidden border-t border-black/[0.06] dark:border-white/[0.08] bg-white/85 dark:bg-[#151821]/85 backdrop-blur-2xl transition-colors px-3 pt-2 pb-5 shadow-[0_-4px_24px_rgba(0,0,0,0.04)] dark:shadow-[0_-4px_28px_rgba(0,0,0,0.4)]">
+    <nav className="fixed bottom-0 left-0 right-0 z-30 lg:hidden border-t border-black/[0.06] dark:border-white/[0.08] bg-white/90 dark:bg-[#151821]/90 backdrop-blur-xl transition-colors px-3 pt-2 pb-5 shadow-[0_-4px_24px_rgba(0,0,0,0.04)] dark:shadow-[0_-4px_28px_rgba(0,0,0,0.4)]">
       <div className="flex items-center justify-around max-w-md mx-auto">
         {tabs.map((tab) => {
           const Icon = tab.icon;

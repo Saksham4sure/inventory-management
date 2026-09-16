@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { Html5QrcodeScanner, Html5Qrcode } from 'html5-qrcode';
+import { Html5Qrcode } from 'html5-qrcode';
 import { productService } from '../services/productService';
 import { transactionService } from '../services/transactionService';
 import { useBusiness } from '../hooks/useBusiness';
@@ -21,12 +21,9 @@ import {
   TrendingDown,
   TrendingUp,
   RotateCcw,
-  Sparkles,
   Package,
   Upload,
   X,
-  FileText,
-  Tag,
   RefreshCw,
 } from 'lucide-react';
 
@@ -57,11 +54,13 @@ export const QRScanPage = () => {
   const [notes, setNotes] = useState('');
 
   // Scanner refs & anti-loop controls
-  const scannerRef = useRef(null);
+  const qrCodeRef = useRef(null);
   const fileInputRef = useRef(null);
   const isProcessingRef = useRef(false);
   const lastScannedCodeRef = useRef(null);
   const lastScannedCooldownTimer = useRef(null);
+  const [isCameraActive, setIsCameraActive] = useState(false);
+  const [isStartingCamera, setIsStartingCamera] = useState(false);
 
   // Manual Calculator state
   const [manualItemName, setManualItemName] = useState('');
@@ -255,40 +254,150 @@ export const QRScanPage = () => {
     }
   };
 
-  // Initialize camera scanner
-  useEffect(() => {
-    if (inputMethod !== 'qr') {
-      if (scannerRef.current) {
-        scannerRef.current.clear().catch(() => {});
-        scannerRef.current = null;
+  // Stop camera stream completely and release device media tracks immediately
+  const stopCamera = async () => {
+    if (qrCodeRef.current) {
+      const scanner = qrCodeRef.current;
+      qrCodeRef.current = null;
+      try {
+        if (scanner.isScanning) {
+          await scanner.stop();
+        }
+        scanner.clear();
+      } catch (err) {
+        console.error('Error stopping camera:', err);
       }
-      return;
     }
 
-    const scannerId = 'mobile-qr-reader';
-    const scanner = new Html5QrcodeScanner(
-      scannerId,
-      {
-        fps: 15,
-        qrbox: { width: 230, height: 230 },
-        aspectRatio: 1.0,
-      },
-      false
-    );
+    // Direct MediaStream track cutoff to guarantee camera hardware shuts down immediately:
+    const readerEl = document.getElementById('mobile-qr-reader');
+    if (readerEl) {
+      const videos = readerEl.querySelectorAll('video');
+      videos.forEach((video) => {
+        if (video.srcObject && typeof video.srcObject.getTracks === 'function') {
+          video.srcObject.getTracks().forEach((track) => track.stop());
+          video.srcObject = null;
+        }
+      });
+      readerEl.innerHTML = '';
+    }
 
-    scanner.render(handleQRDetected, () => {});
-    scannerRef.current = scanner;
+    setIsCameraActive(false);
+    setIsStartingCamera(false);
+  };
 
-    return () => {
-      if (scannerRef.current) {
-        scannerRef.current.clear().catch(() => {});
-        scannerRef.current = null;
+  // Request camera permission and start scanning only after user clicks button
+  const startCamera = async () => {
+    try {
+      setIsStartingCamera(true);
+      setError('');
+
+      // Stop any prior instance
+      await stopCamera();
+
+      // Ensure target element is mounted
+      const readerEl = document.getElementById('mobile-qr-reader');
+      if (!readerEl) {
+        throw new Error('Scanner container element not found');
       }
+      readerEl.innerHTML = '';
+
+      const qrCode = new Html5Qrcode('mobile-qr-reader');
+      qrCodeRef.current = qrCode;
+
+      // Detect best available camera (rear/environment preferred, webcam fallback)
+      let cameraConfig = { facingMode: 'environment' };
+      try {
+        const cameras = await Html5Qrcode.getCameras();
+        if (cameras && cameras.length > 0) {
+          const rearCamera = cameras.find((cam) =>
+            /back|rear|environment/i.test(cam.label)
+          );
+          cameraConfig = rearCamera
+            ? { deviceId: { exact: rearCamera.id } }
+            : { deviceId: { exact: cameras[0].id } };
+        }
+      } catch {
+        // Fallback to environment facingMode if enumeration not supported before permission
+        cameraConfig = { facingMode: 'environment' };
+      }
+
+      const scanConfig = {
+        fps: 15,
+        qrbox: (viewfinderWidth, viewfinderHeight) => {
+          const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+          const edge = Math.max(140, Math.min(230, Math.floor(minEdge * 0.72)));
+          return { width: edge, height: edge };
+        },
+        aspectRatio: 1.0,
+      };
+
+      try {
+        await qrCode.start(
+          cameraConfig,
+          scanConfig,
+          handleQRDetected,
+          () => {} // Frame non-detection callback
+        );
+      } catch (firstErr) {
+        console.warn('Primary camera config rejected, trying user-facing fallback:', firstErr);
+        await qrCode.start(
+          { facingMode: 'user' },
+          scanConfig,
+          handleQRDetected,
+          () => {}
+        );
+      }
+
+      setIsCameraActive(true);
+    } catch (err) {
+      console.error('Camera start error:', err);
+      const errMsg = err?.message || String(err);
+      if (
+        errMsg.toLowerCase().includes('permission') ||
+        errMsg.toLowerCase().includes('notallowed')
+      ) {
+        setError('Camera permission was denied. Please allow camera access in your browser settings to scan QR codes.');
+      } else {
+        setError(errMsg || 'Could not access camera. Please check camera permissions.');
+      }
+      await stopCamera();
+    } finally {
+      setIsStartingCamera(false);
+    }
+  };
+
+  // Ensure camera hardware is immediately stopped whenever leaving this page or unmounting
+  useEffect(() => {
+    return () => {
+      if (qrCodeRef.current) {
+        try {
+          if (qrCodeRef.current.isScanning) {
+            qrCodeRef.current.stop().catch(() => {});
+          }
+          qrCodeRef.current.clear();
+        } catch {
+          // silent
+        }
+        qrCodeRef.current = null;
+      }
+
+      const readerEl = document.getElementById('mobile-qr-reader');
+      if (readerEl) {
+        const videos = readerEl.querySelectorAll('video');
+        videos.forEach((video) => {
+          if (video.srcObject && typeof video.srcObject.getTracks === 'function') {
+            video.srcObject.getTracks().forEach((track) => track.stop());
+            video.srcObject = null;
+          }
+        });
+      }
+
       if (lastScannedCooldownTimer.current) {
         clearTimeout(lastScannedCooldownTimer.current);
       }
     };
-  }, [inputMethod, txnType]);
+  }, []);
 
   // Calculator button handler
   const handleCalcButton = (val) => {
@@ -515,7 +624,10 @@ export const QRScanPage = () => {
 
             <button
               type="button"
-              onClick={() => setInputMethod('manual')}
+              onClick={() => {
+                stopCamera();
+                setInputMethod('manual');
+              }}
               className={`flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-semibold transition-all duration-200 active:scale-98 ${
                 inputMethod === 'manual'
                   ? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-700 dark:text-white'
@@ -535,49 +647,101 @@ export const QRScanPage = () => {
                   <ScanLine className="h-3.5 w-3.5 text-emerald-500" />
                   <span>Aim Camera at QR Label</span>
                 </div>
-                <Badge variant="accent" size="sm" dot>
-                  Live View
-                </Badge>
+                <div className="flex items-center gap-2 justify-center">
+                  {isCameraActive ? (
+                    <>
+                      <Badge variant="accent" size="sm" dot>
+                        Live View
+                      </Badge>
+                      <button
+                        type="button"
+                        onClick={stopCamera}
+                        className="text-[10px] font-semibold text-zinc-500 hover:text-rose-600 dark:text-zinc-400 dark:hover:text-rose-400 px-2 py-0.5 rounded-lg border border-zinc-200 dark:border-zinc-800 active:scale-95 transition-colors"
+                      >
+                        Turn Off
+                      </button>
+                    </>
+                  ) : (
+                    <Badge variant="neutral" size="sm">
+                      Camera Off
+                    </Badge>
+                  )}
+                </div>
               </div>
 
-              {/* Viewfinder Container */}
-              <div className="relative rounded-2xl overflow-hidden bg-black aspect-square max-h-[300px] flex items-center justify-center border border-zinc-200/20 shadow-inner">
-                <div id="mobile-qr-reader" className="w-full h-full"></div>
+              {/* Viewfinder Container - perfectly centered in card */}
+              <div className="relative mx-auto w-full max-w-[280px] sm:max-w-[320px] aspect-square rounded-2xl overflow-hidden bg-black flex items-center justify-center border border-zinc-200/20 shadow-inner">
+                {/* HTML5 QR Code Mount Target */}
+                <div id="mobile-qr-reader" className="absolute inset-0 w-full h-full pointer-events-none" />
 
-                {/* Viewfinder Overlay Frame */}
-                <div
-                  className={`pointer-events-none absolute inset-6 sm:inset-10 rounded-2xl border border-white/20 transition-all duration-300 ${
-                    scanFlash ? 'ring-4 ring-emerald-400/80 bg-emerald-500/10' : ''
-                  }`}
-                >
-                  {/* Corner Target Brackets */}
-                  <div className="absolute -top-1 -left-1 w-6 h-6 border-t-3 border-l-3 border-emerald-500 rounded-tl-lg" />
-                  <div className="absolute -top-1 -right-1 w-6 h-6 border-t-3 border-r-3 border-emerald-500 rounded-tr-lg" />
-                  <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-3 border-l-3 border-emerald-500 rounded-bl-lg" />
-                  <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-3 border-r-3 border-emerald-500 rounded-br-lg" />
-
-                  {/* Laser Scanning Beam */}
-                  <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_12px_#10b981] animate-laser">
-                    <div className="h-10 w-full bg-gradient-to-b from-emerald-500/20 to-transparent -translate-y-full pointer-events-none" />
+                {/* Prompt State: When camera is not active, display centered permission / start button */}
+                {!isCameraActive && (
+                  <div className="relative z-10 flex flex-col items-center justify-center gap-3 p-4 text-center animate-in fade-in duration-200">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-emerald-400 border border-white/15 shadow-inner">
+                      <Camera className="h-6 w-6" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="text-xs font-semibold text-white">
+                        Camera is Idle
+                      </p>
+                      <p className="text-[11px] text-zinc-400 max-w-[200px] leading-tight">
+                        Click below to grant camera permission and scan QR codes
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      onClick={startCamera}
+                      loading={isStartingCamera}
+                      className="rounded-xl px-4 py-2 text-xs font-semibold shadow-md active:scale-95"
+                    >
+                      <Camera className="h-3.5 w-3.5 mr-1.5" />
+                      {isStartingCamera ? 'Requesting Permission...' : 'Start Camera'}
+                    </Button>
                   </div>
-                </div>
+                )}
+
+                {/* Viewfinder Overlay Frame: Target Brackets & Laser Beam (Only active when scanning) */}
+                {isCameraActive && (
+                  <div
+                    className={`pointer-events-none absolute inset-6 sm:inset-8 rounded-2xl border border-white/20 transition-all duration-300 z-10 ${
+                      scanFlash ? 'ring-4 ring-emerald-400/80 bg-emerald-500/10' : ''
+                    }`}
+                  >
+                    {/* Corner Target Brackets */}
+                    <div className="absolute -top-1 -left-1 w-5 h-5 border-t-2 border-l-2 border-emerald-500 rounded-tl-lg" />
+                    <div className="absolute -top-1 -right-1 w-5 h-5 border-t-2 border-r-2 border-emerald-500 rounded-tr-lg" />
+                    <div className="absolute -bottom-1 -left-1 w-5 h-5 border-b-2 border-l-2 border-emerald-500 rounded-bl-lg" />
+                    <div className="absolute -bottom-1 -right-1 w-5 h-5 border-b-2 border-r-2 border-emerald-500 rounded-br-lg" />
+
+                    {/* Laser Scanning Beam */}
+                    <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-emerald-400 to-transparent shadow-[0_0_12px_#10b981] animate-laser">
+                      <div className="h-10 w-full bg-gradient-to-b from-emerald-500/20 to-transparent -translate-y-full pointer-events-none" />
+                    </div>
+                  </div>
+                )}
 
                 {/* Loop Prevention Pill / Next Scan Hint */}
-                {scannedPill ? (
-                  <div className="absolute bottom-3 z-10 px-3 py-1.5 rounded-full bg-zinc-900/90 backdrop-blur-md text-[11px] font-semibold text-emerald-300 border border-emerald-500/40 flex items-center gap-2 shadow-lg">
-                    <span>✓ Scanned: {scannedPill.name}</span>
-                    <button
-                      type="button"
-                      onClick={handleResetScanLock}
-                      className="px-2 py-0.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 text-[10px] font-bold transition-colors inline-flex items-center gap-1 active:scale-95"
-                    >
-                      <RefreshCw className="h-2.5 w-2.5" /> Scan Again
-                    </button>
-                  </div>
-                ) : (
-                  <div className="pointer-events-none absolute bottom-3 z-10 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-[10px] font-medium text-white/90 border border-white/10">
-                    Auto-stacks items into cart • No loop scanning
-                  </div>
+                {isCameraActive && (
+                  <>
+                    {scannedPill ? (
+                      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 px-3 py-1.5 rounded-full bg-zinc-900/95 backdrop-blur-md text-[11px] font-semibold text-emerald-300 border border-emerald-500/40 flex items-center gap-2 shadow-lg whitespace-nowrap">
+                        <span>✓ Scanned: {scannedPill.name}</span>
+                        <button
+                          type="button"
+                          onClick={handleResetScanLock}
+                          className="px-2 py-0.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-200 text-[10px] font-bold transition-colors inline-flex items-center gap-1 active:scale-95"
+                        >
+                          <RefreshCw className="h-2.5 w-2.5" /> Scan Again
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 z-20 px-3 py-1 rounded-full bg-black/70 backdrop-blur-md text-[10px] font-medium text-white/90 border border-white/10 whitespace-nowrap">
+                        Auto-stacks items into cart • No loop scanning
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 

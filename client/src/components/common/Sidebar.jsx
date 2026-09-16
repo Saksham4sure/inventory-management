@@ -73,7 +73,7 @@ export const Sidebar = ({ isMobileOpen, onClose }) => {
     });
 
   const content = (
-    <div className="flex flex-col justify-between h-full bg-white/70 dark:bg-[#12141a]/85 backdrop-blur-2xl p-4 select-none overflow-y-auto">
+    <div className="flex flex-col justify-between h-full bg-white/80 dark:bg-[#12141a]/90 backdrop-blur-xl p-4 select-none overflow-y-auto">
       <div>
         {/* Brand header */}
         <div className="flex h-12 items-center justify-between px-2 mb-4">

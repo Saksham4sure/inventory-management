@@ -11,7 +11,7 @@ export const Navbar = ({ onOpenMobileMenu }) => {
   const { business } = useBusiness();
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-black/[0.06] dark:border-white/[0.08] bg-white/75 dark:bg-[#12141a]/80 px-4 sm:px-6 backdrop-blur-2xl transition-colors">
+    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-black/[0.06] dark:border-white/[0.08] bg-white/80 dark:bg-[#12141a]/85 px-4 sm:px-6 backdrop-blur-xl transition-colors">
       <div className="flex items-center gap-3">
         {/* Mobile menu button */}
         <button
