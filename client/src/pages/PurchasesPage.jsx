@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useBusiness } from '../hooks/useBusiness';
+import { useConfirm } from '../hooks/useConfirm';
 import { transactionService } from '../services/transactionService';
 import { productService } from '../services/productService';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { Select } from '../components/ui/Select';
 import { Modal } from '../components/ui/Modal';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import {
@@ -23,6 +25,7 @@ import {
 
 export const PurchasesPage = () => {
   const { business } = useBusiness();
+  const { confirm, alert } = useConfirm();
   const currency = business?.currency || 'USD';
 
   // Sub-tab: 'all_purchases' | 'returns' | 'summary'
@@ -67,7 +70,15 @@ export const PurchasesPage = () => {
 
   const handleDeleteTransaction = async (e, id, refNum) => {
     if (e) e.stopPropagation();
-    if (!window.confirm(`Delete purchase audit record #${refNum}?`)) return;
+    const isConfirmed = await confirm({
+      title: 'Delete Purchase Record',
+      message: `Are you sure you want to delete purchase audit record #${refNum}? This action cannot be undone.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      variant: 'danger',
+    });
+    if (!isConfirmed) return;
+
     try {
       await transactionService.deleteTransaction(id);
       setTransactions((prev) => prev.filter((t) => t._id !== id));
@@ -75,7 +86,10 @@ export const PurchasesPage = () => {
         setSelectedTxn(null);
       }
     } catch (err) {
-      alert(err.message || 'Failed to delete transaction record');
+      await alert({
+        title: 'Action Failed',
+        message: err.message || 'Failed to delete transaction record',
+      });
     }
   };
 
@@ -188,13 +202,13 @@ export const PurchasesPage = () => {
 
       {/* Sub-Tab Navigation */}
       <div className="flex items-center justify-between border-b border-zinc-200/80 dark:border-zinc-800 pb-2">
-        <div className="flex items-center gap-1.5 p-1 rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-zinc-100/60 dark:bg-zinc-900 text-xs font-semibold">
+        <div className="flex items-center gap-1.5 p-1 rounded-xl border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.035] dark:bg-white/[0.06] backdrop-blur-md text-xs font-semibold select-none">
           <button
             type="button"
             onClick={() => setActiveTab('all_purchases')}
-            className={`px-3 py-1.5 rounded-lg transition-all ${
+            className={`px-3 py-1.5 rounded-lg transition-all duration-200 ease-out active:scale-95 ${
               activeTab === 'all_purchases'
-                ? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-800 dark:text-zinc-100'
+                ? 'bg-white text-zinc-950 shadow-xs dark:bg-zinc-800 dark:text-zinc-100 scale-[1.02]'
                 : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
             }`}
           >
@@ -203,9 +217,9 @@ export const PurchasesPage = () => {
           <button
             type="button"
             onClick={() => setActiveTab('returns')}
-            className={`px-3 py-1.5 rounded-lg transition-all ${
+            className={`px-3 py-1.5 rounded-lg transition-all duration-200 ease-out active:scale-95 ${
               activeTab === 'returns'
-                ? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-800 dark:text-zinc-100'
+                ? 'bg-white text-zinc-950 shadow-xs dark:bg-zinc-800 dark:text-zinc-100 scale-[1.02]'
                 : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
             }`}
           >
@@ -214,9 +228,9 @@ export const PurchasesPage = () => {
           <button
             type="button"
             onClick={() => setActiveTab('summary')}
-            className={`px-3 py-1.5 rounded-lg transition-all ${
+            className={`px-3 py-1.5 rounded-lg transition-all duration-200 ease-out active:scale-95 ${
               activeTab === 'summary'
-                ? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-800 dark:text-zinc-100'
+                ? 'bg-white text-zinc-950 shadow-xs dark:bg-zinc-800 dark:text-zinc-100 scale-[1.02]'
                 : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
             }`}
           >
@@ -231,7 +245,7 @@ export const PurchasesPage = () => {
             placeholder="Search purchases..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 pl-8 pr-3 py-1 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:border-purple-500 focus:outline-none"
+            className="w-full rounded-lg border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 pl-8 pr-3 py-1 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:border-zinc-800 dark:focus:border-[#DBFE80] focus:outline-none focus:ring-2 focus:ring-[#DBFE80]/20"
           />
         </div>
       </div>
@@ -256,7 +270,7 @@ export const PurchasesPage = () => {
                           {txn.referenceNumber}
                         </span>
                         {txn.scannedViaQR && (
-                          <span className="inline-flex items-center text-[10px] text-purple-600 dark:text-purple-400">
+                          <span className="inline-flex items-center text-[10px] text-zinc-500 dark:text-zinc-400">
                             <QrCode className="h-3 w-3" />
                           </span>
                         )}
@@ -416,20 +430,16 @@ export const PurchasesPage = () => {
       >
         <form onSubmit={handleRecordVendorReturn} className="space-y-3.5">
           <div>
-            <label className="block text-[11px] font-medium tracking-wide uppercase text-zinc-400 mb-1">
-              Select Product to Return
-            </label>
-            <select
+            <Select
+              label="Select Product to Return"
               value={returnProduct}
               onChange={(e) => handleProductSelectChange(e.target.value)}
-              className="w-full rounded-lg border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100"
-            >
-              {allProducts.map((p) => (
-                <option key={p._id} value={p._id}>
-                  {p.name} ({p.sku}) — Available: {p.currentStock} {p.unit}
-                </option>
-              ))}
-            </select>
+              options={allProducts.map((p) => ({
+                value: p._id,
+                label: `${p.name} (${p.sku})`,
+                subtext: `Available: ${p.currentStock} ${p.unit}`,
+              }))}
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -452,19 +462,17 @@ export const PurchasesPage = () => {
           </div>
 
           <div>
-            <label className="block text-[11px] font-medium tracking-wide uppercase text-zinc-400 mb-1">
-              Reason for Return
-            </label>
-            <select
+            <Select
+              label="Reason for Return"
               value={returnReason}
               onChange={(e) => setReturnReason(e.target.value)}
-              className="w-full rounded-lg border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs text-zinc-900 dark:text-zinc-100"
-            >
-              <option value="Damaged batch from supplier">Damaged batch from supplier</option>
-              <option value="Incorrect specification">Incorrect specification</option>
-              <option value="Excess / overstock return">Excess / overstock return</option>
-              <option value="Near expiration">Near expiration</option>
-            </select>
+              options={[
+                'Damaged batch from supplier',
+                'Incorrect specification',
+                'Excess / overstock return',
+                'Near expiration',
+              ]}
+            />
           </div>
 
           <div className="rounded-lg bg-zinc-50 dark:bg-zinc-850 p-2.5 text-[11px] text-zinc-500">

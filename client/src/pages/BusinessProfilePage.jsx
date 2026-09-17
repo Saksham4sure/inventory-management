@@ -4,6 +4,7 @@ import { useAuth } from '../hooks/useAuth';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { Select } from '../components/ui/Select';
 import { Badge } from '../components/ui/Badge';
 import {
   Building2,
@@ -133,8 +134,8 @@ export const BusinessProfilePage = () => {
       )}
 
       {success && (
-        <div className="flex items-center gap-2.5 rounded-2xl bg-purple-500/10 border border-purple-500/20 p-4 text-xs text-purple-700 dark:text-purple-300 backdrop-blur-md">
-          <CheckCircle2 className="h-4 w-4 shrink-0" />
+        <div className="flex items-center gap-2.5 rounded-2xl bg-[#DBFE80]/15 border border-[#DBFE80]/30 p-4 text-xs text-zinc-900 dark:text-[#DBFE80] backdrop-blur-md">
+          <CheckCircle2 className="h-4 w-4 shrink-0 text-[#8ca825] dark:text-[#DBFE80]" />
           <span>{success}</span>
         </div>
       )}
@@ -216,39 +217,19 @@ export const BusinessProfilePage = () => {
               />
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div>
-                  <label className="block text-[11px] font-semibold tracking-wider uppercase text-zinc-500 dark:text-zinc-400 mb-1.5">
-                    Category
-                  </label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full rounded-xl border border-black/[0.08] bg-black/[0.025] px-3.5 py-2.5 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 dark:bg-[#181b22] dark:border-white/[0.09] focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-500/10 transition-all"
-                  >
-                    {categories.map((c) => (
-                      <option key={c} value={c} className="dark:bg-[#181b22]">
-                        {c}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <Select
+                  label="Category"
+                  value={formData.category}
+                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                  options={categories}
+                />
 
-                <div>
-                  <label className="block text-[11px] font-semibold tracking-wider uppercase text-zinc-500 dark:text-zinc-400 mb-1.5">
-                    Base Currency
-                  </label>
-                  <select
-                    value={formData.currency}
-                    onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                    className="w-full rounded-xl border border-black/[0.08] bg-black/[0.025] px-3.5 py-2.5 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 dark:bg-[#181b22] dark:border-white/[0.09] focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-500/10 transition-all"
-                  >
-                    {currencies.map((curr) => (
-                      <option key={curr.code} value={curr.code} className="dark:bg-[#181b22]">
-                        {curr.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <Select
+                  label="Base Currency"
+                  value={formData.currency}
+                  onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                  options={currencies.map((curr) => ({ value: curr.code, label: curr.label }))}
+                />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">

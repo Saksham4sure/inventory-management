@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBusiness } from '../hooks/useBusiness';
 import { Input } from '../components/ui/Input';
+import { Select } from '../components/ui/Select';
 import { Button } from '../components/ui/Button';
 import { ThemeToggle } from '../components/ui/ThemeToggle';
 import { ROUTES } from '../constants/routes';
@@ -119,39 +120,19 @@ export const BusinessSetupPage = () => {
             />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div>
-                <label className="block text-[11px] font-medium tracking-wide uppercase text-zinc-500 dark:text-zinc-400 mb-1.5">
-                  Category
-                </label>
-                <select
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  className="w-full rounded-xl border border-black/[0.08] bg-black/[0.025] px-3.5 py-2.5 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 dark:bg-zinc-900 dark:border-white/[0.09] focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-500/10 transition-all"
-                >
-                  {categories.map((cat) => (
-                    <option key={cat} value={cat} className="dark:bg-zinc-900">
-                      {cat}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <Select
+                label="Category"
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                options={categories}
+              />
 
-              <div>
-                <label className="block text-[11px] font-semibold tracking-wider uppercase text-zinc-500 dark:text-zinc-400 mb-1.5">
-                  Base Currency
-                </label>
-                <select
-                  value={formData.currency}
-                  onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                  className="w-full rounded-xl border border-black/[0.08] bg-black/[0.025] px-3.5 py-2.5 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 dark:bg-zinc-900 dark:border-white/[0.09] focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-500/10 transition-all"
-                >
-                  {currencies.map((curr) => (
-                    <option key={curr.code} value={curr.code} className="dark:bg-zinc-900">
-                      {curr.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <Select
+                label="Base Currency"
+                value={formData.currency}
+                onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                options={currencies.map((curr) => ({ value: curr.code, label: curr.label }))}
+              />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">

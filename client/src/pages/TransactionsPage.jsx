@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useBusiness } from '../hooks/useBusiness';
+import { useConfirm } from '../hooks/useConfirm';
 import { transactionService } from '../services/transactionService';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -18,6 +19,7 @@ import {
 
 export const TransactionsPage = () => {
   const { business } = useBusiness();
+  const { confirm } = useConfirm();
   const currency = business?.currency || 'USD';
 
   const [transactions, setTransactions] = useState([]);
@@ -49,7 +51,15 @@ export const TransactionsPage = () => {
   }, [fetchTransactions]);
 
   const handleDeleteTransaction = async (id, refNum) => {
-    if (!window.confirm(`Delete audit record #${refNum}?`)) return;
+    const isConfirmed = await confirm({
+      title: 'Delete Audit Record',
+      message: `Are you sure you want to delete audit record #${refNum}? This action cannot be undone.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      variant: 'danger',
+    });
+    if (!isConfirmed) return;
+
     try {
       await transactionService.deleteTransaction(id);
       setTransactions((prev) => prev.filter((t) => t._id !== id));
@@ -96,20 +106,20 @@ export const TransactionsPage = () => {
               placeholder="Search reference # (e.g. SAL-146698)..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-lg border border-zinc-200/90 bg-white dark:bg-zinc-900 dark:border-zinc-800 pl-9 pr-4 py-1.5 sm:py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/15"
+              className="w-full rounded-lg border border-zinc-200/90 bg-white dark:bg-zinc-900 dark:border-zinc-800 pl-9 pr-4 py-1.5 sm:py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:border-zinc-800 dark:focus:border-[#DBFE80] focus:outline-none focus:ring-2 focus:ring-[#DBFE80]/20"
             />
           </div>
 
           <div className="flex items-center gap-2 w-full md:w-auto">
             <Filter className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
-            <div className="inline-flex rounded-lg border border-zinc-200/80 dark:border-zinc-800 p-0.5 bg-zinc-100/60 dark:bg-zinc-850 text-xs font-medium">
+            <div className="inline-flex rounded-xl border border-black/[0.06] dark:border-white/[0.08] p-1 bg-black/[0.035] dark:bg-white/[0.06] backdrop-blur-md text-xs font-medium">
               <button
                 type="button"
                 onClick={() => setTypeFilter('ALL')}
-                className={`px-3 py-1 rounded-md transition-all ${
+                className={`px-3.5 py-1.5 rounded-lg transition-all duration-200 ${
                   typeFilter === 'ALL'
-                    ? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-800 dark:text-zinc-100'
-                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
+                    ? 'bg-white text-zinc-950 shadow-xs dark:bg-[#1f2128] dark:text-white font-semibold scale-[1.02]'
+                    : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 active:scale-95'
                 }`}
               >
                 All
@@ -117,10 +127,10 @@ export const TransactionsPage = () => {
               <button
                 type="button"
                 onClick={() => setTypeFilter('SALE')}
-                className={`px-3 py-1 rounded-md transition-all ${
+                className={`px-3.5 py-1.5 rounded-lg transition-all duration-200 ${
                   typeFilter === 'SALE'
-                    ? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-800 dark:text-zinc-100 font-semibold'
-                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
+                    ? 'bg-white text-zinc-950 shadow-xs dark:bg-[#1f2128] dark:text-white font-semibold scale-[1.02]'
+                    : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 active:scale-95'
                 }`}
               >
                 Sales
@@ -128,10 +138,10 @@ export const TransactionsPage = () => {
               <button
                 type="button"
                 onClick={() => setTypeFilter('PURCHASE')}
-                className={`px-3 py-1 rounded-md transition-all ${
+                className={`px-3.5 py-1.5 rounded-lg transition-all duration-200 ${
                   typeFilter === 'PURCHASE'
-                    ? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-800 dark:text-zinc-100 font-semibold'
-                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
+                    ? 'bg-white text-zinc-950 shadow-xs dark:bg-[#1f2128] dark:text-white font-semibold scale-[1.02]'
+                    : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 active:scale-95'
                 }`}
               >
                 Purchases
@@ -171,13 +181,13 @@ export const TransactionsPage = () => {
                           {txn.referenceNumber}
                         </div>
                         {txn.scannedViaQR && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-purple-700 bg-purple-500/10 border border-purple-500/20 px-1.5 py-0.2 rounded mt-0.5 dark:text-purple-400">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-zinc-700 bg-black/[0.04] border border-black/[0.06] px-1.5 py-0.2 rounded mt-0.5 dark:text-zinc-300 dark:bg-white/[0.06] dark:border-white/[0.08]">
                             <QrCode className="h-2.5 w-2.5" /> QR Verified
                           </span>
                         )}
                       </td>
                       <td className="px-4 py-3.5">
-                        <Badge variant={isSale ? 'accent' : 'default'} dot>
+                        <Badge variant={isSale ? 'primary' : 'default'} dot>
                           {isSale ? 'Sale' : 'Purchase'}
                         </Badge>
                       </td>

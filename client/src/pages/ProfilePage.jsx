@@ -160,8 +160,8 @@ export const ProfilePage = () => {
             </div>
 
             {profileSuccess && (
-              <div className="flex items-center gap-2 rounded-xl bg-purple-500/10 border border-purple-500/20 p-3 text-xs text-purple-700 dark:text-purple-300">
-                <CheckCircle2 className="h-4 w-4 shrink-0" />
+              <div className="flex items-center gap-2 rounded-xl bg-[#DBFE80]/15 border border-[#DBFE80]/30 p-3 text-xs text-zinc-900 dark:text-[#DBFE80]">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-[#8ca825] dark:text-[#DBFE80]" />
                 <span>{profileSuccess}</span>
               </div>
             )}
@@ -223,8 +223,8 @@ export const ProfilePage = () => {
             </div>
 
             {passwordSuccess && (
-              <div className="flex items-center gap-2 rounded-xl bg-purple-500/10 border border-purple-500/20 p-3 text-xs text-purple-700 dark:text-purple-300">
-                <CheckCircle2 className="h-4 w-4 shrink-0" />
+              <div className="flex items-center gap-2 rounded-xl bg-[#DBFE80]/15 border border-[#DBFE80]/30 p-3 text-xs text-zinc-900 dark:text-[#DBFE80]">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-[#8ca825] dark:text-[#DBFE80]" />
                 <span>{passwordSuccess}</span>
               </div>
             )}

@@ -3,6 +3,12 @@
 @theme {
   --color-zinc-850: #181b22;
   --color-zinc-750: #262a35;
+  --color-primary: #DBFE80;
+  --color-primary-hover: #cbf561;
+  --color-primary-active: #b8e646;
+  --color-primary-muted: rgba(219, 254, 128, 0.15);
+  --color-primary-border: rgba(219, 254, 128, 0.35);
+  --color-primary-foreground: #090a0f;
 }
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -31,7 +37,7 @@
   }
 
   body {
-    @apply bg-[#F4F5F7] text-zinc-900 antialiased min-h-screen dark:bg-[#0f1117] dark:text-zinc-100 selection:bg-purple-500/20 selection:text-purple-700 dark:selection:text-purple-300;
+    @apply bg-[#F4F5F7] text-zinc-900 antialiased min-h-screen dark:bg-[#0f1117] dark:text-zinc-100 selection:bg-[#DBFE80] selection:text-zinc-950;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", -apple-system, system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif;
     letter-spacing: -0.015em;
     -webkit-font-smoothing: antialiased;
@@ -117,6 +123,141 @@
 }
 
 .app-press:active {
+  transform: scale(0.965);
+}
+
+/* iOS Cupertino Animation Suite */
+@keyframes ios-backdrop-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes ios-alert-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translate3d(0, 0, 0);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(1.02) translate3d(0, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+}
+
+@keyframes ios-menu-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.94) translateY(-6px) translate3d(0, 0, 0);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.01) translateY(0) translate3d(0, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0) translate3d(0, 0, 0);
+  }
+}
+
+@keyframes ios-sheet-up {
+  0% {
+    opacity: 0.6;
+    transform: translateY(100%) translate3d(0, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) translate3d(0, 0, 0);
+  }
+}
+
+@keyframes ios-icon-bounce {
+  0% {
+    opacity: 0;
+    transform: scale(0.5) translateY(-4px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.12) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes ios-check-spring {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(-8deg);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(1.2) rotate(2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.animate-ios-backdrop {
+  animation: ios-backdrop-fade 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: opacity;
+}
+
+.animate-ios-alert {
+  animation: ios-alert-pop 0.26s cubic-bezier(0.175, 0.885, 0.32, 1.15) forwards;
+  transform-origin: center center;
+  will-change: transform, opacity;
+}
+
+.animate-ios-menu {
+  animation: ios-menu-pop 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: top center;
+  will-change: transform, opacity;
+}
+
+.animate-ios-sheet {
+  animation: ios-sheet-up 0.32s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  will-change: transform;
+}
+
+.animate-ios-icon {
+  animation: ios-icon-bounce 0.32s cubic-bezier(0.175, 0.885, 0.32, 1.25) forwards;
+  transform-origin: center center;
+}
+
+.animate-ios-check {
+  animation: ios-check-spring 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.2) forwards;
+  transform-origin: center center;
+}
+
+@keyframes ios-sidebar-in {
+  0% {
+    transform: translate3d(-100%, 0, 0);
+  }
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.animate-ios-sidebar {
+  animation: ios-sidebar-in 0.28s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  will-change: transform;
+}
+
+.ios-tap {
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease, background-color 0.15s ease;
+}
+
+.ios-tap:active {
   transform: scale(0.965);
 }
 
@@ -318,3 +459,26 @@
   border-color: rgba(255, 255, 255, 0.1) !important;
   color: white !important;
 }
+
+/* iOS / iPhone-Inspired Select & Dropdown Styling */
+select:not(.sr-only) {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9' /%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  background-size: 1rem 1rem;
+  padding-right: 2.25rem;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+select:not(.sr-only):active {
+  transform: scale(0.985);
+}
+
+.dark select:not(.sr-only) {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9' /%3E%3C/svg%3E");
+}
+

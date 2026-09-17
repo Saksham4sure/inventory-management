@@ -7,35 +7,29 @@ export const Badge = ({
 }) => {
   const variants = {
     default:
-      'bg-zinc-500/10 text-zinc-700 border-zinc-500/15 dark:bg-zinc-500/15 dark:text-zinc-300 dark:border-zinc-500/20',
+      'bg-black/[0.04] text-zinc-700 border-black/[0.06] dark:bg-white/[0.06] dark:text-zinc-300 dark:border-white/[0.08]',
     accent:
-      'bg-purple-500/10 text-purple-700 border-purple-500/25 dark:bg-purple-500/15 dark:text-purple-300 dark:border-purple-500/30',
+      'bg-[#DBFE80]/20 text-zinc-900 border-[#DBFE80]/40 dark:bg-[#DBFE80]/15 dark:text-[#DBFE80] dark:border-[#DBFE80]/30',
     primary:
-      'bg-purple-500/10 text-purple-700 border-purple-500/25 dark:bg-purple-500/15 dark:text-purple-300 dark:border-purple-500/30',
+      'bg-[#DBFE80]/20 text-zinc-900 border-[#DBFE80]/40 dark:bg-[#DBFE80]/15 dark:text-[#DBFE80] dark:border-[#DBFE80]/30',
     success:
-      'bg-purple-500/10 text-purple-700 border-purple-500/25 dark:bg-purple-500/15 dark:text-purple-300 dark:border-purple-500/30',
+      'bg-[#DBFE80]/20 text-zinc-900 border-[#DBFE80]/40 dark:bg-[#DBFE80]/15 dark:text-[#DBFE80] dark:border-[#DBFE80]/30',
     warning:
       'bg-amber-500/10 text-amber-800 border-amber-500/25 dark:bg-amber-500/15 dark:text-amber-300 dark:border-amber-500/30',
     danger:
       'bg-rose-500/10 text-rose-700 border-rose-500/25 dark:bg-rose-500/15 dark:text-rose-300 dark:border-rose-500/30',
     neutral:
       'bg-black/[0.04] text-zinc-600 border-black/[0.06] dark:bg-white/[0.06] dark:text-zinc-300 dark:border-white/[0.08]',
-    blue:
-      'bg-purple-500/10 text-purple-700 border-purple-500/25 dark:bg-purple-500/15 dark:text-purple-300 dark:border-purple-500/30',
-    purple:
-      'bg-purple-500/10 text-purple-700 border-purple-500/25 dark:bg-purple-500/15 dark:text-purple-300 dark:border-purple-500/30',
   };
 
   const dotColors = {
     default: 'bg-zinc-400 dark:bg-zinc-500',
-    accent: 'bg-purple-500 shadow-[0_0_6px_rgba(168,85,247,0.5)]',
-    primary: 'bg-purple-500 shadow-[0_0_6px_rgba(168,85,247,0.5)]',
-    success: 'bg-purple-500 shadow-[0_0_6px_rgba(168,85,247,0.5)]',
+    accent: 'bg-[#8ca825] dark:bg-[#DBFE80] shadow-[0_0_6px_rgba(219,254,128,0.7)]',
+    primary: 'bg-[#8ca825] dark:bg-[#DBFE80] shadow-[0_0_6px_rgba(219,254,128,0.7)]',
+    success: 'bg-[#8ca825] dark:bg-[#DBFE80] shadow-[0_0_6px_rgba(219,254,128,0.7)]',
     warning: 'bg-amber-500 shadow-[0_0_6px_rgba(245,158,11,0.5)]',
     danger: 'bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.5)]',
     neutral: 'bg-zinc-400',
-    blue: 'bg-purple-500 shadow-[0_0_6px_rgba(168,85,247,0.5)]',
-    purple: 'bg-purple-500 shadow-[0_0_6px_rgba(168,85,247,0.5)]',
   };
 
   const sizes = {

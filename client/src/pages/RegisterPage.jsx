@@ -120,7 +120,7 @@ export const RegisterPage = () => {
             type="checkbox"
             checked={skipBusiness}
             onChange={(e) => setSkipBusiness(e.target.checked)}
-            className="rounded text-zinc-900 focus:ring-purple-500 h-4 w-4 accent-zinc-900 dark:accent-white"
+            className="rounded text-zinc-900 focus:ring-[#DBFE80] h-4 w-4 accent-[#DBFE80] dark:accent-[#DBFE80]"
           />
           <span className="font-medium text-zinc-700 dark:text-zinc-300">
             Skip business profile setup for now (configure later)

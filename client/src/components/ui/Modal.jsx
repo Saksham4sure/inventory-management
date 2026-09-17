@@ -29,11 +29,11 @@ export const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-lg' 
 
   const modalContent = (
     <div
-      className="fixed inset-0 z-[100] overflow-y-auto bg-zinc-950/45 dark:bg-zinc-950/70 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 transition-all duration-300"
+      className="fixed inset-0 z-[100] overflow-y-auto bg-zinc-950/45 dark:bg-zinc-950/70 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4 animate-ios-backdrop"
       onClick={onClose}
     >
       <div
-        className={`relative w-full ${maxWidth} rounded-t-[32px] sm:rounded-[26px] border-t sm:border border-black/[0.08] dark:border-white/[0.1] bg-white/95 dark:bg-[#181b22]/95 backdrop-blur-2xl p-5 sm:p-7 shadow-2xl ring-1 ring-white/60 dark:ring-white/[0.06] transition-all text-zinc-900 dark:text-zinc-100 animate-in slide-in-from-bottom-6 sm:slide-in-from-bottom-2 sm:zoom-in-95 duration-250 ease-out max-h-[90vh] overflow-y-auto`}
+        className={`relative w-full ${maxWidth} rounded-t-[32px] sm:rounded-[26px] border-t sm:border border-black/[0.08] dark:border-white/[0.1] bg-white/95 dark:bg-[#181b22]/95 backdrop-blur-2xl p-5 sm:p-7 shadow-2xl ring-1 ring-white/60 dark:ring-white/[0.06] text-zinc-900 dark:text-zinc-100 animate-ios-sheet sm:animate-ios-alert max-h-[90vh] overflow-y-auto`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Mobile handle indicator */}
@@ -47,7 +47,7 @@ export const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-lg' 
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-black/[0.04] dark:bg-white/[0.08] text-zinc-400 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors active:scale-90"
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-black/[0.04] dark:bg-white/[0.08] text-zinc-400 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200 transition-all duration-200 hover:rotate-90 active:scale-90"
           >
             <X className="h-4 w-4" />
           </button>

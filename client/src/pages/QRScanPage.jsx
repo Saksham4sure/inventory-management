@@ -7,6 +7,7 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Modal } from '../components/ui/Modal';
+import { Select } from '../components/ui/Select';
 import { formatCurrency } from '../utils/formatters';
 import {
   ScanLine,
@@ -536,7 +537,7 @@ export const QRScanPage = () => {
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-sm animate-in fade-in slide-in-from-top-4 duration-300 pointer-events-auto">
           <div className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-zinc-900/95 dark:bg-[#181b22]/95 text-white shadow-2xl backdrop-blur-xl border border-white/10 ring-1 ring-black/10">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#DBFE80]/20 text-[#DBFE80] border border-[#DBFE80]/30">
                 <CheckCircle2 className="h-5 w-5" />
               </div>
               <div className="min-w-0">
@@ -645,13 +646,13 @@ export const QRScanPage = () => {
             <Card compact className="relative overflow-hidden p-3.5 rounded-2xl">
               <div className="flex items-center justify-between mb-2 px-1">
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-800 dark:text-zinc-200">
-                  <ScanLine className="h-3.5 w-3.5 text-purple-500" />
+                  <ScanLine className="h-3.5 w-3.5 text-zinc-800 dark:text-[#DBFE80]" />
                   <span>Aim Camera at QR Label</span>
                 </div>
                 <div className="flex items-center gap-2 justify-center">
                   {isCameraActive ? (
                     <>
-                      <Badge variant="accent" size="sm" dot>
+                      <Badge variant="primary" size="sm" dot>
                         Live View
                       </Badge>
                       <button
@@ -707,18 +708,18 @@ export const QRScanPage = () => {
                 {isCameraActive && (
                   <div
                     className={`pointer-events-none absolute inset-6 sm:inset-8 rounded-2xl border border-white/20 transition-all duration-300 z-10 ${
-                      scanFlash ? 'ring-4 ring-purple-400/80 bg-purple-500/10' : ''
+                      scanFlash ? 'ring-4 ring-[#DBFE80]/80 bg-[#DBFE80]/10' : ''
                     }`}
                   >
                     {/* Corner Target Brackets */}
-                    <div className="absolute -top-1 -left-1 w-5 h-5 border-t-2 border-l-2 border-purple-500 rounded-tl-lg" />
-                    <div className="absolute -top-1 -right-1 w-5 h-5 border-t-2 border-r-2 border-purple-500 rounded-tr-lg" />
-                    <div className="absolute -bottom-1 -left-1 w-5 h-5 border-b-2 border-l-2 border-purple-500 rounded-bl-lg" />
-                    <div className="absolute -bottom-1 -right-1 w-5 h-5 border-b-2 border-r-2 border-purple-500 rounded-br-lg" />
+                    <div className="absolute -top-1 -left-1 w-5 h-5 border-t-2 border-l-2 border-[#DBFE80] rounded-tl-lg" />
+                    <div className="absolute -top-1 -right-1 w-5 h-5 border-t-2 border-r-2 border-[#DBFE80] rounded-tr-lg" />
+                    <div className="absolute -bottom-1 -left-1 w-5 h-5 border-b-2 border-l-2 border-[#DBFE80] rounded-bl-lg" />
+                    <div className="absolute -bottom-1 -right-1 w-5 h-5 border-b-2 border-r-2 border-[#DBFE80] rounded-br-lg" />
 
                     {/* Laser Scanning Beam */}
-                    <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-purple-400 to-transparent shadow-[0_0_12px_#a855f7] animate-laser">
-                      <div className="h-10 w-full bg-gradient-to-b from-purple-500/20 to-transparent -translate-y-full pointer-events-none" />
+                    <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#DBFE80] to-transparent shadow-[0_0_12px_#DBFE80] animate-laser">
+                      <div className="h-10 w-full bg-gradient-to-b from-[#DBFE80]/20 to-transparent -translate-y-full pointer-events-none" />
                     </div>
                   </div>
                 )}
@@ -727,12 +728,12 @@ export const QRScanPage = () => {
                 {isCameraActive && (
                   <>
                     {scannedPill ? (
-                      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 px-3 py-1.5 rounded-full bg-zinc-900/95 backdrop-blur-md text-[11px] font-semibold text-purple-300 border border-purple-500/40 flex items-center gap-2 shadow-lg whitespace-nowrap">
+                      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 px-3 py-1.5 rounded-full bg-zinc-900/95 backdrop-blur-md text-[11px] font-semibold text-[#DBFE80] border border-[#DBFE80]/40 flex items-center gap-2 shadow-lg whitespace-nowrap">
                         <span>✓ Scanned: {scannedPill.name}</span>
                         <button
                           type="button"
                           onClick={handleResetScanLock}
-                          className="px-2 py-0.5 rounded-full bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 text-[10px] font-bold transition-colors inline-flex items-center gap-1 active:scale-95"
+                          className="px-2 py-0.5 rounded-full bg-[#DBFE80] hover:bg-[#ccf569] text-zinc-950 text-[10px] font-bold transition-colors inline-flex items-center gap-1 active:scale-95"
                         >
                           <RefreshCw className="h-2.5 w-2.5" /> Scan Again
                         </button>
@@ -791,7 +792,7 @@ export const QRScanPage = () => {
                         ? 'e.g. General Item, Custom Sale, Service'
                         : 'e.g. Supplies, Inventory Restock, Expense'
                     }
-                    className="w-full rounded-xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3.5 py-2.5 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/15 placeholder:text-zinc-400"
+                    className="w-full rounded-xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3.5 py-2.5 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 focus:border-zinc-800 dark:focus:border-[#DBFE80] focus:outline-none focus:ring-2 focus:ring-[#DBFE80]/25 placeholder:text-zinc-400"
                   />
                 </div>
 
@@ -1056,19 +1057,18 @@ export const QRScanPage = () => {
             <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800/80 space-y-3">
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[10px] font-medium uppercase text-zinc-400 mb-1">
-                    Payment Method
-                  </label>
-                  <select
+                  <Select
+                    label="Payment Method"
                     value={paymentMethod}
                     onChange={(e) => setPaymentMethod(e.target.value)}
-                    className="w-full rounded-xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-900 dark:text-zinc-100"
-                  >
-                    <option value="CASH">Cash</option>
-                    <option value="CARD">Card / POS</option>
-                    <option value="BANK_TRANSFER">Bank Transfer</option>
-                    <option value="CREDIT">Credit</option>
-                  </select>
+                    options={[
+                      { value: 'CASH', label: 'Cash' },
+                      { value: 'CARD', label: 'Card / POS' },
+                      { value: 'BANK_TRANSFER', label: 'Bank Transfer' },
+                      { value: 'CREDIT', label: 'Credit' },
+                    ]}
+                    compact
+                  />
                 </div>
 
                 <div>
@@ -1129,7 +1129,7 @@ export const QRScanPage = () => {
         {completedTxn && (
           <div className="space-y-4">
             <div className="text-center py-2">
-              <div className="h-12 w-12 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center mx-auto mb-2 shadow-xs">
+              <div className="h-12 w-12 rounded-full bg-[#DBFE80]/15 text-zinc-900 dark:text-[#DBFE80] flex items-center justify-center mx-auto mb-2 shadow-xs">
                 <CheckCircle2 className="h-6 w-6" />
               </div>
               <h4 className="text-base font-bold text-zinc-900 dark:text-zinc-100">

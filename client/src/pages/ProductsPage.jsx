@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useBusiness } from '../hooks/useBusiness';
+import { useConfirm } from '../hooks/useConfirm';
 import { productService } from '../services/productService';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { Select } from '../components/ui/Select';
 import { Badge } from '../components/ui/Badge';
 import { Modal } from '../components/ui/Modal';
 import { QRViewerModal } from '../components/common/QRViewerModal';
@@ -26,6 +28,7 @@ import {
 export const ProductsPage = () => {
   const { business } = useBusiness();
   const currency = business?.currency || 'USD';
+  const { confirm, alert } = useConfirm();
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -97,13 +100,24 @@ export const ProductsPage = () => {
   };
 
   const handleDeleteProduct = async (id, name) => {
-    if (!window.confirm(`Delete "${name}" from inventory?`)) return;
+    const isConfirmed = await confirm({
+      title: 'Delete Product',
+      message: `Delete "${name}" from inventory? This action cannot be undone.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      variant: 'danger',
+    });
+    if (!isConfirmed) return;
+
     try {
       await productService.deleteProduct(id);
       setActiveDetailProduct(null);
       fetchProducts();
     } catch (err) {
-      alert(err.message || 'Failed to delete product');
+      await alert({
+        title: 'Action Failed',
+        message: err.message || 'Failed to delete product',
+      });
     }
   };
 
@@ -166,24 +180,21 @@ export const ProductsPage = () => {
               placeholder="Search by name, SKU, or barcode..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-xl border border-black/[0.08] bg-black/[0.025] pl-10 pr-3 py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:bg-white/[0.05] dark:border-white/[0.08] focus:bg-white dark:focus:bg-zinc-900 focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-500/10 transition-all"
+              className="w-full rounded-xl border border-black/[0.08] bg-black/[0.025] pl-10 pr-3 py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:bg-white/[0.05] dark:border-white/[0.08] focus:bg-white dark:focus:bg-zinc-900 focus:border-zinc-800 dark:focus:border-[#DBFE80] focus:outline-none focus:ring-2 focus:ring-[#DBFE80]/20 transition-all"
             />
           </div>
 
           <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
             <div className="flex items-center gap-1.5 flex-1 sm:flex-initial">
               <Filter className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full sm:w-auto rounded-xl border border-black/[0.08] bg-black/[0.025] dark:bg-zinc-900 dark:border-white/[0.08] px-3 py-2 text-xs text-zinc-700 dark:text-zinc-300 focus:border-purple-500 focus:outline-none transition-all"
-              >
-                {categories.map((c) => (
-                  <option key={c} value={c} className="dark:bg-zinc-900">
-                    {c}
-                  </option>
-                ))}
-              </select>
+              <div className="w-full sm:w-36">
+                <Select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  options={categories}
+                  compact
+                />
+              </div>
             </div>
 
             <label className="flex items-center gap-2 text-xs text-zinc-600 dark:text-zinc-300 cursor-pointer select-none bg-black/[0.03] dark:bg-white/[0.06] px-3 py-2 rounded-xl border border-black/[0.06] dark:border-white/[0.08] shrink-0 transition-colors">
@@ -191,7 +202,7 @@ export const ProductsPage = () => {
                 type="checkbox"
                 checked={showLowStockOnly}
                 onChange={(e) => setShowLowStockOnly(e.target.checked)}
-                className="rounded-md text-zinc-900 focus:ring-purple-500 h-3.5 w-3.5 accent-zinc-900 dark:accent-white"
+                className="rounded-md text-zinc-900 focus:ring-[#DBFE80] h-3.5 w-3.5 accent-[#DBFE80] dark:accent-[#DBFE80]"
               />
               <span className="text-[11px] font-semibold">Low Stock</span>
             </label>
@@ -476,7 +487,7 @@ export const ProductsPage = () => {
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="block text-[11px] font-medium tracking-wide uppercase text-zinc-500 dark:text-zinc-400">
-                  SKU <span className="text-purple-500">*</span>
+                  SKU <span className="text-zinc-400 dark:text-zinc-500">*</span>
                 </label>
                 <button
                   type="button"
@@ -492,7 +503,7 @@ export const ProductsPage = () => {
                 placeholder="e.g. SCAN-101"
                 value={formData.sku}
                 onChange={(e) => setFormData({ ...formData, sku: e.target.value.toUpperCase() })}
-                className="w-full uppercase font-mono rounded-lg border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/15"
+                className="w-full uppercase font-mono rounded-lg border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 focus:border-zinc-800 dark:focus:border-[#DBFE80] focus:outline-none focus:ring-2 focus:ring-[#DBFE80]/20"
               />
             </div>
 
@@ -505,7 +516,7 @@ export const ProductsPage = () => {
                 placeholder="e.g. Electronics"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full rounded-lg border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500/15"
+                className="w-full rounded-lg border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 focus:border-zinc-800 dark:focus:border-[#DBFE80] focus:outline-none focus:ring-2 focus:ring-[#DBFE80]/20"
               />
             </div>
           </div>

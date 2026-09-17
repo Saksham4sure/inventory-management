@@ -2,6 +2,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import { BusinessProvider } from './context/BusinessContext';
+import { ConfirmProvider } from './context/ConfirmContext';
 import { AppRoutes } from './routes/AppRoutes';
 
 function App() {
@@ -10,7 +11,9 @@ function App() {
       <BrowserRouter>
         <AuthProvider>
           <BusinessProvider>
-            <AppRoutes />
+            <ConfirmProvider>
+              <AppRoutes />
+            </ConfirmProvider>
           </BusinessProvider>
         </AuthProvider>
       </BrowserRouter>

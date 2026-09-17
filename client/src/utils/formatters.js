@@ -21,10 +21,10 @@ export const formatDate = (dateString) => {
 
 export const formatStockBadge = (currentStock, minStockLevel) => {
   if (currentStock <= 0) {
-    return { label: 'Out of Stock', color: 'bg-red-100 text-red-700 border-red-200' };
+    return { label: 'Out of Stock', color: 'bg-rose-500/10 text-rose-700 border-rose-500/25 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900/40' };
   }
   if (currentStock <= minStockLevel) {
-    return { label: 'Low Stock', color: 'bg-amber-100 text-amber-700 border-amber-200' };
+    return { label: 'Low Stock', color: 'bg-amber-500/10 text-amber-700 border-amber-500/25 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/40' };
   }
-  return { label: 'In Stock', color: 'bg-zinc-100 text-zinc-700 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700' };
+  return { label: 'In Stock', color: 'bg-[#DBFE80]/15 text-zinc-900 border-[#DBFE80]/35 dark:bg-[#DBFE80]/12 dark:text-[#DBFE80] dark:border-[#DBFE80]/25 font-medium' };
 };

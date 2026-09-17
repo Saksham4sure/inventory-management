@@ -10,13 +10,13 @@ export const Button = ({
   ...props
 }) => {
   const baseStyles =
-    'inline-flex items-center justify-center font-medium tracking-tight transition-all duration-200 ease-out active:scale-[0.96] focus:outline-none focus-visible:ring-2 focus-visible:ring-purple-500/40 disabled:opacity-40 disabled:pointer-events-none disabled:active:scale-100 select-none';
+    'inline-flex items-center justify-center font-medium tracking-tight transition-all duration-200 ease-out active:scale-[0.96] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#DBFE80]/70 focus-visible:ring-offset-1 dark:focus-visible:ring-offset-zinc-900 disabled:opacity-40 disabled:pointer-events-none disabled:active:scale-100 select-none';
 
   const variants = {
     primary:
-      'bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-white dark:hover:bg-zinc-100 dark:text-zinc-950 font-medium shadow-2xs border border-black/10 dark:border-white/10',
+      'bg-[#DBFE80] hover:bg-[#ccf569] active:bg-[#bce657] text-zinc-950 font-semibold shadow-xs border border-[#c2ee55]/60',
     accent:
-      'bg-purple-600 hover:bg-purple-700 text-white font-medium shadow-[0_2px_8px_rgba(168,85,247,0.25)] border border-purple-500/20',
+      'bg-[#DBFE80] hover:bg-[#ccf569] active:bg-[#bce657] text-zinc-950 font-semibold shadow-xs border border-[#c2ee55]/60',
     secondary:
       'bg-black/[0.04] dark:bg-white/[0.08] text-zinc-800 dark:text-zinc-100 border border-black/[0.07] dark:border-white/[0.09] backdrop-blur-xl shadow-2xs hover:bg-black/[0.07] dark:hover:bg-white/[0.14]',
     ghost:

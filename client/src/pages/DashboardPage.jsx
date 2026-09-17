@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useBusiness } from '../hooks/useBusiness';
+import { useConfirm } from '../hooks/useConfirm';
 import { transactionService } from '../services/transactionService';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -27,6 +28,7 @@ import {
 export const DashboardPage = () => {
   const { user } = useAuth();
   const { business } = useBusiness();
+  const { confirm, alert } = useConfirm();
   const hasBusiness = Boolean(user?.businessId || business?._id);
 
   const [data, setData] = useState(null);
@@ -56,7 +58,15 @@ export const DashboardPage = () => {
   }, [hasBusiness]);
 
   const handleDeleteTransaction = async (id, refNum) => {
-    if (!window.confirm(`Delete audit record #${refNum}?`)) return;
+    const isConfirmed = await confirm({
+      title: 'Delete Audit Record',
+      message: `Are you sure you want to delete audit record #${refNum}? This action cannot be undone.`,
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      variant: 'danger',
+    });
+    if (!isConfirmed) return;
+
     try {
       await transactionService.deleteTransaction(id);
       setData((prev) => ({
@@ -64,7 +74,10 @@ export const DashboardPage = () => {
         recentTransactions: prev?.recentTransactions?.filter((t) => t._id !== id) || [],
       }));
     } catch (err) {
-      alert(err.message || 'Failed to delete audit record');
+      await alert({
+        title: 'Action Failed',
+        message: err.message || 'Failed to delete audit record',
+      });
     }
   };
 
@@ -111,7 +124,7 @@ export const DashboardPage = () => {
                 {greetingData.dateFormatted}
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.06] dark:border-white/[0.08] px-2.5 py-0.5 text-[11px] font-medium text-zinc-700 dark:text-zinc-300">
-                <span className="h-1.5 w-1.5 rounded-full bg-purple-500 shadow-[0_0_6px_rgba(168,85,247,0.7)]" />
+                <span className="h-1.5 w-1.5 rounded-full bg-[#DBFE80] shadow-[0_0_6px_rgba(219,254,128,0.8)]" />
                 {business?.name || 'StockPulse Workspace'}
               </span>
             </div>
@@ -255,7 +268,7 @@ export const DashboardPage = () => {
             <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
               Today's Sales
             </span>
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 transition-transform duration-200 group-hover:scale-110">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#DBFE80]/15 text-zinc-900 dark:bg-[#DBFE80]/10 dark:text-[#DBFE80] transition-transform duration-200 group-hover:scale-110">
               <TrendingUp className="h-4 w-4" />
             </div>
           </div>
@@ -302,7 +315,7 @@ export const DashboardPage = () => {
         <Card className="lg:col-span-4 flex flex-col justify-between">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="h-2 w-2 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.7)]" />
+              <span className="h-2 w-2 rounded-full bg-[#DBFE80] shadow-[0_0_8px_rgba(219,254,128,0.8)]" />
               <h3 className="font-semibold text-sm sm:text-base text-zinc-900 dark:text-zinc-100 tracking-tight">
                 Quick QR Operations
               </h3>
@@ -375,7 +388,7 @@ export const DashboardPage = () => {
                       </td>
                       <td className="px-5 py-3.5 text-right">
                         <Link to={ROUTES.SCAN}>
-                          <Badge variant="accent" className="cursor-pointer hover:opacity-80">
+                          <Badge variant="primary" className="cursor-pointer hover:opacity-80">
                             + Restock
                           </Badge>
                         </Link>
@@ -442,7 +455,7 @@ export const DashboardPage = () => {
                         {txn.referenceNumber}
                       </td>
                       <td className="px-5 py-3.5">
-                        <Badge variant={isSale ? 'accent' : 'default'} dot>
+                        <Badge variant={isSale ? 'primary' : 'default'} dot>
                           {isSale ? 'Sale' : 'Purchase'}
                         </Badge>
                       </td>
