@@ -4,8 +4,10 @@ import { useAuth } from '../hooks/useAuth';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { PhoneInput } from '../components/ui/PhoneInput';
 import { Select } from '../components/ui/Select';
 import { Badge } from '../components/ui/Badge';
+import { validateNepaliPhone } from '../utils/phoneValidator';
 import {
   Building2,
   ShieldCheck,
@@ -82,6 +84,14 @@ export const BusinessProfilePage = () => {
     if (!formData.name.trim()) {
       setError('Business name is required');
       return;
+    }
+
+    if (formData.phone && formData.phone.trim()) {
+      const phoneCheck = validateNepaliPhone(formData.phone, false);
+      if (!phoneCheck.isValid) {
+        setError(phoneCheck.error || 'Please enter a valid Nepali contact number.');
+        return;
+      }
     }
 
     try {
@@ -233,11 +243,9 @@ export const BusinessProfilePage = () => {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <Input
+                <PhoneInput
                   label="Contact Phone"
                   id="bizPhone"
-                  type="tel"
-                  placeholder="+1 234 567 890"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 />

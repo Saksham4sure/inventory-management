@@ -7,6 +7,7 @@ import { ApiError } from '../utils/apiError.js';
 import { ApiResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { TRANSACTION_TYPES } from '../constants/transactionTypes.js';
+import { validateNepaliPhone, extractNepaliLocalDigits } from '../utils/phoneValidator.js';
 
 export const createTransaction = asyncHandler(async (req, res) => {
   const {
@@ -138,9 +139,19 @@ export const createTransaction = asyncHandler(async (req, res) => {
   if (partyId) {
     resolvedParty = await Party.findOne({ _id: partyId, businessId: req.user.businessId });
   } else if (partyPhone && partyPhone.trim()) {
-    const cleanPhone = partyPhone.trim();
-    resolvedParty = await Party.findOne({ businessId: req.user.businessId, phone: cleanPhone });
+    const rawDigits = extractNepaliLocalDigits(partyPhone);
+    const phoneValidation = validateNepaliPhone(partyPhone);
+    const cleanPhone = phoneValidation.isValid ? phoneValidation.normalized : partyPhone.trim();
+
+    resolvedParty = await Party.findOne({
+      businessId: req.user.businessId,
+      phone: { $in: [cleanPhone, partyPhone.trim(), rawDigits, `+977${rawDigits}`, `+977 ${rawDigits}`] },
+    });
+
     if (!resolvedParty && partyName && partyName.trim()) {
+      if (!phoneValidation.isValid) {
+        throw new ApiError(400, phoneValidation.error);
+      }
       resolvedParty = await Party.create({
         businessId: req.user.businessId,
         name: partyName.trim(),

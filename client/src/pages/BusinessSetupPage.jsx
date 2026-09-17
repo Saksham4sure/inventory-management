@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBusiness } from '../hooks/useBusiness';
 import { Input } from '../components/ui/Input';
+import { PhoneInput } from '../components/ui/PhoneInput';
 import { Select } from '../components/ui/Select';
 import { Button } from '../components/ui/Button';
+import { validateNepaliPhone } from '../utils/phoneValidator';
 import { ThemeToggle } from '../components/ui/ThemeToggle';
 import { ROUTES } from '../constants/routes';
 import { Building2, ShieldCheck, AlertCircle, ArrowRight } from 'lucide-react';
@@ -50,6 +52,14 @@ export const BusinessSetupPage = () => {
     if (!formData.name.trim()) {
       setError('Business name is required');
       return;
+    }
+
+    if (formData.phone && formData.phone.trim()) {
+      const phoneCheck = validateNepaliPhone(formData.phone, false);
+      if (!phoneCheck.isValid) {
+        setError(phoneCheck.error || 'Please enter a valid Nepali contact number.');
+        return;
+      }
     }
 
     setError('');
@@ -136,11 +146,9 @@ export const BusinessSetupPage = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <Input
+              <PhoneInput
                 label="Contact Phone"
                 id="phone"
-                type="tel"
-                placeholder="+1 234 567 890"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               />

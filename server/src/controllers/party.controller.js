@@ -4,6 +4,7 @@ import { PartyCredit } from '../models/partyCredit.model.js';
 import { ApiError } from '../utils/apiError.js';
 import { ApiResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { validateNepaliPhone, extractNepaliLocalDigits } from '../utils/phoneValidator.js';
 
 // Get parties list with filtering, searching, and pagination
 export const getParties = asyncHandler(async (req, res) => {
@@ -18,9 +19,11 @@ export const getParties = asyncHandler(async (req, res) => {
 
   if (search && search.trim()) {
     const s = search.trim();
+    const rawDigits = extractNepaliLocalDigits(s);
     filter.$or = [
       { name: new RegExp(s, 'i') },
       { phone: new RegExp(s, 'i') },
+      ...(rawDigits ? [{ phone: new RegExp(rawDigits, 'i') }] : []),
       { email: new RegExp(s, 'i') },
     ];
   }
@@ -104,18 +107,21 @@ export const createParty = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Party name is required');
   }
 
-  if (!phone || !phone.trim()) {
-    throw new ApiError(400, 'Party phone number is required');
+  const phoneValidation = validateNepaliPhone(phone);
+  if (!phoneValidation.isValid) {
+    throw new ApiError(400, phoneValidation.error);
   }
+  const cleanPhone = phoneValidation.normalized;
+  const rawDigits = phoneValidation.localDigits;
 
   // Check if a party with this phone already exists in this business
   const existing = await Party.findOne({
     businessId,
-    phone: phone.trim(),
+    phone: { $in: [cleanPhone, rawDigits, `+977${rawDigits}`, `+977 ${rawDigits}`] },
   });
 
   if (existing) {
-    throw new ApiError(409, `A party with phone number ${phone.trim()} already exists: "${existing.name}"`);
+    throw new ApiError(409, `A party with phone number ${cleanPhone} already exists: "${existing.name}"`);
   }
 
   const numericOpeningBalance = Number(openingBalance) || 0;
@@ -123,7 +129,7 @@ export const createParty = asyncHandler(async (req, res) => {
   const party = await Party.create({
     businessId,
     name: name.trim(),
-    phone: phone.trim(),
+    phone: cleanPhone,
     email: email.trim(),
     type: ['CUSTOMER', 'SUPPLIER'].includes(type) ? type : 'CUSTOMER',
     address: address.trim(),
@@ -179,16 +185,25 @@ export const updateParty = asyncHandler(async (req, res) => {
     party.type = type;
   }
 
-  if (phone !== undefined && phone.trim() !== party.phone) {
-    const existing = await Party.findOne({
-      businessId,
-      phone: phone.trim(),
-      _id: { $ne: id },
-    });
-    if (existing) {
-      throw new ApiError(409, `Phone number already assigned to another party: "${existing.name}"`);
+  if (phone !== undefined) {
+    const phoneValidation = validateNepaliPhone(phone);
+    if (!phoneValidation.isValid) {
+      throw new ApiError(400, phoneValidation.error);
     }
-    party.phone = phone.trim();
+    const cleanPhone = phoneValidation.normalized;
+    const rawDigits = phoneValidation.localDigits;
+
+    if (cleanPhone !== party.phone) {
+      const existing = await Party.findOne({
+        businessId,
+        phone: { $in: [cleanPhone, rawDigits, `+977${rawDigits}`, `+977 ${rawDigits}`] },
+        _id: { $ne: id },
+      });
+      if (existing) {
+        throw new ApiError(409, `Phone number already assigned to another party: "${existing.name}"`);
+      }
+      party.phone = cleanPhone;
+    }
   }
 
   await party.save();

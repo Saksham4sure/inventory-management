@@ -6,9 +6,11 @@ import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
+import { PhoneInput } from '../components/ui/PhoneInput';
 import { Select } from '../components/ui/Select';
 import { Modal } from '../components/ui/Modal';
 import { formatCurrency, formatDate } from '../utils/formatters';
+import { validateNepaliPhone } from '../utils/phoneValidator';
 import {
   Users,
   UserPlus,
@@ -173,6 +175,15 @@ export const PartiesPage = () => {
       await alert({
         title: 'Validation Error',
         message: 'Name and Phone number are required.',
+      });
+      return;
+    }
+
+    const phoneCheck = validateNepaliPhone(partyFormData.phone);
+    if (!phoneCheck.isValid) {
+      await alert({
+        title: 'Invalid Phone Number',
+        message: phoneCheck.error || 'Please enter a valid Nepali contact number (10-digit mobile starting with 98/97/96 or 8-digit landline).',
       });
       return;
     }
@@ -837,10 +848,9 @@ export const PartiesPage = () => {
             onChange={(e) => setPartyFormData({ ...partyFormData, name: e.target.value })}
           />
 
-          <div className="grid grid-cols-2 gap-3">
-            <Input
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <PhoneInput
               label="Phone Number"
-              placeholder="e.g. +1 555-0199"
               required
               value={partyFormData.phone}
               onChange={(e) => setPartyFormData({ ...partyFormData, phone: e.target.value })}

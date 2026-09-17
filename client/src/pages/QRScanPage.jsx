@@ -10,7 +10,9 @@ import { Badge } from '../components/ui/Badge';
 import { Modal } from '../components/ui/Modal';
 import { Select } from '../components/ui/Select';
 import { Input } from '../components/ui/Input';
+import { PhoneInput } from '../components/ui/PhoneInput';
 import { formatCurrency } from '../utils/formatters';
+import { validateNepaliPhone } from '../utils/phoneValidator';
 import {
   ScanLine,
   Camera,
@@ -521,10 +523,19 @@ export const QRScanPage = () => {
       return;
     }
 
+    const phoneCheck = validateNepaliPhone(newPartyPhone);
+    if (!phoneCheck.isValid) {
+      setError(
+        phoneCheck.error ||
+          'Please enter a valid Nepali contact number (10-digit mobile starting with 98/97/96 or 8-digit landline).'
+      );
+      return;
+    }
+
     setCreditParty({
       _id: null,
       name: newPartyName.trim(),
-      phone: newPartyPhone.trim(),
+      phone: phoneCheck.normalized,
       type: txnType === 'SALE' ? 'CUSTOMER' : 'SUPPLIER',
       currentBalance: 0,
       isNew: true,
@@ -1334,9 +1345,8 @@ export const QRScanPage = () => {
                 onChange={(e) => setNewPartyName(e.target.value)}
               />
 
-              <Input
-                label="Phone Number (Unique Identity) *"
-                placeholder="e.g. +1 555-0199"
+              <PhoneInput
+                label="Phone Number (Unique Identity)"
                 required
                 value={newPartyPhone}
                 onChange={(e) => setNewPartyPhone(e.target.value)}
