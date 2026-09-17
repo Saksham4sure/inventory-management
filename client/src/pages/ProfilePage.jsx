@@ -6,7 +6,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Badge } from '../components/ui/Badge';
 import { formatDate } from '../utils/formatters';
-import { User, Shield, KeyRound, CheckCircle2, AlertCircle } from 'lucide-react';
+import { User, KeyRound, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export const ProfilePage = () => {
   const { user, updateUser } = useAuth();
@@ -160,8 +160,8 @@ export const ProfilePage = () => {
             </div>
 
             {profileSuccess && (
-              <div className="flex items-center gap-2 rounded-xl bg-[#DBFE80]/15 border border-[#DBFE80]/30 p-3 text-xs text-zinc-900 dark:text-[#DBFE80]">
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-[#8ca825] dark:text-[#DBFE80]" />
+              <div className="flex items-center gap-2 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700/60 p-3 text-xs text-zinc-800 dark:text-zinc-200">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-zinc-600 dark:text-zinc-400" />
                 <span>{profileSuccess}</span>
               </div>
             )}
@@ -223,8 +223,8 @@ export const ProfilePage = () => {
             </div>
 
             {passwordSuccess && (
-              <div className="flex items-center gap-2 rounded-xl bg-[#DBFE80]/15 border border-[#DBFE80]/30 p-3 text-xs text-zinc-900 dark:text-[#DBFE80]">
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-[#8ca825] dark:text-[#DBFE80]" />
+              <div className="flex items-center gap-2 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700/60 p-3 text-xs text-zinc-800 dark:text-zinc-200">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-zinc-600 dark:text-zinc-400" />
                 <span>{passwordSuccess}</span>
               </div>
             )}

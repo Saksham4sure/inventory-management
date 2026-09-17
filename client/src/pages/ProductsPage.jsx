@@ -6,7 +6,6 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
-import { Badge } from '../components/ui/Badge';
 import { Modal } from '../components/ui/Modal';
 import { QRViewerModal } from '../components/common/QRViewerModal';
 import { formatCurrency, formatStockBadge } from '../utils/formatters';
@@ -18,11 +17,8 @@ import {
   Filter,
   RefreshCw,
   AlertCircle,
-  Tag,
   ChevronRight,
-  TrendingUp,
   Package,
-  Layers,
 } from 'lucide-react';
 
 export const ProductsPage = () => {
@@ -180,7 +176,7 @@ export const ProductsPage = () => {
               placeholder="Search by name, SKU, or barcode..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-xl border border-black/[0.08] bg-black/[0.025] pl-10 pr-3 py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:bg-white/[0.05] dark:border-white/[0.08] focus:bg-white dark:focus:bg-zinc-900 focus:border-zinc-800 dark:focus:border-[#DBFE80] focus:outline-none focus:ring-2 focus:ring-[#DBFE80]/20 transition-all"
+              className="w-full rounded-xl border border-black/[0.08] bg-black/[0.025] pl-10 pr-3 py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:bg-white/[0.05] dark:border-white/[0.08] focus:bg-white dark:focus:bg-zinc-900 focus:border-zinc-700 dark:focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/25 dark:focus:ring-zinc-600/30 transition-all"
             />
           </div>
 
@@ -202,7 +198,7 @@ export const ProductsPage = () => {
                 type="checkbox"
                 checked={showLowStockOnly}
                 onChange={(e) => setShowLowStockOnly(e.target.checked)}
-                className="rounded-md text-zinc-900 focus:ring-[#DBFE80] h-3.5 w-3.5 accent-[#DBFE80] dark:accent-[#DBFE80]"
+                className="rounded-md text-zinc-900 focus:ring-zinc-400 h-3.5 w-3.5 accent-zinc-800 dark:accent-zinc-200"
               />
               <span className="text-[11px] font-semibold">Low Stock</span>
             </label>
@@ -346,7 +342,7 @@ export const ProductsPage = () => {
                             e.stopPropagation();
                             handleDeleteProduct(prod._id, prod.name);
                           }}
-                          className="rounded-lg p-1 text-zinc-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
+                          className="rounded-lg p-1 text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
                           title="Delete"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -503,7 +499,7 @@ export const ProductsPage = () => {
                 placeholder="e.g. SCAN-101"
                 value={formData.sku}
                 onChange={(e) => setFormData({ ...formData, sku: e.target.value.toUpperCase() })}
-                className="w-full uppercase font-mono rounded-lg border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 focus:border-zinc-800 dark:focus:border-[#DBFE80] focus:outline-none focus:ring-2 focus:ring-[#DBFE80]/20"
+                className="w-full uppercase font-mono rounded-lg border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 focus:border-zinc-700 dark:focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/25 dark:focus:ring-zinc-600/30"
               />
             </div>
 
@@ -516,7 +512,7 @@ export const ProductsPage = () => {
                 placeholder="e.g. Electronics"
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full rounded-lg border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 focus:border-zinc-800 dark:focus:border-[#DBFE80] focus:outline-none focus:ring-2 focus:ring-[#DBFE80]/20"
+                className="w-full rounded-lg border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 focus:border-zinc-700 dark:focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/25 dark:focus:ring-zinc-600/30"
               />
             </div>
           </div>

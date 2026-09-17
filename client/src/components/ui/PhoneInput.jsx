@@ -1,4 +1,4 @@
-import React, { useId, useMemo, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { CheckCircle2, Phone } from 'lucide-react';
 import { extractNepaliLocalDigits, validateNepaliPhone } from '../../utils/phoneValidator';
 
@@ -89,7 +89,7 @@ export const PhoneInput = ({
           displayError
             ? 'border-rose-400/80 bg-rose-500/5 dark:border-rose-800 dark:bg-rose-950/20 ring-2 ring-rose-500/15'
             : isFocused
-            ? 'border-zinc-800 bg-white ring-2 ring-[#DBFE80]/50 dark:border-[#DBFE80] dark:bg-zinc-900/90 dark:ring-[#DBFE80]/25'
+            ? 'border-zinc-700 bg-white ring-2 ring-zinc-400/25 dark:border-zinc-400 dark:bg-zinc-900/90 dark:ring-zinc-600/30'
             : 'border-black/[0.08] bg-black/[0.025] hover:border-black/[0.14] hover:bg-black/[0.035] dark:border-white/[0.09] dark:bg-white/[0.05] dark:hover:border-white/[0.15]'
         } ${disabled ? 'opacity-50 cursor-not-allowed bg-zinc-100/50 dark:bg-zinc-800/40' : ''}`}
       >
@@ -124,7 +124,7 @@ export const PhoneInput = ({
         {/* Verification indicator icon */}
         <div className="pr-3 flex items-center shrink-0">
           {isValidComplete ? (
-            <CheckCircle2 className="h-4 w-4 text-emerald-500 transition-all animate-in fade-in zoom-in-75 duration-200" />
+            <CheckCircle2 className="h-4 w-4 text-zinc-600 dark:text-zinc-400 transition-all animate-in fade-in zoom-in-75 duration-200" />
           ) : (
             <Phone className="h-3.5 w-3.5 text-zinc-400 dark:text-zinc-500" />
           )}

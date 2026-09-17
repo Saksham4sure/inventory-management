@@ -35,7 +35,7 @@ const partyCreditSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ['CASH', 'CARD', 'ONLINE', 'BANK_TRANSFER', 'CHEQUE', 'CREDIT', 'OTHER'],
+      enum: ['CASH', 'CARD', 'ONLINE', 'ONLINE_PAYMENT', 'BANK_TRANSFER', 'CHEQUE', 'CREDIT', 'OTHER'],
       default: 'CASH',
     },
     notes: {

@@ -157,7 +157,7 @@ export const Select = ({
               : 'border border-black/[0.08] bg-black/[0.025] hover:bg-black/[0.04] hover:border-black/[0.14] dark:border-white/[0.09] dark:bg-white/[0.05] dark:hover:bg-white/[0.07] dark:hover:border-white/[0.15]'
           } ${
             isOpen
-              ? 'ring-2 ring-[#DBFE80]/50 border-zinc-800 dark:border-[#DBFE80] bg-white dark:bg-[#181b22]'
+              ? 'ring-2 ring-zinc-400/25 border-zinc-700 dark:border-zinc-400 dark:ring-zinc-600/30 bg-white dark:bg-[#181b22]'
               : ''
           } ${
             disabled ? 'opacity-50 cursor-not-allowed bg-zinc-100/50 dark:bg-zinc-800/40' : 'cursor-pointer active:scale-[0.985]'
@@ -254,7 +254,7 @@ export const Select = ({
                       </div>
 
                       {isSelected && (
-                        <Check className="w-4 h-4 text-[#007AFF] dark:text-[#0A84FF] shrink-0 ml-2 animate-ios-check" />
+                        <Check className="w-4 h-4 text-zinc-900 dark:text-zinc-100 shrink-0 ml-2 animate-ios-check" />
                       )}
                     </div>
                   );

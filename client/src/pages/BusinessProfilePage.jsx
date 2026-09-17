@@ -6,6 +6,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { PhoneInput } from '../components/ui/PhoneInput';
 import { Select } from '../components/ui/Select';
+import { LocationSelect } from '../components/ui/LocationSelect';
 import { Badge } from '../components/ui/Badge';
 import { validateNepaliPhone } from '../utils/phoneValidator';
 import {
@@ -14,12 +15,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Coins,
-  MapPin,
-  FileText,
-  Phone,
-  Mail,
   QrCode,
-  Sparkles,
 } from 'lucide-react';
 
 export const BusinessProfilePage = () => {
@@ -144,8 +140,8 @@ export const BusinessProfilePage = () => {
       )}
 
       {success && (
-        <div className="flex items-center gap-2.5 rounded-2xl bg-[#DBFE80]/15 border border-[#DBFE80]/30 p-4 text-xs text-zinc-900 dark:text-[#DBFE80] backdrop-blur-md">
-          <CheckCircle2 className="h-4 w-4 shrink-0 text-[#8ca825] dark:text-[#DBFE80]" />
+        <div className="flex items-center gap-2.5 rounded-2xl bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700/60 p-4 text-xs text-zinc-800 dark:text-zinc-200 backdrop-blur-md">
+          <CheckCircle2 className="h-4 w-4 shrink-0 text-zinc-600 dark:text-zinc-400" />
           <span>{success}</span>
         </div>
       )}
@@ -260,7 +256,7 @@ export const BusinessProfilePage = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
                 <Input
                   label="Tax / VAT Identification"
                   id="bizTax"
@@ -269,14 +265,16 @@ export const BusinessProfilePage = () => {
                   value={formData.taxNumber}
                   onChange={(e) => setFormData({ ...formData, taxNumber: e.target.value })}
                 />
+              </div>
 
-                <Input
+              <div className="pt-1">
+                <LocationSelect
                   label="Store / Warehouse Location"
                   id="bizAddress"
-                  type="text"
-                  placeholder="100 Innovation Pkwy, Suite 40"
+                  name="address"
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                  isBusinessSetup={true}
                 />
               </div>
 

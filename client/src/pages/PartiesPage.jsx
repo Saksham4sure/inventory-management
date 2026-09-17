@@ -443,7 +443,7 @@ export const PartiesPage = () => {
               className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-all duration-150 active:scale-95 ${
                 activeTab === 'ALL'
                   ? 'bg-white text-zinc-950 shadow-xs dark:bg-zinc-800 dark:text-zinc-100 font-semibold scale-[1.02]'
-                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
+                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
               }`}
             >
               All Parties
@@ -454,7 +454,7 @@ export const PartiesPage = () => {
               className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-all duration-150 active:scale-95 ${
                 activeTab === 'CUSTOMER'
                   ? 'bg-white text-zinc-950 shadow-xs dark:bg-zinc-800 dark:text-zinc-100 font-semibold scale-[1.02]'
-                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
+                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
               }`}
             >
               Customers
@@ -465,7 +465,7 @@ export const PartiesPage = () => {
               className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-all duration-150 active:scale-95 ${
                 activeTab === 'SUPPLIER'
                   ? 'bg-white text-zinc-950 shadow-xs dark:bg-zinc-800 dark:text-zinc-100 font-semibold scale-[1.02]'
-                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
+                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
               }`}
             >
               Suppliers / Vendors
@@ -476,7 +476,7 @@ export const PartiesPage = () => {
               className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-all duration-150 active:scale-95 ${
                 activeTab === 'CREDIT'
                   ? 'bg-white text-amber-700 shadow-xs dark:bg-zinc-800 dark:text-amber-400 font-semibold scale-[1.02]'
-                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
+                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
               }`}
             >
               Credits Only
@@ -491,7 +491,7 @@ export const PartiesPage = () => {
               placeholder="Search by name, phone, email..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-xl border border-zinc-200/90 dark:border-zinc-750 bg-white dark:bg-zinc-900 pl-8 pr-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:border-zinc-800 dark:focus:border-[#DBFE80] focus:outline-none focus:ring-2 focus:ring-[#DBFE80]/20"
+              className="w-full rounded-xl border border-zinc-200/90 dark:border-zinc-750 bg-white dark:bg-zinc-900 pl-8 pr-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:border-zinc-700 dark:focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/25 dark:focus:ring-zinc-600/30"
             />
             {search && (
               <button
@@ -518,7 +518,7 @@ export const PartiesPage = () => {
                 className={`px-2.5 py-0.5 rounded-md text-[11px] font-medium transition-all ${
                   balanceFilter === 'ALL'
                     ? 'bg-white text-zinc-950 shadow-xs dark:bg-zinc-800 dark:text-zinc-100 font-semibold'
-                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
+                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
                 }`}
               >
                 All ({currentBalanceCounts.total})
@@ -529,7 +529,7 @@ export const PartiesPage = () => {
                 className={`px-2.5 py-0.5 rounded-md text-[11px] font-medium transition-all ${
                   balanceFilter === 'RECEIVABLE'
                     ? 'bg-white text-emerald-700 shadow-xs dark:bg-zinc-800 dark:text-emerald-400 font-semibold'
-                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
+                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
                 }`}
               >
                 To Collect ({currentBalanceCounts.receivable})
@@ -540,7 +540,7 @@ export const PartiesPage = () => {
                 className={`px-2.5 py-0.5 rounded-md text-[11px] font-medium transition-all ${
                   balanceFilter === 'PAYABLE'
                     ? 'bg-white text-amber-700 shadow-xs dark:bg-zinc-800 dark:text-amber-400 font-semibold'
-                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
+                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
                 }`}
               >
                 To Pay ({currentBalanceCounts.payable})
@@ -551,7 +551,7 @@ export const PartiesPage = () => {
                 className={`px-2.5 py-0.5 rounded-md text-[11px] font-medium transition-all ${
                   balanceFilter === 'CLEAR'
                     ? 'bg-white text-zinc-950 shadow-xs dark:bg-zinc-800 dark:text-zinc-100 font-semibold'
-                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
+                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
                 }`}
               >
                 Settled ({currentBalanceCounts.settled})
@@ -600,13 +600,7 @@ export const PartiesPage = () => {
                   >
                     <div className="flex items-start justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800/80">
                       <div className="flex items-center gap-2.5">
-                        <div
-                          className={`flex h-9 w-9 items-center justify-center rounded-xl font-bold text-xs ${
-                            isCustomer
-                              ? 'bg-[#DBFE80]/25 text-zinc-900 dark:text-[#DBFE80]'
-                              : 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300'
-                          }`}
-                        >
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl font-bold text-xs bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-700/60">
                           {getInitials(party.name)}
                         </div>
                         <div>
@@ -679,7 +673,7 @@ export const PartiesPage = () => {
                         <button
                           type="button"
                           onClick={(e) => handleDeleteParty(party, e)}
-                          className="p-1 text-zinc-400 hover:text-rose-500"
+                          className="p-1 text-zinc-400 hover:text-rose-500 dark:hover:text-rose-400"
                           title="Delete Party"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -717,13 +711,7 @@ export const PartiesPage = () => {
                         >
                           <td className="px-5 py-3.5">
                             <div className="flex items-center gap-2.5">
-                              <div
-                                className={`flex h-8 w-8 items-center justify-center rounded-xl font-bold text-xs ${
-                                  isCustomer
-                                    ? 'bg-[#DBFE80]/25 text-zinc-900 dark:text-[#DBFE80]'
-                                    : 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300'
-                                }`}
-                              >
+                              <div className="flex h-8 w-8 items-center justify-center rounded-xl font-bold text-xs bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-700/60">
                                 {getInitials(party.name)}
                               </div>
                               <div>
@@ -867,7 +855,7 @@ export const PartiesPage = () => {
                   className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
                     partyFormData.type === 'CUSTOMER'
                       ? 'bg-white text-zinc-950 shadow-xs dark:bg-zinc-800 dark:text-zinc-100'
-                      : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
+                      : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
                   }`}
                 >
                   Customer
@@ -878,7 +866,7 @@ export const PartiesPage = () => {
                   className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
                     partyFormData.type === 'SUPPLIER'
                       ? 'bg-white text-zinc-950 shadow-xs dark:bg-zinc-800 dark:text-zinc-100'
-                      : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
+                      : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
                   }`}
                 >
                   Supplier
@@ -934,7 +922,7 @@ export const PartiesPage = () => {
               placeholder="Special credit terms, business remarks..."
               value={partyFormData.notes}
               onChange={(e) => setPartyFormData({ ...partyFormData, notes: e.target.value })}
-              className="w-full rounded-xl border border-zinc-200/90 dark:border-zinc-750 bg-white dark:bg-zinc-900 p-2.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#DBFE80]/30"
+              className="w-full rounded-xl border border-zinc-200/90 dark:border-zinc-750 bg-white dark:bg-zinc-900 p-2.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/25 dark:focus:ring-zinc-600/30"
             />
           </div>
 
@@ -1088,7 +1076,12 @@ export const PartiesPage = () => {
                 onChange={(e) =>
                   setCreditFormData({ ...creditFormData, paymentMethod: e.target.value })
                 }
-                options={['CASH', 'CARD', 'ONLINE', 'BANK_TRANSFER', 'CHEQUE', 'OTHER']}
+                options={[
+                  { value: 'CASH', label: 'Cash' },
+                  { value: 'BANK_TRANSFER', label: 'Bank Transfer' },
+                  { value: 'ONLINE', label: 'Online Payment' },
+                  { value: 'CREDIT', label: 'Credit' },
+                ]}
               />
 
               <Input
@@ -1132,7 +1125,7 @@ export const PartiesPage = () => {
             {/* Ledger Header Card */}
             <div className="flex items-center justify-between p-3.5 rounded-2xl bg-zinc-100/90 dark:bg-zinc-850 border border-zinc-200/80 dark:border-zinc-750">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-900 text-[#DBFE80] dark:bg-zinc-800 font-bold text-sm">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-900 text-white dark:bg-zinc-800 dark:text-zinc-100 font-bold text-sm">
                   {getInitials(ledgerParty.name)}
                 </div>
                 <div>

@@ -52,7 +52,7 @@ export const Navbar = ({ onOpenMobileMenu }) => {
             title="Set up Business Profile"
             className="flex items-center gap-2 text-xs font-semibold tracking-tight text-zinc-700 dark:text-zinc-300 hover:opacity-80 transition-opacity"
           >
-            <span className="h-2 w-2 rounded-full bg-[#DBFE80] shadow-[0_0_8px_rgba(219,254,128,0.7)]" />
+            <span className="h-2 w-2 rounded-full bg-zinc-400 dark:bg-zinc-500" />
             StockPulse
             <span className="text-[10px] text-zinc-500 dark:text-zinc-400 font-normal underline ml-1">
               (Setup Business)
@@ -79,7 +79,7 @@ export const Navbar = ({ onOpenMobileMenu }) => {
               {user?.email || ''}
             </span>
           </div>
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#DBFE80] text-zinc-950 font-bold text-xs shadow-2xs">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-bold text-xs shadow-2xs">
             {user?.name ? user.name[0].toUpperCase() : 'U'}
           </div>
         </Link>

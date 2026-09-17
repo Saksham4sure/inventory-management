@@ -53,20 +53,20 @@ export const ConfirmDialog = ({
     }
     if (variant === 'warning') {
       return (
-        <div className="w-12 h-12 rounded-full bg-amber-500/12 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 mx-auto mb-3 flex items-center justify-center ring-4 ring-amber-500/5 animate-ios-icon">
+        <div className="w-12 h-12 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 mx-auto mb-3 flex items-center justify-center ring-4 ring-black/[0.04] dark:ring-white/[0.06] animate-ios-icon">
           <AlertCircle className="w-5 h-5" />
         </div>
       );
     }
     if (variant === 'primary') {
       return (
-        <div className="w-12 h-12 rounded-full bg-[#DBFE80]/25 dark:bg-[#DBFE80]/20 text-lime-700 dark:text-[#DBFE80] mx-auto mb-3 flex items-center justify-center ring-4 ring-[#DBFE80]/10 animate-ios-icon">
+        <div className="w-12 h-12 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 mx-auto mb-3 flex items-center justify-center ring-4 ring-black/[0.04] dark:ring-white/[0.06] animate-ios-icon">
           <CheckCircle2 className="w-5 h-5" />
         </div>
       );
     }
     return (
-      <div className="w-12 h-12 rounded-full bg-blue-500/12 dark:bg-blue-500/20 text-[#007AFF] dark:text-[#0A84FF] mx-auto mb-3 flex items-center justify-center ring-4 ring-blue-500/5 animate-ios-icon">
+      <div className="w-12 h-12 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 mx-auto mb-3 flex items-center justify-center ring-4 ring-black/[0.04] dark:ring-white/[0.06] animate-ios-icon">
         <HelpCircle className="w-5 h-5" />
       </div>
     );
@@ -108,7 +108,7 @@ export const ConfirmDialog = ({
             <button
               type="button"
               onClick={onConfirm}
-              className="w-full py-3.5 text-[16px] font-semibold text-[#007AFF] dark:text-[#0A84FF] hover:bg-black/[0.035] dark:hover:bg-white/[0.06] active:bg-black/[0.08] dark:active:bg-white/[0.1] active:scale-[0.98] transition-all duration-150 focus:outline-none select-none"
+              className="w-full py-3.5 text-[16px] font-semibold text-zinc-900 dark:text-zinc-100 hover:bg-black/[0.035] dark:hover:bg-white/[0.06] active:bg-black/[0.08] dark:active:bg-white/[0.1] active:scale-[0.98] transition-all duration-150 focus:outline-none select-none"
             >
               {confirmText || 'OK'}
             </button>
@@ -117,7 +117,7 @@ export const ConfirmDialog = ({
               <button
                 type="button"
                 onClick={onCancel}
-                className="w-full py-3.5 text-[16px] font-normal text-zinc-700 dark:text-zinc-300 hover:bg-black/[0.035] dark:hover:bg-white/[0.06] active:bg-black/[0.08] dark:active:bg-white/[0.1] active:scale-[0.98] transition-all duration-150 focus:outline-none select-none"
+                className="w-full py-3.5 text-[16px] font-normal text-zinc-600 dark:text-zinc-400 hover:bg-black/[0.035] dark:hover:bg-white/[0.06] active:bg-black/[0.08] dark:active:bg-white/[0.1] active:scale-[0.98] transition-all duration-150 focus:outline-none select-none"
               >
                 {cancelText}
               </button>
@@ -126,8 +126,8 @@ export const ConfirmDialog = ({
                 onClick={onConfirm}
                 className={`w-full py-3.5 text-[16px] font-semibold transition-all duration-150 focus:outline-none hover:bg-black/[0.035] dark:hover:bg-white/[0.06] active:bg-black/[0.08] dark:active:bg-white/[0.1] active:scale-[0.98] select-none ${
                   variant === 'danger'
-                    ? 'text-[#FF3B30] dark:text-[#FF453A]'
-                    : 'text-[#007AFF] dark:text-[#0A84FF]'
+                    ? 'text-rose-600 dark:text-rose-400 hover:bg-rose-500/10'
+                    : 'text-zinc-900 dark:text-zinc-100'
                 }`}
               >
                 {confirmText}

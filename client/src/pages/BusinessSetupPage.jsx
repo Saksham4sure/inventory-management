@@ -4,6 +4,7 @@ import { useBusiness } from '../hooks/useBusiness';
 import { Input } from '../components/ui/Input';
 import { PhoneInput } from '../components/ui/PhoneInput';
 import { Select } from '../components/ui/Select';
+import { LocationSelect } from '../components/ui/LocationSelect';
 import { Button } from '../components/ui/Button';
 import { validateNepaliPhone } from '../utils/phoneValidator';
 import { ThemeToggle } from '../components/ui/ThemeToggle';
@@ -163,13 +164,13 @@ export const BusinessSetupPage = () => {
               />
             </div>
 
-            <Input
-              label="Store / Warehouse Address"
+            <LocationSelect
+              label="Store / Warehouse Location"
               id="address"
-              type="text"
-              placeholder="100 Innovation Parkway, Suite 40"
+              name="address"
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              isBusinessSetup={true}
             />
 
             <div className="space-y-2 pt-1">

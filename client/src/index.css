@@ -3,12 +3,12 @@
 @theme {
   --color-zinc-850: #181b22;
   --color-zinc-750: #262a35;
-  --color-primary: #DBFE80;
-  --color-primary-hover: #cbf561;
-  --color-primary-active: #b8e646;
-  --color-primary-muted: rgba(219, 254, 128, 0.15);
-  --color-primary-border: rgba(219, 254, 128, 0.35);
-  --color-primary-foreground: #090a0f;
+  --color-primary: #18181b;
+  --color-primary-hover: #27272a;
+  --color-primary-active: #3f3f46;
+  --color-primary-muted: rgba(24, 24, 27, 0.06);
+  --color-primary-border: rgba(24, 24, 27, 0.15);
+  --color-primary-foreground: #fafafa;
 }
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -37,7 +37,7 @@
   }
 
   body {
-    @apply bg-[#F4F5F7] text-zinc-900 antialiased min-h-screen dark:bg-[#0f1117] dark:text-zinc-100 selection:bg-[#DBFE80] selection:text-zinc-950;
+    @apply bg-[#F4F5F7] text-zinc-900 antialiased min-h-screen dark:bg-[#0f1117] dark:text-zinc-100 selection:bg-zinc-200 dark:selection:bg-zinc-800 selection:text-zinc-900 dark:selection:text-zinc-100;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", -apple-system, system-ui, "Helvetica Neue", Helvetica, Arial, sans-serif;
     letter-spacing: -0.015em;
     -webkit-font-smoothing: antialiased;

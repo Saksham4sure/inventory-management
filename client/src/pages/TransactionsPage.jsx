@@ -6,7 +6,7 @@ import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
-import { formatCurrency, formatDate } from '../utils/formatters';
+import { formatCurrency, formatDate, formatPaymentMethod } from '../utils/formatters';
 import {
   Search,
   ArrowLeftRight,
@@ -106,7 +106,7 @@ export const TransactionsPage = () => {
               placeholder="Search reference # (e.g. SAL-146698)..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-lg border border-zinc-200/90 bg-white dark:bg-zinc-900 dark:border-zinc-800 pl-9 pr-4 py-1.5 sm:py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:border-zinc-800 dark:focus:border-[#DBFE80] focus:outline-none focus:ring-2 focus:ring-[#DBFE80]/20"
+              className="w-full rounded-lg border border-zinc-200/90 bg-white dark:bg-zinc-900 dark:border-zinc-800 pl-9 pr-4 py-1.5 sm:py-2 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:border-zinc-700 dark:focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/25 dark:focus:ring-zinc-600/30"
             />
           </div>
 
@@ -203,7 +203,7 @@ export const TransactionsPage = () => {
                         {formatCurrency(txn.totalAmount, currency)}
                       </td>
                       <td className="px-4 py-3.5 text-xs text-zinc-500 dark:text-zinc-400">
-                        {txn.paymentMethod}
+                        {formatPaymentMethod(txn.paymentMethod)}
                       </td>
                       <td className="px-4 py-3.5 text-xs text-zinc-400">
                         {txn.createdBy?.name || 'Staff'}
@@ -313,7 +313,7 @@ export const TransactionsPage = () => {
 
             <div className="grid grid-cols-2 gap-2 text-[11px] text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-850 p-3 rounded-lg border border-zinc-200/60 dark:border-zinc-800">
               <div>
-                <span className="font-medium">Payment:</span> {selectedTxn.paymentMethod}
+                <span className="font-medium">Payment:</span> {formatPaymentMethod(selectedTxn.paymentMethod)}
               </div>
               <div>
                 <span className="font-medium">QR Scanned:</span>{' '}

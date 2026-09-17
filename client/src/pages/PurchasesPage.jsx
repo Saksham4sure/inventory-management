@@ -9,7 +9,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { Modal } from '../components/ui/Modal';
-import { formatCurrency } from '../utils/formatters';
+import { formatCurrency, formatPaymentMethod } from '../utils/formatters';
 import {
   DATE_FILTERS,
   getDateFilterBounds,
@@ -312,7 +312,7 @@ export const PurchasesPage = () => {
               placeholder="Search reference, product, SKU..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-xl border border-zinc-200/90 dark:border-zinc-750 bg-white dark:bg-zinc-900 pl-8 pr-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:border-zinc-800 dark:focus:border-[#DBFE80] focus:outline-none focus:ring-2 focus:ring-[#DBFE80]/20"
+              className="w-full rounded-xl border border-zinc-200/90 dark:border-zinc-750 bg-white dark:bg-zinc-900 pl-8 pr-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:border-zinc-700 dark:focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/25 dark:focus:ring-zinc-600/30"
             />
             {search && (
               <button
@@ -340,7 +340,7 @@ export const PurchasesPage = () => {
                 className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all active:scale-95 ${
                   typeFilter === 'ALL'
                     ? 'bg-white text-zinc-950 shadow-xs dark:bg-zinc-800 dark:text-zinc-100 font-semibold'
-                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
+                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
                 }`}
               >
                 All
@@ -351,7 +351,7 @@ export const PurchasesPage = () => {
                 className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all active:scale-95 ${
                   typeFilter === 'PURCHASE'
                     ? 'bg-white text-zinc-950 shadow-xs dark:bg-zinc-800 dark:text-zinc-100 font-semibold'
-                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
+                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
                 }`}
               >
                 Purchases Only
@@ -362,7 +362,7 @@ export const PurchasesPage = () => {
                 className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all active:scale-95 ${
                   typeFilter === 'PURCHASE_RETURN'
                     ? 'bg-white text-amber-700 shadow-xs dark:bg-zinc-800 dark:text-amber-400 font-semibold'
-                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
+                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
                 }`}
               >
                 Vendor Returns
@@ -380,7 +380,7 @@ export const PurchasesPage = () => {
                   type="date"
                   value={customStart}
                   onChange={(e) => setCustomStart(e.target.value)}
-                  className="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-[#DBFE80]"
+                  className="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-500"
                 />
               </div>
               <div className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-300">
@@ -389,7 +389,7 @@ export const PurchasesPage = () => {
                   type="date"
                   value={customEnd}
                   onChange={(e) => setCustomEnd(e.target.value)}
-                  className="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-[#DBFE80]"
+                  className="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-500"
                 />
               </div>
               {(customStart || customEnd) && (
@@ -399,7 +399,7 @@ export const PurchasesPage = () => {
                     setCustomStart('');
                     setCustomEnd('');
                   }}
-                  className="text-xs text-zinc-400 hover:text-rose-500 transition-colors"
+                  className="text-xs text-zinc-400 hover:text-rose-500 dark:hover:text-rose-400 transition-colors"
                 >
                   Clear
                 </button>
@@ -551,7 +551,7 @@ export const PurchasesPage = () => {
                           <Clock className="h-3 w-3 text-zinc-400" />
                           <span>{formatTimeOnly(txn.createdAt)}</span>
                           <span>•</span>
-                          <span>{txn.paymentMethod || 'CASH'}</span>
+                          <span>{formatPaymentMethod(txn.paymentMethod)}</span>
                         </div>
                         <div className="flex items-center gap-2">
                           <button
@@ -567,7 +567,7 @@ export const PurchasesPage = () => {
                           <button
                             type="button"
                             onClick={(e) => handleDeleteTransaction(e, txn._id, txn.referenceNumber)}
-                            className="text-rose-500 hover:text-rose-600 p-1"
+                            className="text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 p-1"
                             title="Delete record"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
@@ -632,7 +632,7 @@ export const PurchasesPage = () => {
                               {formatCurrency(txn.totalAmount, currency)}
                             </td>
                             <td className="px-4 py-3.5 text-xs text-zinc-500">
-                              {txn.paymentMethod || 'CASH'}
+                              {formatPaymentMethod(txn.paymentMethod)}
                             </td>
                             <td className="px-4 py-3.5">
                               <div className="text-xs font-medium text-zinc-900 dark:text-zinc-100">

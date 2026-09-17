@@ -8,7 +8,6 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Modal } from '../components/ui/Modal';
-import { Select } from '../components/ui/Select';
 import { Input } from '../components/ui/Input';
 import { PhoneInput } from '../components/ui/PhoneInput';
 import { formatCurrency } from '../utils/formatters';
@@ -33,8 +32,6 @@ import {
   Users,
   UserCheck,
   Search,
-  Phone,
-  UserPlus,
 } from 'lucide-react';
 
 export const QRScanPage = () => {
@@ -634,7 +631,7 @@ export const QRScanPage = () => {
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-sm animate-in fade-in slide-in-from-top-4 duration-300 pointer-events-auto">
           <div className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-zinc-900/95 dark:bg-[#181b22]/95 text-white shadow-2xl backdrop-blur-xl border border-white/10 ring-1 ring-black/10">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#DBFE80]/20 text-[#DBFE80] border border-[#DBFE80]/30">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-800 text-zinc-100 border border-zinc-700">
                 <CheckCircle2 className="h-5 w-5" />
               </div>
               <div className="min-w-0">
@@ -676,7 +673,7 @@ export const QRScanPage = () => {
             className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 active:scale-95 ${
               txnType === 'SALE'
                 ? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-700 dark:text-white'
-                : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400'
+                : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
             }`}
           >
             <TrendingDown className="h-3.5 w-3.5" /> Sale
@@ -687,7 +684,7 @@ export const QRScanPage = () => {
             className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 active:scale-95 ${
               txnType === 'PURCHASE'
                 ? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-700 dark:text-white'
-                : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400'
+                : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
             }`}
           >
             <TrendingUp className="h-3.5 w-3.5" /> Purchase
@@ -714,7 +711,7 @@ export const QRScanPage = () => {
               className={`flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-semibold transition-all duration-200 active:scale-98 ${
                 inputMethod === 'qr'
                   ? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-700 dark:text-white'
-                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
+                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
               }`}
             >
               <Camera className="h-4 w-4 text-zinc-600 dark:text-zinc-300" />
@@ -730,7 +727,7 @@ export const QRScanPage = () => {
               className={`flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-semibold transition-all duration-200 active:scale-98 ${
                 inputMethod === 'manual'
                   ? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-700 dark:text-white'
-                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
+                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
               }`}
             >
               <Calculator className="h-4 w-4 text-zinc-600 dark:text-zinc-300" />
@@ -743,7 +740,7 @@ export const QRScanPage = () => {
             <Card compact className="relative overflow-hidden p-3.5 rounded-2xl">
               <div className="flex items-center justify-between mb-2 px-1">
                 <div className="flex items-center gap-1.5 text-xs font-semibold text-zinc-800 dark:text-zinc-200">
-                  <ScanLine className="h-3.5 w-3.5 text-zinc-800 dark:text-[#DBFE80]" />
+                  <ScanLine className="h-3.5 w-3.5 text-zinc-800 dark:text-zinc-200" />
                   <span>Aim Camera at QR Label</span>
                 </div>
                 <div className="flex items-center gap-2 justify-center">
@@ -802,16 +799,16 @@ export const QRScanPage = () => {
                 {isCameraActive && (
                   <div
                     className={`pointer-events-none absolute inset-6 sm:inset-8 rounded-2xl border border-white/20 transition-all duration-300 z-10 ${
-                      scanFlash ? 'ring-4 ring-[#DBFE80]/80 bg-[#DBFE80]/10' : ''
+                      scanFlash ? 'ring-4 ring-zinc-300/80 bg-zinc-300/10' : ''
                     }`}
                   >
-                    <div className="absolute -top-1 -left-1 w-5 h-5 border-t-2 border-l-2 border-[#DBFE80] rounded-tl-lg" />
-                    <div className="absolute -top-1 -right-1 w-5 h-5 border-t-2 border-r-2 border-[#DBFE80] rounded-tr-lg" />
-                    <div className="absolute -bottom-1 -left-1 w-5 h-5 border-b-2 border-l-2 border-[#DBFE80] rounded-bl-lg" />
-                    <div className="absolute -bottom-1 -right-1 w-5 h-5 border-b-2 border-r-2 border-[#DBFE80] rounded-br-lg" />
+                    <div className="absolute -top-1 -left-1 w-5 h-5 border-t-2 border-l-2 border-zinc-300 rounded-tl-lg" />
+                    <div className="absolute -top-1 -right-1 w-5 h-5 border-t-2 border-r-2 border-zinc-300 rounded-tr-lg" />
+                    <div className="absolute -bottom-1 -left-1 w-5 h-5 border-b-2 border-l-2 border-zinc-300 rounded-bl-lg" />
+                    <div className="absolute -bottom-1 -right-1 w-5 h-5 border-b-2 border-r-2 border-zinc-300 rounded-br-lg" />
 
-                    <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#DBFE80] to-transparent shadow-[0_0_12px_#DBFE80] animate-laser">
-                      <div className="h-10 w-full bg-gradient-to-b from-[#DBFE80]/20 to-transparent -translate-y-full pointer-events-none" />
+                    <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-zinc-200 to-transparent shadow-[0_0_10px_rgba(255,255,255,0.4)] animate-laser">
+                      <div className="h-10 w-full bg-gradient-to-b from-white/15 to-transparent -translate-y-full pointer-events-none" />
                     </div>
                   </div>
                 )}
@@ -819,12 +816,12 @@ export const QRScanPage = () => {
                 {isCameraActive && (
                   <>
                     {scannedPill ? (
-                      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 px-3 py-1.5 rounded-full bg-zinc-900/95 backdrop-blur-md text-[11px] font-semibold text-[#DBFE80] border border-[#DBFE80]/40 flex items-center gap-2 shadow-lg whitespace-nowrap">
+                      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 px-3 py-1.5 rounded-full bg-zinc-900/95 backdrop-blur-md text-[11px] font-semibold text-zinc-100 border border-zinc-700 flex items-center gap-2 shadow-lg whitespace-nowrap">
                         <span>✓ Scanned: {scannedPill.name}</span>
                         <button
                           type="button"
                           onClick={handleResetScanLock}
-                          className="px-2 py-0.5 rounded-full bg-[#DBFE80] hover:bg-[#ccf569] text-zinc-950 text-[10px] font-bold transition-colors inline-flex items-center gap-1 active:scale-95"
+                          className="px-2 py-0.5 rounded-full bg-zinc-100 hover:bg-zinc-200 text-zinc-950 text-[10px] font-bold transition-colors inline-flex items-center gap-1 active:scale-95"
                         >
                           <RefreshCw className="h-2.5 w-2.5" /> Scan Again
                         </button>
@@ -883,7 +880,7 @@ export const QRScanPage = () => {
                         ? 'e.g. General Item, Custom Sale, Service'
                         : 'e.g. Supplies, Inventory Restock, Expense'
                     }
-                    className="w-full rounded-xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3.5 py-2.5 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 focus:border-zinc-800 dark:focus:border-[#DBFE80] focus:outline-none focus:ring-2 focus:ring-[#DBFE80]/25 placeholder:text-zinc-400"
+                    className="w-full rounded-xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3.5 py-2.5 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 focus:border-zinc-800 dark:focus:border-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/25 placeholder:text-zinc-400"
                   />
                 </div>
 
@@ -1090,7 +1087,7 @@ export const QRScanPage = () => {
                           <button
                             type="button"
                             onClick={() => removeCartItem(item.cartId)}
-                            className="p-1 text-zinc-400 hover:text-rose-600 active:scale-90"
+                            className="p-1 text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 active:scale-90"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
@@ -1117,23 +1114,23 @@ export const QRScanPage = () => {
                 <label className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-400 mb-1.5">
                   Payment Method
                 </label>
-                <div className="grid grid-cols-4 gap-1.5 text-xs font-medium select-none">
+                <div className="grid grid-cols-4 gap-1.5 select-none">
                   {[
                     { id: 'CASH', label: 'Cash' },
-                    { id: 'CARD', label: 'Card' },
-                    { id: 'BANK_TRANSFER', label: 'Transfer' },
-                    { id: 'CREDIT', label: 'Credit 💳' },
+                    { id: 'BANK_TRANSFER', label: 'Bank Transfer' },
+                    { id: 'ONLINE', label: 'Online Payment' },
+                    { id: 'CREDIT', label: 'Credit' },
                   ].map((m) => (
                     <button
                       key={m.id}
                       type="button"
                       onClick={() => handleSelectPaymentMethod(m.id)}
-                      className={`py-2 rounded-xl border text-center transition-all duration-150 active:scale-95 ${
+                      className={`py-2 px-1 rounded-xl border text-center text-[11px] sm:text-xs font-medium leading-tight flex items-center justify-center min-h-[38px] transition-all duration-150 active:scale-95 ${
                         paymentMethod === m.id
                           ? m.id === 'CREDIT'
                             ? 'border-amber-500 bg-amber-500/15 text-amber-700 dark:text-amber-300 font-bold shadow-xs'
                             : 'border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-950 font-bold shadow-xs'
-                          : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300'
+                          : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300 hover:text-zinc-900 dark:hover:border-zinc-700 dark:hover:text-zinc-100'
                       }`}
                     >
                       {m.label}
@@ -1189,7 +1186,7 @@ export const QRScanPage = () => {
                   placeholder="Notes or invoice remark (optional)..."
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="w-full rounded-xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[#DBFE80]/20"
+                  className="w-full rounded-xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-400/20"
                 />
               </div>
 
@@ -1247,7 +1244,7 @@ export const QRScanPage = () => {
               className={`flex-1 py-1.5 rounded-lg transition-all ${
                 partyTab === 'existing'
                   ? 'bg-white text-zinc-950 shadow-xs dark:bg-zinc-800 dark:text-zinc-100 font-bold'
-                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
+                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
               }`}
             >
               Choose Existing ({existingParties.length})
@@ -1258,7 +1255,7 @@ export const QRScanPage = () => {
               className={`flex-1 py-1.5 rounded-lg transition-all ${
                 partyTab === 'new'
                   ? 'bg-white text-zinc-950 shadow-xs dark:bg-zinc-800 dark:text-zinc-100 font-bold'
-                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
+                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
               }`}
             >
               + Quick Add (Name & Phone)
@@ -1275,7 +1272,7 @@ export const QRScanPage = () => {
                   placeholder={`Search ${txnType === 'SALE' ? 'customers' : 'suppliers'} by name or phone...`}
                   value={partySearch}
                   onChange={(e) => setPartySearch(e.target.value)}
-                  className="w-full rounded-xl border border-zinc-200/90 dark:border-zinc-750 bg-white dark:bg-zinc-900 pl-8 pr-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-[#DBFE80]"
+                  className="w-full rounded-xl border border-zinc-200/90 dark:border-zinc-750 bg-white dark:bg-zinc-900 pl-8 pr-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
                 />
               </div>
 
@@ -1291,7 +1288,7 @@ export const QRScanPage = () => {
                     <button
                       type="button"
                       onClick={() => setPartyTab('new')}
-                      className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
+                      className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 underline hover:text-zinc-900 dark:hover:text-zinc-100"
                     >
                       + Quick enter Name & Phone
                     </button>
@@ -1330,7 +1327,7 @@ export const QRScanPage = () => {
           {/* TAB 2: Quick Add New Party using just Name & Phone Number */}
           {partyTab === 'new' && (
             <div className="space-y-3">
-              <div className="p-3 rounded-xl bg-[#DBFE80]/15 border border-[#DBFE80]/30 text-xs text-zinc-800 dark:text-zinc-200">
+              <div className="p-3 rounded-xl bg-zinc-100 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-800 dark:text-zinc-200">
                 <p className="font-semibold">Party Not Created Yet?</p>
                 <p className="text-[11px] text-zinc-600 dark:text-zinc-400 mt-0.5">
                   Enter their Name and Phone number below. Their identity will be created and this credit record will be logged directly to their ledger.
@@ -1382,7 +1379,7 @@ export const QRScanPage = () => {
         {completedTxn && (
           <div className="space-y-4">
             <div className="text-center py-2">
-              <div className="h-12 w-12 rounded-full bg-[#DBFE80]/15 text-zinc-900 dark:text-[#DBFE80] flex items-center justify-center mx-auto mb-2 shadow-xs">
+              <div className="h-12 w-12 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 flex items-center justify-center mx-auto mb-2 shadow-xs">
                 <CheckCircle2 className="h-6 w-6" />
               </div>
               <h4 className="text-base font-bold text-zinc-900 dark:text-zinc-100">

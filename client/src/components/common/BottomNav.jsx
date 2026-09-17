@@ -34,7 +34,7 @@ export const BottomNav = () => {
                   }`
                 }
               >
-                <div className="flex h-13 w-13 items-center justify-center rounded-[20px] bg-[#DBFE80] text-zinc-950 shadow-[0_4px_16px_rgba(219,254,128,0.35)] ring-4 ring-[#F4F5F7] dark:ring-[#0f1117] border border-[#c2ee55]/60 font-bold">
+                <div className="flex h-13 w-13 items-center justify-center rounded-[20px] bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 shadow-md ring-4 ring-[#F4F5F7] dark:ring-[#0f1117] border border-black/10 dark:border-white/10 font-bold">
                   <Icon className="h-6 w-6 stroke-[2.2]" />
                 </div>
                 <span className="text-[10px] font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 mt-1">
@@ -61,7 +61,7 @@ export const BottomNav = () => {
                   <div className="relative">
                     <Icon className="h-4.5 w-4.5" />
                     {isActive && (
-                      <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-[#DBFE80] shadow-[0_0_6px_rgba(219,254,128,0.8)]" />
+                      <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-zinc-900 dark:bg-zinc-100" />
                     )}
                   </div>
                   <span className="text-[10px] mt-2 tracking-tight font-medium">
