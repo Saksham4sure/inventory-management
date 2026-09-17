@@ -18,7 +18,7 @@ export const Button = ({
     accent:
       'bg-[#DBFE80] hover:bg-[#ccf569] active:bg-[#bce657] text-zinc-950 font-semibold shadow-xs border border-[#c2ee55]/60',
     secondary:
-      'bg-black/[0.04] dark:bg-white/[0.08] text-zinc-800 dark:text-zinc-100 border border-black/[0.07] dark:border-white/[0.09] backdrop-blur-xl shadow-2xs hover:bg-black/[0.07] dark:hover:bg-white/[0.14]',
+      'bg-black/[0.04] dark:bg-white/[0.08] text-zinc-800 dark:text-zinc-100 border border-black/[0.07] dark:border-white/[0.09] shadow-2xs hover:bg-black/[0.07] dark:hover:bg-white/[0.14]',
     ghost:
       'text-zinc-600 hover:text-zinc-900 hover:bg-black/[0.05] dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-white/[0.08]',
     danger:

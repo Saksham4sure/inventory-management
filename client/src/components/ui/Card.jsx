@@ -3,15 +3,15 @@ export const Card = ({
   className = '',
   hoverEffect = false,
   compact = false,
-  glass = true,
+  glass = false,
   ...props
 }) => {
   const surfaceStyle = glass
-    ? 'bg-white/85 dark:bg-[#181b22]/80 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] shadow-[0_4px_24px_-2px_rgba(0,0,0,0.03)] dark:shadow-[0_10px_32px_-4px_rgba(0,0,0,0.35)] ring-1 ring-white/80 dark:ring-white/[0.05]'
+    ? 'bg-white/90 dark:bg-[#181b22]/90 backdrop-blur-md border border-black/[0.06] dark:border-white/[0.08] shadow-[0_4px_20px_-2px_rgba(0,0,0,0.03)] dark:shadow-[0_10px_30px_-4px_rgba(0,0,0,0.35)]'
     : 'bg-white dark:bg-[#181b22] border border-zinc-200/80 dark:border-zinc-800 shadow-xs';
 
   const hoverStyle = hoverEffect
-    ? 'hover:-translate-y-0.5 hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_14px_40px_-4px_rgba(0,0,0,0.5)] hover:border-black/[0.1] dark:hover:border-white/[0.15] transition-all duration-200 ease-out will-change-transform'
+    ? 'hover:-translate-y-0.5 hover:shadow-md hover:border-black/[0.1] dark:hover:border-white/[0.15] transition-transform duration-150 ease-out will-change-transform'
     : 'transition-colors duration-150';
 
   return (

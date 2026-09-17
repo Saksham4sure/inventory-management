@@ -271,9 +271,7 @@
   pointer-events: none;
   background: radial-gradient(circle at 50% -20%, rgba(0, 0, 0, 0.02), transparent 70%);
   z-index: -10;
-  -webkit-transform: translate3d(0, 0, 0);
-  transform: translateZ(0);
-  will-change: transform;
+  pointer-events: none;
 }
 
 .dark .app-ambient-glow {

@@ -78,5 +78,6 @@ const productSchema = new mongoose.Schema(
 // Compound index so SKU is unique within a specific business
 productSchema.index({ businessId: 1, sku: 1 }, { unique: true });
 productSchema.index({ businessId: 1, qrCodeData: 1 });
+productSchema.index({ businessId: 1, createdAt: -1 });
 
 export const Product = mongoose.model('Product', productSchema);

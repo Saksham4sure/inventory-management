@@ -39,7 +39,7 @@ export const Badge = ({
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border backdrop-blur-md transition-colors ${variants[variant] || variants.default} ${sizes[size] || sizes.sm} ${className}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border transition-colors ${variants[variant] || variants.default} ${sizes[size] || sizes.sm} ${className}`}
     >
       {dot && (
         <span className={`h-1.5 w-1.5 rounded-full ${dotColors[variant] || dotColors.default}`} />

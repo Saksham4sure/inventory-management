@@ -92,5 +92,6 @@ const transactionSchema = new mongoose.Schema(
 );
 
 transactionSchema.index({ businessId: 1, createdAt: -1 });
+transactionSchema.index({ businessId: 1, type: 1, createdAt: -1 });
 
 export const Transaction = mongoose.model('Transaction', transactionSchema);

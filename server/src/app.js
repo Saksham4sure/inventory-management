@@ -1,12 +1,16 @@
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
+import compression from 'compression';
 import apiRouter from './routes/index.js';
 import { errorHandler } from './middlewares/error.middleware.js';
 import { ApiError } from './utils/apiError.js';
 import { ENV } from './config/env.js';
 
 const app = express();
+
+// Performance: gzip / deflate compression
+app.use(compression());
 
 // Middlewares
 app.use(

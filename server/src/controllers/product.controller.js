@@ -61,7 +61,7 @@ export const createProduct = asyncHandler(async (req, res) => {
 });
 
 export const getProducts = asyncHandler(async (req, res) => {
-  const { search, category, lowStock, page = 1, limit = 50 } = req.query;
+  const { search, category, lowStock, excludeQR, page = 1, limit = 50 } = req.query;
 
   const filter = { businessId: req.user.businessId };
 
@@ -80,8 +80,13 @@ export const getProducts = asyncHandler(async (req, res) => {
 
   const skip = (Number(page) - 1) * Number(limit);
 
+  let query = Product.find(filter).sort({ createdAt: -1 }).skip(skip).limit(Number(limit)).lean();
+  if (excludeQR === 'true') {
+    query = query.select('-qrCodeImage');
+  }
+
   const [products, total] = await Promise.all([
-    Product.find(filter).sort({ createdAt: -1 }).skip(skip).limit(Number(limit)),
+    query,
     Product.countDocuments(filter),
   ]);
 

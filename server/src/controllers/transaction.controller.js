@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import { Transaction } from '../models/transaction.model.js';
 import { Product } from '../models/product.model.js';
 import { ApiError } from '../utils/apiError.js';
@@ -200,7 +201,8 @@ export const getTransactions = asyncHandler(async (req, res) => {
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(Number(limit))
-      .populate('createdBy', 'name email'),
+      .populate('createdBy', 'name email')
+      .lean(),
     Transaction.countDocuments(filter),
   ]);
 
@@ -226,10 +228,12 @@ export const getDashboardSummary = asyncHandler(async (req, res) => {
   const startOfToday = new Date();
   startOfToday.setHours(0, 0, 0, 0);
 
+  const businessObjectId = new mongoose.Types.ObjectId(businessId);
+
   const [
     totalProducts,
     lowStockProducts,
-    allTransactions,
+    txnSummaryAgg,
     todaySalesAgg,
     recentTransactions,
   ] = await Promise.all([
@@ -239,12 +243,22 @@ export const getDashboardSummary = asyncHandler(async (req, res) => {
       $expr: { $lte: ['$currentStock', '$minStockLevel'] },
     })
       .limit(10)
-      .select('name sku currentStock minStockLevel unit sellingPrice'),
-    Transaction.find({ businessId }),
+      .select('name sku currentStock minStockLevel unit sellingPrice')
+      .lean(),
+    Transaction.aggregate([
+      { $match: { businessId: businessObjectId } },
+      {
+        $group: {
+          _id: '$type',
+          totalAmount: { $sum: '$totalAmount' },
+          count: { $sum: 1 },
+        },
+      },
+    ]),
     Transaction.aggregate([
       {
         $match: {
-          businessId,
+          businessId: businessObjectId,
           type: TRANSACTION_TYPES.SALE,
           createdAt: { $gte: startOfToday },
         },
@@ -260,7 +274,8 @@ export const getDashboardSummary = asyncHandler(async (req, res) => {
     Transaction.find({ businessId })
       .sort({ createdAt: -1 })
       .limit(8)
-      .populate('createdBy', 'name'),
+      .populate('createdBy', 'name')
+      .lean(),
   ]);
 
   let totalSalesAmount = 0;
@@ -270,17 +285,17 @@ export const getDashboardSummary = asyncHandler(async (req, res) => {
   let totalPurchasesCount = 0;
   let totalPurchaseReturns = 0;
 
-  for (const txn of allTransactions) {
-    if (txn.type === TRANSACTION_TYPES.SALE) {
-      totalSalesAmount += txn.totalAmount;
-      totalSalesCount += 1;
-    } else if (txn.type === TRANSACTION_TYPES.SALE_RETURN) {
-      totalSalesReturns += txn.totalAmount;
-    } else if (txn.type === TRANSACTION_TYPES.PURCHASE) {
-      totalPurchasesAmount += txn.totalAmount;
-      totalPurchasesCount += 1;
-    } else if (txn.type === TRANSACTION_TYPES.PURCHASE_RETURN) {
-      totalPurchaseReturns += txn.totalAmount;
+  for (const group of txnSummaryAgg) {
+    if (group._id === TRANSACTION_TYPES.SALE) {
+      totalSalesAmount = group.totalAmount || 0;
+      totalSalesCount = group.count || 0;
+    } else if (group._id === TRANSACTION_TYPES.SALE_RETURN) {
+      totalSalesReturns = group.totalAmount || 0;
+    } else if (group._id === TRANSACTION_TYPES.PURCHASE) {
+      totalPurchasesAmount = group.totalAmount || 0;
+      totalPurchasesCount = group.count || 0;
+    } else if (group._id === TRANSACTION_TYPES.PURCHASE_RETURN) {
+      totalPurchaseReturns = group.totalAmount || 0;
     }
   }
 

@@ -122,7 +122,7 @@ export const PurchasesPage = () => {
 
   // Load products for vendor returns modal
   useEffect(() => {
-    productService.getProducts({ limit: 150 }).then((res) => {
+    productService.getProducts({ limit: 150, excludeQR: true }).then((res) => {
       const prods = res?.products || [];
       setAllProducts(prods);
       if (prods.length > 0) {
