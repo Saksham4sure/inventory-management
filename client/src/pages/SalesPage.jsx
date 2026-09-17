@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useBusiness } from '../hooks/useBusiness';
 import { useConfirm } from '../hooks/useConfirm';
 import { transactionService } from '../services/transactionService';
@@ -9,20 +9,32 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { Modal } from '../components/ui/Modal';
-import { formatCurrency, formatDate } from '../utils/formatters';
+import { formatCurrency } from '../utils/formatters';
 import {
-  TrendingUp,
+  DATE_FILTERS,
+  getDateFilterBounds,
+  formatDateOnly,
+  formatDateTime,
+  formatTimeOnly,
+  groupTransactionsByDate,
+  calculateSummary,
+} from '../utils/dateGrouping';
+import {
   RotateCcw,
   Search,
-  Plus,
   RefreshCw,
   FileText,
   AlertCircle,
   QrCode,
   DollarSign,
   Calendar,
-  CheckCircle2,
   Trash2,
+  Filter,
+  X,
+  Clock,
+  Package,
+  ArrowUpRight,
+  ArrowDownLeft,
 } from 'lucide-react';
 
 export const SalesPage = () => {
@@ -30,14 +42,18 @@ export const SalesPage = () => {
   const { confirm, alert } = useConfirm();
   const currency = business?.currency || 'USD';
 
-  // Sub-tab: 'all_sales' | 'returns' | 'summary'
-  const [activeTab, setActiveTab] = useState('all_sales');
-
+  // Transactions data & loading
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [search, setSearch] = useState('');
   const [selectedTxn, setSelectedTxn] = useState(null);
+
+  // Filters state
+  const [search, setSearch] = useState('');
+  const [dateFilter, setDateFilter] = useState('all'); // 'all' | 'today' | 'yesterday' | 'week' | 'month' | 'custom'
+  const [customStart, setCustomStart] = useState('');
+  const [customEnd, setCustomEnd] = useState('');
+  const [typeFilter, setTypeFilter] = useState('ALL'); // 'ALL' | 'SALE' | 'SALE_RETURN'
 
   // Return modal state
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
@@ -48,28 +64,37 @@ export const SalesPage = () => {
   const [returnReason, setReturnReason] = useState('Defective item');
   const [submittingReturn, setSubmittingReturn] = useState(false);
 
+  // Fetch sales records with applied filters
   const fetchSales = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
-      const params = { categoryGroup: 'sales' };
-      if (search) params.search = search;
-      if (activeTab === 'returns') params.type = 'SALE_RETURN';
-      if (activeTab === 'all_sales') params.type = 'SALE';
+
+      const bounds = getDateFilterBounds(dateFilter, customStart, customEnd);
+      const params = {
+        categoryGroup: 'sales',
+        limit: 200,
+      };
+
+      if (bounds.startDate) params.startDate = bounds.startDate;
+      if (bounds.endDate) params.endDate = bounds.endDate;
+      if (typeFilter && typeFilter !== 'ALL') params.type = typeFilter;
+      if (search.trim()) params.search = search.trim();
 
       const data = await transactionService.getTransactions(params);
-      setTransactions(data.transactions || []);
+      setTransactions(data?.transactions || []);
     } catch (err) {
       setError(err.message || 'Failed to load sales history');
     } finally {
       setLoading(false);
     }
-  }, [search, activeTab]);
+  }, [dateFilter, customStart, customEnd, typeFilter, search]);
 
   useEffect(() => {
     fetchSales();
   }, [fetchSales]);
 
+  // Handle record deletion with iOS custom popup
   const handleDeleteTransaction = async (e, id, refNum) => {
     if (e) e.stopPropagation();
     const isConfirmed = await confirm({
@@ -95,13 +120,14 @@ export const SalesPage = () => {
     }
   };
 
-  // Load products for returns modal
+  // Load products for customer returns modal
   useEffect(() => {
     productService.getProducts({ limit: 150 }).then((res) => {
-      setAllProducts(res.products || []);
-      if (res.products?.length > 0) {
-        setReturnProduct(res.products[0]._id);
-        setRefundAmount(res.products[0].sellingPrice);
+      const prods = res?.products || [];
+      setAllProducts(prods);
+      if (prods.length > 0) {
+        setReturnProduct(prods[0]._id);
+        setRefundAmount(prods[0].sellingPrice);
       }
     });
   }, []);
@@ -144,20 +170,11 @@ export const SalesPage = () => {
     }
   };
 
-  // Metrics summary
-  const summary = transactions.reduce(
-    (acc, t) => {
-      if (t.type === 'SALE') {
-        acc.grossSales += t.totalAmount;
-        acc.salesCount += 1;
-      } else if (t.type === 'SALE_RETURN') {
-        acc.totalReturns += t.totalAmount;
-        acc.returnsCount += 1;
-      }
-      return acc;
-    },
-    { grossSales: 0, salesCount: 0, totalReturns: 0, returnsCount: 0 }
-  );
+  // Group transactions by date & compute summaries
+  const dateGroups = useMemo(() => groupTransactionsByDate(transactions), [transactions]);
+  const summary = useMemo(() => calculateSummary(transactions), [transactions]);
+
+  const activeDateLabel = DATE_FILTERS.find((f) => f.id === dateFilter)?.label || 'All Time';
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -166,19 +183,25 @@ export const SalesPage = () => {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-              Sales Management Hub
+              Sales Hub
             </h1>
             <Badge variant="accent" dot>
-              Active
+              Live
             </Badge>
           </div>
           <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
-            Customer sales orders, invoices, and product returns
+            Customer sales, invoices, returns, and daily transaction audit
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="secondary" size="sm" onClick={fetchSales} disabled={loading}>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={fetchSales}
+            disabled={loading}
+            title="Refresh sales"
+          >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
           </Button>
           <Button variant="primary" size="sm" onClick={() => setIsReturnModalOpen(true)}>
@@ -194,155 +217,315 @@ export const SalesPage = () => {
         </div>
       )}
 
-      {/* Sub-Tab Navigation Bar */}
-      <div className="flex items-center justify-between border-b border-zinc-200/80 dark:border-zinc-800 pb-2">
-        <div className="flex items-center gap-1.5 p-1 rounded-xl border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.035] dark:bg-white/[0.06] backdrop-blur-md text-xs font-semibold select-none">
-          <button
-            type="button"
-            onClick={() => setActiveTab('all_sales')}
-            className={`px-3 py-1.5 rounded-lg transition-all duration-200 ease-out active:scale-95 ${
-              activeTab === 'all_sales'
-                ? 'bg-white text-zinc-950 shadow-xs dark:bg-zinc-800 dark:text-zinc-100 scale-[1.02]'
-                : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
-            }`}
-          >
-            All Sales
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('returns')}
-            className={`px-3 py-1.5 rounded-lg transition-all duration-200 ease-out active:scale-95 ${
-              activeTab === 'returns'
-                ? 'bg-white text-zinc-950 shadow-xs dark:bg-zinc-800 dark:text-zinc-100 scale-[1.02]'
-                : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
-            }`}
-          >
-            Sales Returns
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('summary')}
-            className={`px-3 py-1.5 rounded-lg transition-all duration-200 ease-out active:scale-95 ${
-              activeTab === 'summary'
-                ? 'bg-white text-zinc-950 shadow-xs dark:bg-zinc-800 dark:text-zinc-100 scale-[1.02]'
-                : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
-            }`}
-          >
-            Summary
-          </button>
+      {/* Overview Summary Cards for Active Filter */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5">
+        <Card compact className="relative overflow-hidden">
+          <div className="flex items-center justify-between text-zinc-400">
+            <span className="text-[10px] uppercase font-semibold tracking-wider">Net Sales</span>
+            <DollarSign className="h-3.5 w-3.5 text-zinc-400" />
+          </div>
+          <div className="text-lg sm:text-2xl font-black font-mono text-zinc-900 dark:text-zinc-100 mt-1">
+            {formatCurrency(summary.netAmount, currency)}
+          </div>
+          <span className="text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 block truncate">
+            {activeDateLabel}
+          </span>
+        </Card>
+
+        <Card compact className="relative overflow-hidden">
+          <div className="flex items-center justify-between text-zinc-400">
+            <span className="text-[10px] uppercase font-semibold tracking-wider">Gross Sales</span>
+            <ArrowUpRight className="h-3.5 w-3.5 text-emerald-500" />
+          </div>
+          <div className="text-lg sm:text-2xl font-black font-mono text-emerald-600 dark:text-emerald-400 mt-1">
+            {formatCurrency(summary.primaryAmount, currency)}
+          </div>
+          <span className="text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 block">
+            {summary.primaryCount} {summary.primaryCount === 1 ? 'sale' : 'sales'}
+          </span>
+        </Card>
+
+        <Card compact className="relative overflow-hidden">
+          <div className="flex items-center justify-between text-zinc-400">
+            <span className="text-[10px] uppercase font-semibold tracking-wider">Returns</span>
+            <ArrowDownLeft className="h-3.5 w-3.5 text-amber-500" />
+          </div>
+          <div className="text-lg sm:text-2xl font-black font-mono text-amber-600 dark:text-amber-400 mt-1">
+            -{formatCurrency(summary.returnsAmount, currency)}
+          </div>
+          <span className="text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 block">
+            {summary.returnsCount} {summary.returnsCount === 1 ? 'return' : 'returns'}
+          </span>
+        </Card>
+
+        <Card compact className="relative overflow-hidden">
+          <div className="flex items-center justify-between text-zinc-400">
+            <span className="text-[10px] uppercase font-semibold tracking-wider">Items / Orders</span>
+            <Package className="h-3.5 w-3.5 text-zinc-400" />
+          </div>
+          <div className="text-lg sm:text-2xl font-black font-mono text-zinc-900 dark:text-zinc-100 mt-1">
+            {summary.totalQty} <span className="text-xs font-normal text-zinc-400">items</span>
+          </div>
+          <span className="text-[10px] sm:text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5 block">
+            Across {summary.count} {summary.count === 1 ? 'record' : 'records'}
+          </span>
+        </Card>
+      </div>
+
+      {/* Filter Controls: Date Filter Pills + Type Filter Pills + Search */}
+      <div className="space-y-2.5 p-3 rounded-2xl bg-zinc-100/60 dark:bg-zinc-800/40 border border-zinc-200/80 dark:border-zinc-800/80 backdrop-blur-md">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
+          {/* Date Filter Segmented Bar */}
+          <div className="flex items-center gap-1 overflow-x-auto pb-1 lg:pb-0 scrollbar-none text-xs font-medium">
+            <div className="flex items-center gap-1 p-1 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.06] dark:border-white/[0.08]">
+              {DATE_FILTERS.map((df) => (
+                <button
+                  key={df.id}
+                  type="button"
+                  onClick={() => setDateFilter(df.id)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-all duration-150 active:scale-95 ${
+                    dateFilter === df.id
+                      ? 'bg-white text-zinc-950 shadow-xs dark:bg-zinc-800 dark:text-zinc-100 font-semibold scale-[1.02]'
+                      : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200'
+                  }`}
+                >
+                  {df.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Search Input */}
+          <div className="relative w-full lg:w-72">
+            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-400" />
+            <input
+              type="text"
+              placeholder="Search reference, product, SKU..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full rounded-xl border border-zinc-200/90 dark:border-zinc-750 bg-white dark:bg-zinc-900 pl-8 pr-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:border-zinc-800 dark:focus:border-[#DBFE80] focus:outline-none focus:ring-2 focus:ring-[#DBFE80]/20"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                className="absolute right-2.5 top-2.5 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Quick Search */}
-        <div className="relative w-44 sm:w-64">
-          <Search className="absolute left-2.5 top-2 h-3.5 w-3.5 text-zinc-400" />
-          <input
-            type="text"
-            placeholder="Search sales..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 pl-8 pr-3 py-1 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:border-zinc-800 dark:focus:border-[#DBFE80] focus:outline-none focus:ring-2 focus:ring-[#DBFE80]/20"
-          />
+        {/* Second Row: Transaction Type Filter & Custom Date Inputs */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-1 border-t border-zinc-200/50 dark:border-zinc-700/40">
+          {/* Type Filter Pills */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mr-1 flex items-center gap-1">
+              <Filter className="h-3 w-3" /> Type:
+            </span>
+            <div className="flex items-center gap-1 p-0.5 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.06] dark:border-white/[0.08] text-xs">
+              <button
+                type="button"
+                onClick={() => setTypeFilter('ALL')}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all active:scale-95 ${
+                  typeFilter === 'ALL'
+                    ? 'bg-white text-zinc-950 shadow-xs dark:bg-zinc-800 dark:text-zinc-100 font-semibold'
+                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
+                }`}
+              >
+                All
+              </button>
+              <button
+                type="button"
+                onClick={() => setTypeFilter('SALE')}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all active:scale-95 ${
+                  typeFilter === 'SALE'
+                    ? 'bg-white text-emerald-700 shadow-xs dark:bg-zinc-800 dark:text-emerald-400 font-semibold'
+                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
+                }`}
+              >
+                Sales Only
+              </button>
+              <button
+                type="button"
+                onClick={() => setTypeFilter('SALE_RETURN')}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all active:scale-95 ${
+                  typeFilter === 'SALE_RETURN'
+                    ? 'bg-white text-amber-700 shadow-xs dark:bg-zinc-800 dark:text-amber-400 font-semibold'
+                    : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
+                }`}
+              >
+                Returns Only
+              </button>
+            </div>
+          </div>
+
+          {/* Custom Date Range Picker (shown if dateFilter === 'custom') */}
+          {dateFilter === 'custom' && (
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-300">
+                <Calendar className="h-3.5 w-3.5 text-zinc-400" />
+                <span className="text-[11px] font-medium">From:</span>
+                <input
+                  type="date"
+                  value={customStart}
+                  onChange={(e) => setCustomStart(e.target.value)}
+                  className="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-[#DBFE80]"
+                />
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-300">
+                <span className="text-[11px] font-medium">To:</span>
+                <input
+                  type="date"
+                  value={customEnd}
+                  onChange={(e) => setCustomEnd(e.target.value)}
+                  className="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-[#DBFE80]"
+                />
+              </div>
+              {(customStart || customEnd) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCustomStart('');
+                    setCustomEnd('');
+                  }}
+                  className="text-xs text-zinc-400 hover:text-rose-500 transition-colors"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* TAB 1 & 2: Sales & Returns List View */}
-      {activeTab !== 'summary' && (
-        <div className="space-y-3">
-          {/* Rich Phone Cards */}
-          <div className="block lg:hidden space-y-2">
-            {transactions.length > 0 ? (
-              transactions.map((txn) => {
-                const isReturn = txn.type === 'SALE_RETURN';
-                return (
-                  <div
-                    key={txn._id}
-                    onClick={() => setSelectedTxn(txn)}
-                    className="p-3 rounded-xl border border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-900 cursor-pointer active:scale-[0.99] transition-all shadow-2xs"
-                  >
-                    <div className="flex items-center justify-between pb-1.5 border-b border-zinc-100 dark:border-zinc-800/80">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-mono font-bold text-xs text-zinc-900 dark:text-zinc-100">
-                          {txn.referenceNumber}
-                        </span>
-                        {txn.scannedViaQR && (
-                          <span className="inline-flex items-center text-[10px] text-zinc-500 dark:text-zinc-400">
-                            <QrCode className="h-3 w-3" />
-                          </span>
-                        )}
-                      </div>
-                      <Badge variant={isReturn ? 'warning' : 'primary'} size="sm">
-                        {isReturn ? 'Return (Refund)' : 'Sale'}
-                      </Badge>
-                    </div>
-
-                    <div className="flex justify-between items-center pt-2">
-                      <div className="text-xs text-zinc-600 dark:text-zinc-400">
-                        {txn.items?.[0]?.productName}
-                        {txn.items?.length > 1 && ` +${txn.items.length - 1} more`}
-                      </div>
-                      <div
-                        className={`font-mono font-bold text-xs sm:text-sm ${
-                          isReturn
-                            ? 'text-amber-600 dark:text-amber-400'
-                            : 'text-zinc-900 dark:text-zinc-100'
-                        }`}
-                      >
-                        {isReturn ? '-' : '+'}
-                        {formatCurrency(txn.totalAmount, currency)}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between text-[10px] text-zinc-400 mt-1">
-                      <span>{txn.paymentMethod}</span>
-                      <span>{formatDate(txn.createdAt)}</span>
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="py-10 text-center text-zinc-400 text-xs">
-                No records found for this view
-              </div>
-            )}
+      {/* Transactions List Grouped by Date */}
+      <div className="space-y-6">
+        {loading && transactions.length === 0 ? (
+          <div className="py-16 text-center text-zinc-400 text-xs">
+            <RefreshCw className="h-5 w-5 animate-spin mx-auto mb-2 text-zinc-400" />
+            Loading sales records...
           </div>
+        ) : dateGroups.length === 0 ? (
+          <Card className="py-12 text-center text-zinc-400 text-xs">
+            <div className="max-w-xs mx-auto space-y-2">
+              <Calendar className="h-8 w-8 mx-auto text-zinc-300 dark:text-zinc-600" />
+              <p className="font-semibold text-zinc-700 dark:text-zinc-300 text-sm">
+                No transactions found
+              </p>
+              <p className="text-zinc-500">
+                There are no sales or return records for {activeDateLabel.toLowerCase()} matching your filter criteria.
+              </p>
+              {(dateFilter !== 'all' || typeFilter !== 'ALL' || search) && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    setDateFilter('all');
+                    setTypeFilter('ALL');
+                    setSearch('');
+                    setCustomStart('');
+                    setCustomEnd('');
+                  }}
+                  className="mt-2"
+                >
+                  Reset all filters
+                </Button>
+              )}
+            </div>
+          </Card>
+        ) : (
+          dateGroups.map((group) => (
+            <div key={group.dateKey} className="space-y-2.5">
+              {/* Daily Group Sticky Header with Summary */}
+              <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-2 py-2 px-3 rounded-xl bg-zinc-100/90 dark:bg-zinc-850/90 backdrop-blur-md border border-zinc-200/80 dark:border-zinc-800 shadow-2xs">
+                <div className="flex items-baseline gap-2">
+                  <span className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
+                    {group.label}
+                  </span>
+                  {group.subLabel && (
+                    <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">
+                      • {group.subLabel}
+                    </span>
+                  )}
+                </div>
 
-          {/* Desktop Table */}
-          <Card className="hidden lg:block p-0 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="bg-zinc-50/80 dark:bg-zinc-850/80 border-b border-zinc-200/80 dark:border-zinc-800 text-[10px] font-medium uppercase tracking-wider text-zinc-400">
-                  <tr>
-                    <th className="px-6 py-3">Reference</th>
-                    <th className="px-4 py-3">Type</th>
-                    <th className="px-4 py-3">Line Items</th>
-                    <th className="px-4 py-3">Amount</th>
-                    <th className="px-4 py-3">Method</th>
-                    <th className="px-4 py-3">Date</th>
-                    <th className="px-6 py-3 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
-                  {transactions.map((txn) => {
-                    const isReturn = txn.type === 'SALE_RETURN';
-                    return (
-                      <tr
-                        key={txn._id}
-                        onClick={() => setSelectedTxn(txn)}
-                        className="hover:bg-black/[0.03] dark:hover:bg-white/[0.06] transition-colors duration-150 cursor-pointer"
-                      >
-                        <td className="px-6 py-3.5 font-mono font-semibold text-xs text-zinc-900 dark:text-zinc-100">
-                          {txn.referenceNumber}
-                        </td>
-                        <td className="px-4 py-3.5">
-                          <Badge variant={isReturn ? 'warning' : 'accent'} size="sm">
-                            {isReturn ? 'Return' : 'Sale'}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3.5 text-xs text-zinc-600 dark:text-zinc-400">
-                          {txn.items?.map((i) => `${i.quantity}x ${i.productName}`).join(', ')}
-                        </td>
-                        <td
-                          className={`px-4 py-3.5 font-bold font-mono text-xs ${
+                {/* Daily Summary Metrics */}
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-xs">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-black/[0.04] dark:bg-white/[0.06] text-zinc-600 dark:text-zinc-300 border border-black/[0.06] dark:border-white/[0.08]">
+                    {group.summary.count} {group.summary.count === 1 ? 'txn' : 'txns'} · {group.summary.totalQty} items
+                  </span>
+
+                  <span
+                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold font-mono ${
+                      group.summary.netAmount >= 0
+                        ? 'bg-[#DBFE80]/20 text-zinc-900 dark:bg-[#DBFE80]/15 dark:text-[#DBFE80] border border-[#DBFE80]/40'
+                        : 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30'
+                    }`}
+                  >
+                    Net: {formatCurrency(group.summary.netAmount, currency)}
+                  </span>
+
+                  {group.summary.returnsCount > 0 && (
+                    <span className="hidden sm:inline-flex items-center text-[11px] text-amber-600 dark:text-amber-400 font-medium">
+                      ({group.summary.returnsCount} return: -{formatCurrency(group.summary.returnsAmount, currency)})
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Mobile Cards for this Date Group */}
+              <div className="block lg:hidden space-y-2">
+                {group.transactions.map((txn) => {
+                  const isReturn = txn.type === 'SALE_RETURN';
+                  return (
+                    <div
+                      key={txn._id}
+                      onClick={() => setSelectedTxn(txn)}
+                      className={`p-3.5 rounded-2xl border bg-white dark:bg-zinc-900 cursor-pointer active:scale-[0.99] transition-all shadow-2xs ${
+                        isReturn
+                          ? 'border-amber-200/80 dark:border-amber-900/40'
+                          : 'border-zinc-200/80 dark:border-zinc-800'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800/80">
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-mono font-bold text-xs text-zinc-900 dark:text-zinc-100">
+                            {txn.referenceNumber}
+                          </span>
+                          {txn.scannedViaQR && (
+                            <span
+                              className="inline-flex items-center text-[10px] text-zinc-500 dark:text-zinc-400"
+                              title="Scanned via QR"
+                            >
+                              <QrCode className="h-3 w-3" />
+                            </span>
+                          )}
+                        </div>
+                        <Badge variant={isReturn ? 'warning' : 'accent'} size="sm" dot>
+                          {isReturn ? 'Customer Return' : 'Sale'}
+                        </Badge>
+                      </div>
+
+                      <div className="flex justify-between items-start pt-2.5">
+                        <div className="text-xs text-zinc-600 dark:text-zinc-300 max-w-[70%]">
+                          <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                            {txn.items?.[0]?.productName}
+                          </span>
+                          {txn.items?.[0]?.quantity && (
+                            <span className="text-zinc-400 text-[11px] ml-1">
+                              x{txn.items[0].quantity}
+                            </span>
+                          )}
+                          {txn.items?.length > 1 && (
+                            <div className="text-[11px] text-zinc-400">
+                              +{txn.items.length - 1} additional item{txn.items.length > 2 ? 's' : ''}
+                            </div>
+                          )}
+                        </div>
+                        <div
+                          className={`font-mono font-bold text-sm text-right ${
                             isReturn
                               ? 'text-amber-600 dark:text-amber-400'
                               : 'text-zinc-900 dark:text-zinc-100'
@@ -350,85 +533,141 @@ export const SalesPage = () => {
                         >
                           {isReturn ? '-' : '+'}
                           {formatCurrency(txn.totalAmount, currency)}
-                        </td>
-                        <td className="px-4 py-3.5 text-xs text-zinc-500">{txn.paymentMethod}</td>
-                        <td className="px-4 py-3.5 text-xs text-zinc-400">
-                          {formatDate(txn.createdAt)}
-                        </td>
-                        <td className="px-6 py-3.5 text-right">
-                          <div className="inline-flex items-center gap-1 justify-end">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedTxn(txn);
-                              }}
-                              className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-900 hover:bg-black/[0.04] dark:hover:bg-white/[0.08] dark:hover:text-zinc-200 transition-colors active:scale-90"
-                              title="View Details"
-                            >
-                              <FileText className="h-4 w-4" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={(e) => handleDeleteTransaction(e, txn._id, txn.referenceNumber)}
-                              className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-600 hover:bg-rose-500/10 dark:hover:text-rose-400 dark:hover:bg-rose-500/15 transition-colors active:scale-90"
-                              title="Delete Audit Record"
-                              aria-label={`Delete record ${txn.referenceNumber}`}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                          </div>
-                        </td>
+                        </div>
+                      </div>
+
+                      {/* Date, Time and Details */}
+                      <div className="flex items-center justify-between text-[11px] text-zinc-400 pt-2.5 mt-2 border-t border-zinc-100 dark:border-zinc-800/60">
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="h-3 w-3 text-zinc-400" />
+                          <span>{formatTimeOnly(txn.createdAt)}</span>
+                          <span>•</span>
+                          <span>{txn.paymentMethod || 'CASH'}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedTxn(txn);
+                            }}
+                            className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:underline"
+                          >
+                            Receipt
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => handleDeleteTransaction(e, txn._id, txn.referenceNumber)}
+                            className="text-rose-500 hover:text-rose-600 p-1"
+                            title="Delete record"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Table for this Date Group */}
+              <Card className="hidden lg:block p-0 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm">
+                    <thead className="bg-zinc-50/80 dark:bg-zinc-850/80 border-b border-zinc-200/80 dark:border-zinc-800 text-[10px] font-medium uppercase tracking-wider text-zinc-400">
+                      <tr>
+                        <th className="px-5 py-3">Reference</th>
+                        <th className="px-4 py-3">Type</th>
+                        <th className="px-4 py-3">Line Items</th>
+                        <th className="px-4 py-3">Net Amount</th>
+                        <th className="px-4 py-3">Method</th>
+                        <th className="px-4 py-3">Date & Time</th>
+                        <th className="px-5 py-3 text-right">Actions</th>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800/60">
+                      {group.transactions.map((txn) => {
+                        const isReturn = txn.type === 'SALE_RETURN';
+                        return (
+                          <tr
+                            key={txn._id}
+                            onClick={() => setSelectedTxn(txn)}
+                            className="hover:bg-black/[0.02] dark:hover:bg-white/[0.04] transition-colors duration-150 cursor-pointer"
+                          >
+                            <td className="px-5 py-3.5 font-mono font-semibold text-xs text-zinc-900 dark:text-zinc-100">
+                              <div className="flex items-center gap-1.5">
+                                <span>{txn.referenceNumber}</span>
+                                {txn.scannedViaQR && (
+                                  <span title="Scanned via QR">
+                                    <QrCode className="h-3 w-3 text-zinc-400" />
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3.5">
+                              <Badge variant={isReturn ? 'warning' : 'accent'} size="sm" dot>
+                                {isReturn ? 'Customer Return' : 'Sale'}
+                              </Badge>
+                            </td>
+                            <td className="px-4 py-3.5 text-xs text-zinc-600 dark:text-zinc-400 max-w-xs truncate">
+                              {txn.items?.map((i) => `${i.quantity}x ${i.productName}`).join(', ')}
+                            </td>
+                            <td
+                              className={`px-4 py-3.5 font-bold font-mono text-xs ${
+                                isReturn
+                                  ? 'text-amber-600 dark:text-amber-400'
+                                  : 'text-zinc-900 dark:text-zinc-100'
+                              }`}
+                            >
+                              {isReturn ? '-' : '+'}
+                              {formatCurrency(txn.totalAmount, currency)}
+                            </td>
+                            <td className="px-4 py-3.5 text-xs text-zinc-500">
+                              {txn.paymentMethod || 'CASH'}
+                            </td>
+                            <td className="px-4 py-3.5">
+                              <div className="text-xs font-medium text-zinc-900 dark:text-zinc-100">
+                                {formatDateOnly(txn.createdAt)}
+                              </div>
+                              <div className="text-[11px] text-zinc-400 font-mono">
+                                {formatTimeOnly(txn.createdAt)}
+                              </div>
+                            </td>
+                            <td className="px-5 py-3.5 text-right">
+                              <div className="inline-flex items-center gap-1 justify-end">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedTxn(txn);
+                                  }}
+                                  className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-900 hover:bg-black/[0.04] dark:hover:bg-white/[0.08] dark:hover:text-zinc-200 transition-colors active:scale-90"
+                                  title="View Receipt"
+                                >
+                                  <FileText className="h-4 w-4" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => handleDeleteTransaction(e, txn._id, txn.referenceNumber)}
+                                  className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-600 hover:bg-rose-500/10 dark:hover:text-rose-400 dark:hover:bg-rose-500/15 transition-colors active:scale-90"
+                                  title="Delete Audit Record"
+                                  aria-label={`Delete record ${txn.referenceNumber}`}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
             </div>
-          </Card>
-        </div>
-      )}
-
-      {/* TAB 3: Sales Summary & Analytics */}
-      {activeTab === 'summary' && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-          <Card compact>
-            <span className="text-[10px] uppercase font-semibold text-zinc-400 block">
-              Gross Sales Revenue
-            </span>
-            <div className="text-xl sm:text-2xl font-black font-mono text-zinc-900 dark:text-zinc-100 mt-1">
-              {formatCurrency(summary.grossSales, currency)}
-            </div>
-            <span className="text-[11px] text-zinc-400 mt-1 block">
-              {summary.salesCount} sale transactions
-            </span>
-          </Card>
-
-          <Card compact>
-            <span className="text-[10px] uppercase font-semibold text-zinc-400 block">
-              Customer Returns / Refunds
-            </span>
-            <div className="text-xl sm:text-2xl font-black font-mono text-amber-600 dark:text-amber-400 mt-1">
-              {formatCurrency(summary.totalReturns, currency)}
-            </div>
-            <span className="text-[11px] text-zinc-400 mt-1 block">
-              {summary.returnsCount} return entries
-            </span>
-          </Card>
-
-          <Card compact>
-            <span className="text-[10px] uppercase font-semibold text-zinc-400 block">
-              Net Realized Sales
-            </span>
-            <div className="text-xl sm:text-2xl font-black font-mono text-zinc-900 dark:text-zinc-100 mt-1">
-              {formatCurrency(summary.grossSales - summary.totalReturns, currency)}
-            </div>
-            <span className="text-[11px] text-zinc-400 mt-1 block">
-              Gross sales minus returns
-            </span>
-          </Card>
-        </div>
-      )}
+          ))
+        )}
+      </div>
 
       {/* Log Return Modal */}
       <Modal
@@ -483,9 +722,9 @@ export const SalesPage = () => {
             />
           </div>
 
-          <div className="rounded-lg bg-zinc-50 dark:bg-zinc-850 p-2.5 text-[11px] text-zinc-500">
+          <div className="rounded-xl bg-zinc-100 dark:bg-zinc-800/80 p-3 text-[11px] text-zinc-500 dark:text-zinc-400 border border-zinc-200/80 dark:border-zinc-750">
             Note: Recording a customer return will automatically replenish inventory stock by +
-            {returnQty}.
+            {returnQty} and deduct {formatCurrency(refundAmount || 0, currency)} from sales revenue.
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
@@ -503,7 +742,7 @@ export const SalesPage = () => {
       <Modal
         isOpen={Boolean(selectedTxn)}
         onClose={() => setSelectedTxn(null)}
-        title="Sales Receipt"
+        title="Sales Transaction Receipt"
         maxWidth="max-w-md"
       >
         {selectedTxn && (
@@ -515,16 +754,29 @@ export const SalesPage = () => {
                   {selectedTxn.referenceNumber}
                 </p>
               </div>
-              <Badge variant={selectedTxn.type === 'SALE_RETURN' ? 'warning' : 'accent'}>
-                {selectedTxn.type === 'SALE_RETURN' ? 'Customer Return' : 'Customer Sale'}
+              <Badge
+                variant={selectedTxn.type === 'SALE_RETURN' ? 'warning' : 'accent'}
+                size="sm"
+                dot
+              >
+                {selectedTxn.type === 'SALE_RETURN' ? 'Customer Return' : 'Sale'}
               </Badge>
             </div>
 
-            <div className="divide-y divide-zinc-100 dark:divide-zinc-800 border rounded-lg p-2.5 bg-zinc-50/50 dark:bg-zinc-850/50 max-h-44 overflow-y-auto">
+            <div className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center justify-between">
+              <span>Timestamp:</span>
+              <span className="font-mono text-zinc-700 dark:text-zinc-300 font-medium">
+                {formatDateTime(selectedTxn.createdAt)}
+              </span>
+            </div>
+
+            <div className="divide-y divide-zinc-100 dark:divide-zinc-800 border rounded-xl p-2.5 bg-zinc-50/50 dark:bg-zinc-850/50 max-h-48 overflow-y-auto">
               {selectedTxn.items?.map((it, i) => (
                 <div key={i} className="flex justify-between py-1.5 text-xs">
                   <div>
-                    <p className="font-semibold text-zinc-800 dark:text-zinc-200">{it.productName}</p>
+                    <p className="font-semibold text-zinc-800 dark:text-zinc-200">
+                      {it.productName}
+                    </p>
                     <p className="text-[10px] text-zinc-400 font-mono">
                       {it.quantity} x {formatCurrency(it.unitPrice, currency)}
                     </p>
@@ -537,14 +789,21 @@ export const SalesPage = () => {
             </div>
 
             <div className="flex justify-between text-sm font-bold border-t border-zinc-100 dark:border-zinc-800 pt-2">
-              <span>Total:</span>
-              <span className="font-mono text-base text-zinc-900 dark:text-zinc-100">
+              <span>Total Amount:</span>
+              <span
+                className={`font-mono text-base ${
+                  selectedTxn.type === 'SALE_RETURN'
+                    ? 'text-amber-600 dark:text-amber-400'
+                    : 'text-zinc-900 dark:text-zinc-100'
+                }`}
+              >
+                {selectedTxn.type === 'SALE_RETURN' ? '-' : '+'}
                 {formatCurrency(selectedTxn.totalAmount, currency)}
               </span>
             </div>
 
             {selectedTxn.notes && (
-              <p className="text-xs text-zinc-500 bg-zinc-50 dark:bg-zinc-850 p-2 rounded">
+              <p className="text-xs text-zinc-500 bg-zinc-50 dark:bg-zinc-850 p-2.5 rounded-xl border border-zinc-200/50 dark:border-zinc-800">
                 {selectedTxn.notes}
               </p>
             )}
@@ -568,4 +827,5 @@ export const SalesPage = () => {
     </div>
   );
 };
+
 export default SalesPage;

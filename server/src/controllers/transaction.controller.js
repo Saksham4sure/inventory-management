@@ -151,16 +151,38 @@ export const createTransaction = asyncHandler(async (req, res) => {
 });
 
 export const getTransactions = asyncHandler(async (req, res) => {
-  const { type, categoryGroup, search, page = 1, limit = 50 } = req.query;
+  const { type, categoryGroup, search, startDate, endDate, page = 1, limit = 150 } = req.query;
 
   const filter = { businessId: req.user.businessId };
 
   if (categoryGroup === 'sales') {
-    filter.type = { $in: [TRANSACTION_TYPES.SALE, TRANSACTION_TYPES.SALE_RETURN] };
+    if (type && type !== 'ALL') {
+      filter.type = type;
+    } else {
+      filter.type = { $in: [TRANSACTION_TYPES.SALE, TRANSACTION_TYPES.SALE_RETURN] };
+    }
   } else if (categoryGroup === 'purchases') {
-    filter.type = { $in: [TRANSACTION_TYPES.PURCHASE, TRANSACTION_TYPES.PURCHASE_RETURN] };
+    if (type && type !== 'ALL') {
+      filter.type = type;
+    } else {
+      filter.type = { $in: [TRANSACTION_TYPES.PURCHASE, TRANSACTION_TYPES.PURCHASE_RETURN] };
+    }
   } else if (type && type !== 'ALL') {
     filter.type = type;
+  }
+
+  if (startDate || endDate) {
+    filter.createdAt = {};
+    if (startDate) {
+      filter.createdAt.$gte = new Date(startDate);
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      if (typeof endDate === 'string' && endDate.length <= 10) {
+        end.setHours(23, 59, 59, 999);
+      }
+      filter.createdAt.$lte = end;
+    }
   }
 
   if (search) {
