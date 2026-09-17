@@ -1,13 +1,24 @@
 import mongoose from 'mongoose';
 import { Transaction } from '../models/transaction.model.js';
 import { Product } from '../models/product.model.js';
+import { Party } from '../models/party.model.js';
+import { PartyCredit } from '../models/partyCredit.model.js';
 import { ApiError } from '../utils/apiError.js';
 import { ApiResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { TRANSACTION_TYPES } from '../constants/transactionTypes.js';
 
 export const createTransaction = asyncHandler(async (req, res) => {
-  const { type, items, paymentMethod = 'CASH', notes = '', scannedViaQR = false } = req.body;
+  const {
+    type,
+    items,
+    paymentMethod = 'CASH',
+    notes = '',
+    scannedViaQR = false,
+    partyId,
+    partyName,
+    partyPhone,
+  } = req.body;
 
   const validTypes = [
     TRANSACTION_TYPES.PURCHASE,
@@ -122,6 +133,25 @@ export const createTransaction = asyncHandler(async (req, res) => {
   // Save stock updates
   await Promise.all(productsToUpdate.map((p) => p.save()));
 
+  // Resolve or create Party if party info provided
+  let resolvedParty = null;
+  if (partyId) {
+    resolvedParty = await Party.findOne({ _id: partyId, businessId: req.user.businessId });
+  } else if (partyPhone && partyPhone.trim()) {
+    const cleanPhone = partyPhone.trim();
+    resolvedParty = await Party.findOne({ businessId: req.user.businessId, phone: cleanPhone });
+    if (!resolvedParty && partyName && partyName.trim()) {
+      resolvedParty = await Party.create({
+        businessId: req.user.businessId,
+        name: partyName.trim(),
+        phone: cleanPhone,
+        type: type === TRANSACTION_TYPES.SALE ? 'CUSTOMER' : 'SUPPLIER',
+        currentBalance: 0,
+        createdBy: req.user._id,
+      });
+    }
+  }
+
   // Create transaction record
   const transaction = await Transaction.create({
     businessId: req.user.businessId,
@@ -130,10 +160,47 @@ export const createTransaction = asyncHandler(async (req, res) => {
     items: processedItems,
     totalAmount,
     paymentMethod,
+    party: resolvedParty?._id || null,
+    partyName: resolvedParty?.name || (partyName ? partyName.trim() : ''),
+    partyPhone: resolvedParty?.phone || (partyPhone ? partyPhone.trim() : ''),
     notes,
     scannedViaQR: Boolean(scannedViaQR),
     createdBy: req.user._id,
   });
+
+  // If credit transaction with a party, update party balance and log ledger entry!
+  if (resolvedParty && paymentMethod === 'CREDIT') {
+    let entryType = 'CREDIT_GIVEN';
+    if (type === TRANSACTION_TYPES.SALE) {
+      entryType = 'CREDIT_GIVEN';
+      resolvedParty.currentBalance += totalAmount;
+    } else if (type === TRANSACTION_TYPES.PURCHASE) {
+      entryType = 'CREDIT_TAKEN';
+      resolvedParty.currentBalance -= totalAmount;
+    } else if (type === TRANSACTION_TYPES.SALE_RETURN) {
+      entryType = 'PAYMENT_RECEIVED';
+      resolvedParty.currentBalance -= totalAmount;
+    } else if (type === TRANSACTION_TYPES.PURCHASE_RETURN) {
+      entryType = 'PAYMENT_MADE';
+      resolvedParty.currentBalance += totalAmount;
+    }
+
+    await Promise.all([
+      resolvedParty.save(),
+      PartyCredit.create({
+        businessId: req.user.businessId,
+        partyId: resolvedParty._id,
+        entryType,
+        amount: totalAmount,
+        balanceAfter: resolvedParty.currentBalance,
+        referenceNumber,
+        paymentMethod: 'CREDIT',
+        notes: `Credit ${type === TRANSACTION_TYPES.SALE ? 'sale' : 'purchase'} #${referenceNumber}`,
+        date: new Date(),
+        createdBy: req.user._id,
+      }),
+    ]);
+  }
 
   const typeLabels = {
     [TRANSACTION_TYPES.SALE]: 'Sale',

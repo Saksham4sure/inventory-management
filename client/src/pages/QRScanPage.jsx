@@ -1,13 +1,15 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
 import { productService } from '../services/productService';
 import { transactionService } from '../services/transactionService';
+import { partyService } from '../services/partyService';
 import { useBusiness } from '../hooks/useBusiness';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Modal } from '../components/ui/Modal';
 import { Select } from '../components/ui/Select';
+import { Input } from '../components/ui/Input';
 import { formatCurrency } from '../utils/formatters';
 import {
   ScanLine,
@@ -26,6 +28,11 @@ import {
   Upload,
   X,
   RefreshCw,
+  Users,
+  UserCheck,
+  Search,
+  Phone,
+  UserPlus,
 } from 'lucide-react';
 
 export const QRScanPage = () => {
@@ -38,7 +45,7 @@ export const QRScanPage = () => {
   // Input Method: 'qr' or 'manual'
   const [inputMethod, setInputMethod] = useState('qr');
 
-  // Stacked Cart items: each item is { cartId, isManual, product, productName, sku, quantity, unitPrice }
+  // Stacked Cart items
   const [cart, setCart] = useState([]);
 
   // Notifications & State
@@ -48,11 +55,21 @@ export const QRScanPage = () => {
   const [completedTxn, setCompletedTxn] = useState(null);
   const [scanFlash, setScanFlash] = useState(false);
   const [isScanningFile, setIsScanningFile] = useState(false);
-  const [scannedPill, setScannedPill] = useState(null); // { name, code }
+  const [scannedPill, setScannedPill] = useState(null);
 
   // Transaction options
   const [paymentMethod, setPaymentMethod] = useState('CASH');
   const [notes, setNotes] = useState('');
+
+  // Credit Party State
+  const [creditParty, setCreditParty] = useState(null); // { _id, name, phone, type, currentBalance, isNew }
+  const [isCreditPartyModalOpen, setIsCreditPartyModalOpen] = useState(false);
+  const [existingParties, setExistingParties] = useState([]);
+  const [loadingParties, setLoadingParties] = useState(false);
+  const [partyTab, setPartyTab] = useState('existing'); // 'existing' | 'new'
+  const [partySearch, setPartySearch] = useState('');
+  const [newPartyName, setNewPartyName] = useState('');
+  const [newPartyPhone, setNewPartyPhone] = useState('');
 
   // Scanner refs & anti-loop controls
   const qrCodeRef = useRef(null);
@@ -63,11 +80,9 @@ export const QRScanPage = () => {
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [isStartingCamera, setIsStartingCamera] = useState(false);
 
-  // Manual Calculator state
+  // Simplified Manual Calculator state
   const [manualItemName, setManualItemName] = useState('');
   const [manualAmount, setManualAmount] = useState('0');
-  const [manualQty, setManualQty] = useState(1);
-  const [calcTarget, setCalcTarget] = useState('amount'); // 'amount' | 'qty'
 
   // Auto-dismiss snackbar after 3.5 seconds
   useEffect(() => {
@@ -78,7 +93,7 @@ export const QRScanPage = () => {
     return () => clearTimeout(timer);
   }, [snackbar]);
 
-  // Trigger sensory feedback (vibration + viewfinder flash + snackbar)
+  // Sensory feedback
   const showSuccessSnackbar = (itemName, qty, price) => {
     if (typeof window !== 'undefined' && 'vibrate' in navigator) {
       try {
@@ -135,7 +150,7 @@ export const QRScanPage = () => {
     showSuccessSnackbar(product.name, addQty, unitPrice);
   };
 
-  // Add Manual / Non-Catalog Item to cart
+  // Add Manual / Non-Catalog Item to cart (Simplified 1-step calculator add)
   const addManualItemToCart = () => {
     let finalPrice = 0;
     try {
@@ -153,10 +168,9 @@ export const QRScanPage = () => {
       return;
     }
 
-    const qty = Math.max(1, Number(manualQty) || 1);
     const cleanName =
       manualItemName.trim() ||
-      (txnType === 'SALE' ? 'General Sale Item' : 'General Purchase Item');
+      (txnType === 'SALE' ? 'Manual Sale Item' : 'Manual Purchase Item');
 
     const newItem = {
       cartId: `manual-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -164,16 +178,15 @@ export const QRScanPage = () => {
       product: null,
       productName: cleanName,
       sku: 'MANUAL',
-      quantity: qty,
+      quantity: 1,
       unitPrice: finalPrice,
     };
 
     setCart((prev) => [...prev, newItem]);
-    showSuccessSnackbar(cleanName, qty, finalPrice);
+    showSuccessSnackbar(cleanName, 1, finalPrice);
 
     // Reset manual form
     setManualAmount('0');
-    setManualQty(1);
     setManualItemName('');
     setError('');
   };
@@ -183,13 +196,8 @@ export const QRScanPage = () => {
     if (!rawCode) return;
     const cleanCode = String(rawCode).trim();
 
-    // 1. Prevent concurrent frame resolution
     if (isProcessingRef.current) return;
-
-    // 2. PREVENT LOOP SCANNING: If the camera is still viewing the same QR code, IGNORE it!
-    if (lastScannedCodeRef.current === cleanCode) {
-      return;
-    }
+    if (lastScannedCodeRef.current === cleanCode) return;
 
     try {
       isProcessingRef.current = true;
@@ -204,11 +212,9 @@ export const QRScanPage = () => {
         code: cleanCode,
       });
 
-      // Clear existing reset timer
       if (lastScannedCooldownTimer.current) {
         clearTimeout(lastScannedCooldownTimer.current);
       }
-      // Allow re-scanning the same code after 6 seconds or if moved away
       lastScannedCooldownTimer.current = setTimeout(() => {
         lastScannedCodeRef.current = null;
         setScannedPill(null);
@@ -225,7 +231,6 @@ export const QRScanPage = () => {
     }
   };
 
-  // Force allow scanning the same item again immediately
   const handleResetScanLock = () => {
     lastScannedCodeRef.current = null;
     setScannedPill(null);
@@ -234,7 +239,7 @@ export const QRScanPage = () => {
     }
   };
 
-  // Handle file / photo upload QR scan
+  // File upload scan
   const handleFileUploadScan = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -244,7 +249,7 @@ export const QRScanPage = () => {
       setError('');
       const html5QrCode = new Html5Qrcode('qr-temp-reader');
       const decodedText = await html5QrCode.scanFile(file, true);
-      lastScannedCodeRef.current = null; // reset lock for file scan
+      lastScannedCodeRef.current = null;
       await handleQRDetected(decodedText);
       html5QrCode.clear();
     } catch (err) {
@@ -255,7 +260,7 @@ export const QRScanPage = () => {
     }
   };
 
-  // Stop camera stream completely and release device media tracks immediately
+  // Stop camera
   const stopCamera = async () => {
     if (qrCodeRef.current) {
       const scanner = qrCodeRef.current;
@@ -270,7 +275,6 @@ export const QRScanPage = () => {
       }
     }
 
-    // Direct MediaStream track cutoff to guarantee camera hardware shuts down immediately:
     const readerEl = document.getElementById('mobile-qr-reader');
     if (readerEl) {
       const videos = readerEl.querySelectorAll('video');
@@ -287,16 +291,14 @@ export const QRScanPage = () => {
     setIsStartingCamera(false);
   };
 
-  // Request camera permission and start scanning only after user clicks button
+  // Start camera
   const startCamera = async () => {
     try {
       setIsStartingCamera(true);
       setError('');
 
-      // Stop any prior instance
       await stopCamera();
 
-      // Ensure target element is mounted
       const readerEl = document.getElementById('mobile-qr-reader');
       if (!readerEl) {
         throw new Error('Scanner container element not found');
@@ -306,7 +308,6 @@ export const QRScanPage = () => {
       const qrCode = new Html5Qrcode('mobile-qr-reader');
       qrCodeRef.current = qrCode;
 
-      // Detect best available camera (rear/environment preferred, webcam fallback)
       let cameraConfig = { facingMode: 'environment' };
       try {
         const cameras = await Html5Qrcode.getCameras();
@@ -319,7 +320,6 @@ export const QRScanPage = () => {
             : { deviceId: { exact: cameras[0].id } };
         }
       } catch {
-        // Fallback to environment facingMode if enumeration not supported before permission
         cameraConfig = { facingMode: 'environment' };
       }
 
@@ -338,7 +338,7 @@ export const QRScanPage = () => {
           cameraConfig,
           scanConfig,
           handleQRDetected,
-          () => {} // Frame non-detection callback
+          () => {}
         );
       } catch (firstErr) {
         console.warn('Primary camera config rejected, trying user-facing fallback:', firstErr);
@@ -368,7 +368,6 @@ export const QRScanPage = () => {
     }
   };
 
-  // Ensure camera hardware is immediately stopped whenever leaving this page or unmounting
   useEffect(() => {
     return () => {
       if (qrCodeRef.current) {
@@ -400,26 +399,16 @@ export const QRScanPage = () => {
     };
   }, []);
 
-  // Calculator button handler
+  // Simple Calculator button handler
   const handleCalcButton = (val) => {
     if (val === 'C') {
-      if (calcTarget === 'qty') {
-        setManualQty(1);
-      } else {
-        setManualAmount('0');
-      }
+      setManualAmount('0');
       return;
     }
 
     if (val === '⌫') {
-      if (calcTarget === 'qty') {
-        const str = String(manualQty);
-        const trimmed = str.length > 1 ? str.slice(0, -1) : '1';
-        setManualQty(Math.max(1, Number(trimmed) || 1));
-      } else {
-        const trimmed = manualAmount.length > 1 ? manualAmount.slice(0, -1) : '0';
-        setManualAmount(trimmed);
-      }
+      const trimmed = manualAmount.length > 1 ? manualAmount.slice(0, -1) : '0';
+      setManualAmount(trimmed);
       return;
     }
 
@@ -435,15 +424,8 @@ export const QRScanPage = () => {
       return;
     }
 
-    if (calcTarget === 'qty') {
-      if (!isNaN(val)) {
-        const nextQty = Number(String(manualQty) + val);
-        setManualQty(Math.min(9999, Math.max(1, nextQty)));
-      }
-    } else {
-      let nextStr = manualAmount === '0' && !isNaN(val) ? String(val) : manualAmount + val;
-      setManualAmount(nextStr);
-    }
+    const nextStr = manualAmount === '0' && !isNaN(val) ? String(val) : manualAmount + val;
+    setManualAmount(nextStr);
   };
 
   // Cart operations
@@ -480,6 +462,98 @@ export const QRScanPage = () => {
     return { totalItems, totalAmount, linesCount: cart.length };
   }, [cart]);
 
+  // Fetch Parties for Credit Selection
+  const fetchPartiesForCredit = useCallback(async () => {
+    try {
+      setLoadingParties(true);
+      const targetType = txnType === 'SALE' ? 'CUSTOMER' : 'SUPPLIER';
+      const res = await partyService.getParties({
+        type: targetType,
+        limit: 100,
+      });
+      setExistingParties(res?.parties || []);
+    } catch (err) {
+      console.error('Failed to load parties for credit', err);
+    } finally {
+      setLoadingParties(false);
+    }
+  }, [txnType]);
+
+  // Handle Payment Method Switch
+  const handleSelectPaymentMethod = (method) => {
+    setPaymentMethod(method);
+    if (method === 'CREDIT') {
+      setIsCreditPartyModalOpen(true);
+      fetchPartiesForCredit();
+    } else {
+      setCreditParty(null);
+    }
+  };
+
+  // When changing transaction mode (Sale <-> Purchase), reset credit party if mismatched
+  const handleSwitchTxnType = (type) => {
+    setTxnType(type);
+    if (creditParty) {
+      setCreditParty(null);
+      setPaymentMethod('CASH');
+    }
+  };
+
+  // Select an Existing Party for Credit
+  const handleSelectExistingParty = (party) => {
+    setCreditParty({
+      _id: party._id,
+      name: party.name,
+      phone: party.phone,
+      type: party.type,
+      currentBalance: party.currentBalance || 0,
+      isNew: false,
+    });
+    setPaymentMethod('CREDIT');
+    setIsCreditPartyModalOpen(false);
+    setError('');
+  };
+
+  // Use Just Name & Phone for New Party
+  const handleSelectNewParty = () => {
+    if (!newPartyName.trim() || !newPartyPhone.trim()) {
+      setError('Please provide both Name and Phone number for the party identity.');
+      return;
+    }
+
+    setCreditParty({
+      _id: null,
+      name: newPartyName.trim(),
+      phone: newPartyPhone.trim(),
+      type: txnType === 'SALE' ? 'CUSTOMER' : 'SUPPLIER',
+      currentBalance: 0,
+      isNew: true,
+    });
+    setPaymentMethod('CREDIT');
+    setIsCreditPartyModalOpen(false);
+    setNewPartyName('');
+    setNewPartyPhone('');
+    setError('');
+  };
+
+  const handleCloseCreditModal = () => {
+    setIsCreditPartyModalOpen(false);
+    if (!creditParty) {
+      setPaymentMethod('CASH');
+    }
+  };
+
+  // Filtered list of existing parties for credit modal
+  const filteredExistingParties = useMemo(() => {
+    if (!partySearch.trim()) return existingParties;
+    const s = partySearch.toLowerCase().trim();
+    return existingParties.filter(
+      (p) =>
+        p.name.toLowerCase().includes(s) ||
+        (p.phone && p.phone.toLowerCase().includes(s))
+    );
+  }, [existingParties, partySearch]);
+
   // Complete batch transaction
   const handleCompleteTransaction = async () => {
     if (cart.length === 0) {
@@ -501,6 +575,14 @@ export const QRScanPage = () => {
       }
     }
 
+    // If payment method is CREDIT, party identity is required!
+    if (paymentMethod === 'CREDIT' && !creditParty) {
+      setError(`Please select or specify a ${txnType === 'SALE' ? 'Customer' : 'Supplier'} for this credit transaction.`);
+      setIsCreditPartyModalOpen(true);
+      fetchPartiesForCredit();
+      return;
+    }
+
     try {
       setSubmitting(true);
       setError('');
@@ -515,6 +597,9 @@ export const QRScanPage = () => {
           unitPrice: item.unitPrice,
         })),
         paymentMethod,
+        partyId: creditParty?._id || null,
+        partyName: creditParty?.name || '',
+        partyPhone: creditParty?.phone || '',
         notes: notes.trim(),
         scannedViaQR: cart.some((i) => !i.isManual),
       };
@@ -523,6 +608,7 @@ export const QRScanPage = () => {
       setCompletedTxn(result);
       setCart([]);
       setNotes('');
+      setCreditParty(null);
     } catch (err) {
       setError(err.message || 'Failed to complete transaction');
     } finally {
@@ -575,7 +661,7 @@ export const QRScanPage = () => {
         <div className="flex p-1 rounded-full bg-zinc-200/70 dark:bg-zinc-850 self-start sm:self-auto shadow-inner">
           <button
             type="button"
-            onClick={() => setTxnType('SALE')}
+            onClick={() => handleSwitchTxnType('SALE')}
             className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 active:scale-95 ${
               txnType === 'SALE'
                 ? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-700 dark:text-white'
@@ -586,7 +672,7 @@ export const QRScanPage = () => {
           </button>
           <button
             type="button"
-            onClick={() => setTxnType('PURCHASE')}
+            onClick={() => handleSwitchTxnType('PURCHASE')}
             className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 active:scale-95 ${
               txnType === 'PURCHASE'
                 ? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-700 dark:text-white'
@@ -671,12 +757,10 @@ export const QRScanPage = () => {
                 </div>
               </div>
 
-              {/* Viewfinder Container - perfectly centered in card */}
+              {/* Viewfinder Container */}
               <div className="relative mx-auto w-full max-w-[280px] sm:max-w-[320px] aspect-square rounded-2xl overflow-hidden bg-black flex items-center justify-center border border-zinc-200/20 shadow-inner">
-                {/* HTML5 QR Code Mount Target */}
                 <div id="mobile-qr-reader" className="absolute inset-0 w-full h-full pointer-events-none" />
 
-                {/* Prompt State: When camera is not active, display centered permission / start button */}
                 {!isCameraActive && (
                   <div className="relative z-10 flex flex-col items-center justify-center gap-3 p-4 text-center animate-in fade-in duration-200">
                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-white border border-white/15 shadow-inner">
@@ -704,27 +788,23 @@ export const QRScanPage = () => {
                   </div>
                 )}
 
-                {/* Viewfinder Overlay Frame: Target Brackets & Laser Beam (Only active when scanning) */}
                 {isCameraActive && (
                   <div
                     className={`pointer-events-none absolute inset-6 sm:inset-8 rounded-2xl border border-white/20 transition-all duration-300 z-10 ${
                       scanFlash ? 'ring-4 ring-[#DBFE80]/80 bg-[#DBFE80]/10' : ''
                     }`}
                   >
-                    {/* Corner Target Brackets */}
                     <div className="absolute -top-1 -left-1 w-5 h-5 border-t-2 border-l-2 border-[#DBFE80] rounded-tl-lg" />
                     <div className="absolute -top-1 -right-1 w-5 h-5 border-t-2 border-r-2 border-[#DBFE80] rounded-tr-lg" />
                     <div className="absolute -bottom-1 -left-1 w-5 h-5 border-b-2 border-l-2 border-[#DBFE80] rounded-bl-lg" />
                     <div className="absolute -bottom-1 -right-1 w-5 h-5 border-b-2 border-r-2 border-[#DBFE80] rounded-br-lg" />
 
-                    {/* Laser Scanning Beam */}
                     <div className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-[#DBFE80] to-transparent shadow-[0_0_12px_#DBFE80] animate-laser">
                       <div className="h-10 w-full bg-gradient-to-b from-[#DBFE80]/20 to-transparent -translate-y-full pointer-events-none" />
                     </div>
                   </div>
                 )}
 
-                {/* Loop Prevention Pill / Next Scan Hint */}
                 {isCameraActive && (
                   <>
                     {scannedPill ? (
@@ -747,7 +827,7 @@ export const QRScanPage = () => {
                 )}
               </div>
 
-              {/* Photo & Image Fallback Action */}
+              {/* Photo Upload Action */}
               <div className="mt-3 pt-2.5 border-t border-zinc-200/60 dark:border-zinc-800/60 flex items-center justify-between gap-2">
                 <input
                   ref={fileInputRef}
@@ -774,13 +854,13 @@ export const QRScanPage = () => {
             </Card>
           )}
 
-          {/* VIEW 2: Fast Manual POS Amount Calculator */}
+          {/* VIEW 2: Simple Manual POS Calculator (Quantity/Amount toggle removed) */}
           {inputMethod === 'manual' && (
             <Card compact className="space-y-3 p-3.5 rounded-2xl">
-              {/* Item Name / Description Input */}
+              {/* Item Note Input */}
               <div>
                 <label className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">
-                  Item Description or Note (Optional)
+                  Item Description / Note (Optional)
                 </label>
                 <div className="relative">
                   <input
@@ -796,7 +876,7 @@ export const QRScanPage = () => {
                   />
                 </div>
 
-                {/* Fast One-Tap Preset Chips */}
+                {/* Preset Chips */}
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {['General Item', 'Custom Sale', 'Repair / Service', 'Beverages', 'Miscellaneous'].map((preset) => (
                     <button
@@ -811,48 +891,15 @@ export const QRScanPage = () => {
                 </div>
               </div>
 
-              {/* Amount and Quantity Selectors */}
-              <div className="grid grid-cols-2 gap-2">
-                <div
-                  onClick={() => setCalcTarget('amount')}
-                  className={`p-2.5 rounded-xl border cursor-pointer transition-all active:scale-98 ${
-                    calcTarget === 'amount'
-                      ? 'border-zinc-900 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 ring-2 ring-zinc-900/10 dark:ring-white/10'
-                      : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400'
-                  }`}
-                >
-                  <span className="text-[10px] uppercase font-bold tracking-wider block">
+              {/* Simple Calculator Surface */}
+              <div className="rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-zinc-100/70 dark:bg-zinc-900 p-2.5 space-y-2">
+                {/* Clean LCD Amount Display */}
+                <div className="flex items-center justify-between px-3.5 py-3 rounded-xl bg-white dark:bg-[#181b22] border border-zinc-200 dark:border-zinc-800 shadow-inner">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
                     Amount ({currency})
                   </span>
-                  <span className="text-base font-bold font-mono">
+                  <span className="text-xl font-black font-mono text-zinc-900 dark:text-zinc-100">
                     {manualAmount || '0'}
-                  </span>
-                </div>
-
-                <div
-                  onClick={() => setCalcTarget('qty')}
-                  className={`p-2.5 rounded-xl border cursor-pointer transition-all active:scale-98 ${
-                    calcTarget === 'qty'
-                      ? 'border-zinc-900 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 ring-2 ring-zinc-900/10 dark:ring-white/10'
-                      : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400'
-                  }`}
-                >
-                  <span className="text-[10px] uppercase font-bold tracking-wider block">
-                    Quantity
-                  </span>
-                  <span className="text-base font-bold font-mono">{manualQty}</span>
-                </div>
-              </div>
-
-              {/* Calculator Surface */}
-              <div className="rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-zinc-100/70 dark:bg-zinc-900 p-2.5 space-y-2">
-                {/* LCD Display */}
-                <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-white dark:bg-[#181b22] border border-zinc-200 dark:border-zinc-800 shadow-inner">
-                  <span className="text-[10px] uppercase font-semibold text-zinc-400">
-                    {calcTarget === 'qty' ? 'Set Quantity:' : 'Set Amount:'}
-                  </span>
-                  <span className="text-lg font-bold font-mono text-zinc-900 dark:text-zinc-100">
-                    {calcTarget === 'qty' ? manualQty : manualAmount}
                   </span>
                 </div>
 
@@ -922,7 +969,7 @@ export const QRScanPage = () => {
                 </div>
               </div>
 
-              {/* Add to Stack Action Button */}
+              {/* Add to Stack Button */}
               <Button
                 variant="primary"
                 size="md"
@@ -930,7 +977,7 @@ export const QRScanPage = () => {
                 className="w-full py-2.5 rounded-xl font-semibold"
               >
                 <Plus className="h-4 w-4 mr-1" />
-                Add to Stack ({manualQty}x @ {formatCurrency(Number(manualAmount) || 0, currency)})
+                Add to Stack ({formatCurrency(Number(manualAmount) || 0, currency)})
               </Button>
             </Card>
           )}
@@ -1004,7 +1051,6 @@ export const QRScanPage = () => {
                           </div>
                         </div>
 
-                        {/* Quantity Stepper & Subtotal */}
                         <div className="flex items-center gap-2 shrink-0">
                           <div className="flex items-center border border-zinc-200 dark:border-zinc-750 rounded-lg overflow-hidden bg-zinc-50 dark:bg-zinc-850">
                             <button
@@ -1055,34 +1101,85 @@ export const QRScanPage = () => {
 
             {/* Footer Form & Action */}
             <div className="pt-3 border-t border-zinc-100 dark:border-zinc-800/80 space-y-3">
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Select
-                    label="Payment Method"
-                    value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                    options={[
-                      { value: 'CASH', label: 'Cash' },
-                      { value: 'CARD', label: 'Card / POS' },
-                      { value: 'BANK_TRANSFER', label: 'Bank Transfer' },
-                      { value: 'CREDIT', label: 'Credit' },
-                    ]}
-                    compact
-                  />
+              {/* Payment Methods */}
+              <div>
+                <label className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-400 mb-1.5">
+                  Payment Method
+                </label>
+                <div className="grid grid-cols-4 gap-1.5 text-xs font-medium select-none">
+                  {[
+                    { id: 'CASH', label: 'Cash' },
+                    { id: 'CARD', label: 'Card' },
+                    { id: 'BANK_TRANSFER', label: 'Transfer' },
+                    { id: 'CREDIT', label: 'Credit 💳' },
+                  ].map((m) => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => handleSelectPaymentMethod(m.id)}
+                      className={`py-2 rounded-xl border text-center transition-all duration-150 active:scale-95 ${
+                        paymentMethod === m.id
+                          ? m.id === 'CREDIT'
+                            ? 'border-amber-500 bg-amber-500/15 text-amber-700 dark:text-amber-300 font-bold shadow-xs'
+                            : 'border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-950 font-bold shadow-xs'
+                          : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:border-zinc-300'
+                      }`}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-[10px] font-medium uppercase text-zinc-400 mb-1">
-                    Notes (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. In-store customer"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    className="w-full rounded-xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-2.5 py-1.5 text-xs text-zinc-900 dark:text-zinc-100"
-                  />
+              {/* Selected Credit Party Badge (shown when paymentMethod is CREDIT) */}
+              {paymentMethod === 'CREDIT' && (
+                <div className="p-2.5 rounded-xl border border-amber-300 dark:border-amber-900/60 bg-amber-50/60 dark:bg-amber-950/20 text-xs flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/20 text-amber-700 dark:text-amber-300">
+                      <Users className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-bold text-zinc-900 dark:text-zinc-100 truncate">
+                        {creditParty
+                          ? creditParty.name
+                          : `No ${txnType === 'SALE' ? 'Customer' : 'Supplier'} Selected`}
+                      </p>
+                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono truncate">
+                        {creditParty
+                          ? `${creditParty.phone}${
+                              creditParty.isNew
+                                ? ' • (New Party Identity)'
+                                : ` • Bal: ${formatCurrency(creditParty.currentBalance || 0, currency)}`
+                            }`
+                          : `Click "Select Party" to choose or enter phone & name`}
+                      </p>
+                    </div>
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => {
+                      setIsCreditPartyModalOpen(true);
+                      fetchPartiesForCredit();
+                    }}
+                    className="text-[11px] px-2.5 py-1 whitespace-nowrap"
+                  >
+                    {creditParty ? 'Change' : 'Select Party'}
+                  </Button>
                 </div>
+              )}
+
+              {/* Optional Notes */}
+              <div>
+                <input
+                  type="text"
+                  placeholder="Notes or invoice remark (optional)..."
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="w-full rounded-xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-2 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-[#DBFE80]/20"
+                />
               </div>
 
               {/* Total Due */}
@@ -1119,6 +1216,152 @@ export const QRScanPage = () => {
         </div>
       </div>
 
+      {/* MODAL 1: Select or Create Party for Credit */}
+      <Modal
+        isOpen={isCreditPartyModalOpen}
+        onClose={handleCloseCreditModal}
+        title={
+          txnType === 'SALE'
+            ? 'Select Customer for Credit Sale'
+            : 'Select Supplier for Credit Purchase'
+        }
+        maxWidth="max-w-md"
+      >
+        <div className="space-y-4">
+          {/* Mode Switch: Pick Existing vs New Party */}
+          <div className="flex items-center gap-1 p-1 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold">
+            <button
+              type="button"
+              onClick={() => setPartyTab('existing')}
+              className={`flex-1 py-1.5 rounded-lg transition-all ${
+                partyTab === 'existing'
+                  ? 'bg-white text-zinc-950 shadow-xs dark:bg-zinc-800 dark:text-zinc-100 font-bold'
+                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
+              }`}
+            >
+              Choose Existing ({existingParties.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setPartyTab('new')}
+              className={`flex-1 py-1.5 rounded-lg transition-all ${
+                partyTab === 'new'
+                  ? 'bg-white text-zinc-950 shadow-xs dark:bg-zinc-800 dark:text-zinc-100 font-bold'
+                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400'
+              }`}
+            >
+              + Quick Add (Name & Phone)
+            </button>
+          </div>
+
+          {/* TAB 1: Existing Parties List */}
+          {partyTab === 'existing' && (
+            <div className="space-y-2.5">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-400" />
+                <input
+                  type="text"
+                  placeholder={`Search ${txnType === 'SALE' ? 'customers' : 'suppliers'} by name or phone...`}
+                  value={partySearch}
+                  onChange={(e) => setPartySearch(e.target.value)}
+                  className="w-full rounded-xl border border-zinc-200/90 dark:border-zinc-750 bg-white dark:bg-zinc-900 pl-8 pr-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-[#DBFE80]"
+                />
+              </div>
+
+              <div className="border border-zinc-200/80 dark:border-zinc-800 rounded-xl p-1.5 max-h-56 overflow-y-auto divide-y divide-zinc-100 dark:divide-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-900/50">
+                {loadingParties ? (
+                  <div className="py-6 text-center text-xs text-zinc-400">
+                    <RefreshCw className="h-4 w-4 animate-spin mx-auto mb-1" />
+                    Loading contacts...
+                  </div>
+                ) : filteredExistingParties.length === 0 ? (
+                  <div className="py-6 text-center text-xs text-zinc-400 space-y-2">
+                    <p>No {txnType === 'SALE' ? 'customers' : 'suppliers'} found.</p>
+                    <button
+                      type="button"
+                      onClick={() => setPartyTab('new')}
+                      className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
+                    >
+                      + Quick enter Name & Phone
+                    </button>
+                  </div>
+                ) : (
+                  filteredExistingParties.map((party) => (
+                    <div
+                      key={party._id}
+                      onClick={() => handleSelectExistingParty(party)}
+                      className="p-2.5 rounded-lg flex items-center justify-between cursor-pointer hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
+                    >
+                      <div>
+                        <p className="font-semibold text-xs text-zinc-900 dark:text-zinc-100">
+                          {party.name}
+                        </p>
+                        <p className="text-[11px] text-zinc-400 font-mono">{party.phone}</p>
+                      </div>
+
+                      <div className="text-right flex items-center gap-2">
+                        <div className="text-right">
+                          <span className="text-[10px] text-zinc-400 block font-mono">
+                            Bal: {formatCurrency(party.currentBalance || 0, currency)}
+                          </span>
+                        </div>
+                        <Button variant="secondary" size="sm" className="text-[11px] px-2 py-0.5">
+                          Select
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: Quick Add New Party using just Name & Phone Number */}
+          {partyTab === 'new' && (
+            <div className="space-y-3">
+              <div className="p-3 rounded-xl bg-[#DBFE80]/15 border border-[#DBFE80]/30 text-xs text-zinc-800 dark:text-zinc-200">
+                <p className="font-semibold">Party Not Created Yet?</p>
+                <p className="text-[11px] text-zinc-600 dark:text-zinc-400 mt-0.5">
+                  Enter their Name and Phone number below. Their identity will be created and this credit record will be logged directly to their ledger.
+                </p>
+              </div>
+
+              <Input
+                label={`${txnType === 'SALE' ? 'Customer' : 'Supplier'} Name *`}
+                placeholder="e.g. John Doe / Apex Supplies"
+                required
+                value={newPartyName}
+                onChange={(e) => setNewPartyName(e.target.value)}
+              />
+
+              <Input
+                label="Phone Number (Unique Identity) *"
+                placeholder="e.g. +1 555-0199"
+                required
+                value={newPartyPhone}
+                onChange={(e) => setNewPartyPhone(e.target.value)}
+              />
+
+              <Button
+                variant="primary"
+                size="md"
+                onClick={handleSelectNewParty}
+                className="w-full font-bold mt-2"
+              >
+                <UserCheck className="h-4 w-4 mr-1.5" />
+                Use This {txnType === 'SALE' ? 'Customer' : 'Supplier'}
+              </Button>
+            </div>
+          )}
+
+          <div className="flex justify-end pt-1">
+            <Button variant="secondary" size="sm" onClick={handleCloseCreditModal}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
       {/* Transaction Success Receipt Modal */}
       <Modal
         isOpen={Boolean(completedTxn)}
@@ -1139,6 +1382,17 @@ export const QRScanPage = () => {
                 Ref #{completedTxn.referenceNumber}
               </p>
             </div>
+
+            {completedTxn.partyName && (
+              <div className="p-2.5 rounded-xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/40 text-xs flex justify-between items-center">
+                <span className="text-zinc-500 dark:text-zinc-400">
+                  {completedTxn.type === 'SALE' ? 'Customer Account:' : 'Supplier Account:'}
+                </span>
+                <span className="font-bold text-zinc-900 dark:text-zinc-100">
+                  {completedTxn.partyName} ({completedTxn.partyPhone})
+                </span>
+              </div>
+            )}
 
             <div className="border border-zinc-200 dark:border-zinc-800 rounded-2xl p-3 bg-zinc-50/60 dark:bg-zinc-850/60 space-y-2 max-h-48 overflow-y-auto">
               {completedTxn.items?.map((it, idx) => (

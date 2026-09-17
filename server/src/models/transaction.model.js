@@ -72,6 +72,19 @@ const transactionSchema = new mongoose.Schema(
       enum: ['CASH', 'CARD', 'BANK_TRANSFER', 'CREDIT', 'OTHER'],
       default: 'CASH',
     },
+    party: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Party',
+      default: null,
+    },
+    partyName: {
+      type: String,
+      default: '',
+    },
+    partyPhone: {
+      type: String,
+      default: '',
+    },
     notes: {
       type: String,
       default: '',

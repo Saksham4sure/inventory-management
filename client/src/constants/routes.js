@@ -10,5 +10,6 @@ export const ROUTES = {
   SCAN: '/scan',
   SALES: '/sales',
   PURCHASES: '/purchases',
+  PARTIES: '/parties',
   TRANSACTIONS: '/transactions',
 };

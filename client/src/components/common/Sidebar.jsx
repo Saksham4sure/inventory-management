@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   TrendingUp,
   ShoppingCart,
+  Users,
   Building2,
   User,
 } from 'lucide-react';
@@ -21,6 +22,7 @@ export const Sidebar = ({ isMobileOpen, onClose }) => {
     { label: 'Scan & Register', path: ROUTES.SCAN, icon: ScanLine, highlight: true },
     { label: 'Sales & Returns', path: ROUTES.SALES, icon: TrendingUp },
     { label: 'Purchases & Stock In', path: ROUTES.PURCHASES, icon: ShoppingCart },
+    { label: 'Parties & Credits', path: ROUTES.PARTIES, icon: Users },
     { label: 'Full Audit Trail', path: ROUTES.TRANSACTIONS, icon: ArrowLeftRight },
   ];
 

@@ -1,0 +1,28 @@
+import { Router } from 'express';
+import {
+  getParties,
+  getPartyById,
+  createParty,
+  updateParty,
+  deleteParty,
+  recordCreditTransaction,
+  getPartyCreditHistory,
+  getPartiesCreditSummary,
+} from '../controllers/party.controller.js';
+import { authenticate } from '../middlewares/auth.middleware.js';
+import { requireBusiness } from '../middlewares/business.middleware.js';
+
+const router = Router();
+
+router.use(authenticate, requireBusiness);
+
+router.get('/summary', getPartiesCreditSummary);
+router.get('/', getParties);
+router.post('/', createParty);
+router.get('/:id', getPartyById);
+router.put('/:id', updateParty);
+router.delete('/:id', deleteParty);
+router.post('/:id/credit', recordCreditTransaction);
+router.get('/:id/history', getPartyCreditHistory);
+
+export default router;

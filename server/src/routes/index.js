@@ -3,6 +3,7 @@ import authRoutes from './auth.routes.js';
 import businessRoutes from './business.routes.js';
 import productRoutes from './product.routes.js';
 import transactionRoutes from './transaction.routes.js';
+import partyRoutes from './party.routes.js';
 
 const apiRouter = Router();
 
@@ -10,6 +11,7 @@ apiRouter.use('/auth', authRoutes);
 apiRouter.use('/business', businessRoutes);
 apiRouter.use('/products', productRoutes);
 apiRouter.use('/transactions', transactionRoutes);
+apiRouter.use('/parties', partyRoutes);
 
 // Health check endpoint
 apiRouter.get('/health', (req, res) => {
