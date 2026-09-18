@@ -9,6 +9,7 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { Button } from '../ui/Button';
 import { ROUTES } from '../../constants/routes';
+import { useSnackbar } from '../../hooks/useSnackbar';
 import {
   FileCheck2,
   MapPin,
@@ -29,11 +30,11 @@ export const OnboardingModal = ({ isOpen = true, onClose }) => {
   const navigate = useNavigate();
   const { user, updateUser, setBusinessConfigured } = useAuth();
   const { refreshBusiness } = useBusiness();
+  const { showSuccess, showError } = useSnackbar();
 
   // Wizard Step: 1 = KYC Document Upload, 2 = Personal Profile & Nepal Location, 3 = Business Profile Setup
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
 
   // STEP 1 STATE: KYC Document
   const [documentType, setDocumentType] = useState('CITIZENSHIP'); // CITIZENSHIP | DRIVING_LICENSE
@@ -100,16 +101,15 @@ export const OnboardingModal = ({ isOpen = true, onClose }) => {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      setError('Please select a valid image file (JPEG, PNG, WEBP).');
+      showError('Please select a valid image file (JPEG, PNG, WEBP).');
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      setError('Document image size should be less than 5MB.');
+      showError('Document image size should be less than 5MB.');
       return;
     }
 
-    setError('');
     const reader = new FileReader();
     reader.onload = () => {
       if (side === 'front') {
@@ -124,20 +124,19 @@ export const OnboardingModal = ({ isOpen = true, onClose }) => {
   // STEP 1 PROCEED: KYC Document Submit
   const handleStep1KycSubmit = async (e) => {
     e.preventDefault();
-    setError('');
 
     if (!documentNumber.trim()) {
-      setError(`Please enter your ${documentType === 'CITIZENSHIP' ? 'Citizenship' : 'Driving License'} identification number.`);
+      showError(`Please enter your ${documentType === 'CITIZENSHIP' ? 'Citizenship' : 'Driving License'} identification number.`);
       return;
     }
 
     if (!frontImage) {
-      setError('Please upload the front side photo of your document.');
+      showError('Please upload the front side photo of your document.');
       return;
     }
 
     if (!backImage) {
-      setError('Please upload the back side photo of your document.');
+      showError('Please upload the back side photo of your document.');
       return;
     }
 
@@ -154,9 +153,10 @@ export const OnboardingModal = ({ isOpen = true, onClose }) => {
       });
 
       if (res?.user) updateUser(res.user);
+      showSuccess('Identity documents saved successfully!');
       setCurrentStep(2);
     } catch (err) {
-      setError(err.message || 'Failed to submit identity document verification');
+      showError(err.message || 'Failed to submit identity document verification');
     } finally {
       setLoading(false);
     }
@@ -165,20 +165,19 @@ export const OnboardingModal = ({ isOpen = true, onClose }) => {
   // STEP 2 PROCEED: Personal Profile & Location Submit
   const handleStep2ProfileSubmit = async (e) => {
     e.preventDefault();
-    setError('');
 
     if (!name.trim()) {
-      setError('Full name is required.');
+      showError('Full name is required.');
       return;
     }
 
     if (!phone.trim()) {
-      setError('Contact phone number is required.');
+      showError('Contact phone number is required.');
       return;
     }
 
     if (!locationValue || (typeof locationValue === 'string' && !locationValue.trim())) {
-      setError('Please select your location using the dropdowns.');
+      showError('Please select your location using the dropdowns.');
       return;
     }
 
@@ -194,9 +193,10 @@ export const OnboardingModal = ({ isOpen = true, onClose }) => {
       });
 
       if (res?.user) updateUser(res.user);
+      showSuccess('Profile and address saved successfully!');
       setCurrentStep(3);
     } catch (err) {
-      setError(err.message || 'Failed to save profile and location details');
+      showError(err.message || 'Failed to save profile and location details');
     } finally {
       setLoading(false);
     }
@@ -205,15 +205,14 @@ export const OnboardingModal = ({ isOpen = true, onClose }) => {
   // STEP 3: CREATE BUSINESS
   const handleStep3CreateBusiness = async (e) => {
     e.preventDefault();
-    setError('');
 
     if (user?.kyc?.status !== 'VERIFIED') {
-      setError('Your identity documents (KYC) must be verified by Platform Compliance before you can configure a business profile.');
+      showError('Your identity documents (KYC) must be verified by Platform Compliance before you can configure a business profile.');
       return;
     }
 
     if (!businessName.trim()) {
-      setError('Business name is required.');
+      showError('Business name is required.');
       return;
     }
 
@@ -244,10 +243,11 @@ export const OnboardingModal = ({ isOpen = true, onClose }) => {
         if (refreshBusiness) refreshBusiness();
       }
 
+      showSuccess('Business created and configured successfully!');
       if (onClose) onClose();
       navigate(ROUTES.DASHBOARD, { replace: true });
     } catch (err) {
-      setError(err.message || 'Failed to setup business');
+      showError(err.message || 'Failed to setup business');
     } finally {
       setLoading(false);
     }
@@ -321,14 +321,6 @@ export const OnboardingModal = ({ isOpen = true, onClose }) => {
             </div>
           </div>
         </div>
-
-        {/* Error notification */}
-        {error && (
-          <div className="mx-6 sm:mx-7 mt-5 p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2.5">
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
 
         {/* Modal Body / Steps */}
         <div className="p-6 sm:p-7 overflow-y-auto max-h-[65vh]">

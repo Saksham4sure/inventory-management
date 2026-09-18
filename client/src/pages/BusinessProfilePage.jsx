@@ -12,10 +12,13 @@ import { CoordinateInput } from '../components/ui/CoordinateInput';
 import { Badge } from '../components/ui/Badge';
 import { TeamManagement } from '../components/team/TeamManagement';
 import { validateNepaliPhone } from '../utils/phoneValidator';
+import { Modal } from '../components/ui/Modal';
+import { ROUTES } from '../constants/routes';
 import { useSnackbar } from '../hooks/useSnackbar';
 import {
   Building2,
   ShieldCheck,
+  ShieldAlert,
   CheckCircle2,
   AlertCircle,
   Coins,
@@ -24,12 +27,14 @@ import {
   MapPin,
   ExternalLink,
   Lock,
+  ArrowRight,
 } from 'lucide-react';
 
 export const BusinessProfilePage = () => {
   const { business, loadingBusiness, updateBusiness, setupBusiness } = useBusiness();
   const { user } = useAuth();
   const { showSuccess, showError } = useSnackbar();
+  const [kycModalOpen, setKycModalOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') === 'team' ? 'team' : 'details';
 
@@ -290,96 +295,147 @@ export const BusinessProfilePage = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <Input
-                label="Store / Business Name"
-                id="bizName"
-                type="text"
-                placeholder="e.g. Apex Retail Labs"
-                required
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                helperText="Primary business identity across your inventory"
-              />
+              {!business && !isKycVerified && (
+                <div className="rounded-2xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/80 dark:bg-amber-950/30 p-4 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="h-9 w-9 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30">
+                      <ShieldAlert className="h-5 w-5" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-bold text-amber-950 dark:text-amber-200">
+                          Identity Verification (KYC) Required
+                        </span>
+                        <span className="px-2 py-0.5 rounded-md bg-amber-200/60 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 text-[10px] font-mono font-bold uppercase">
+                          {user?.kyc?.status === 'PENDING' ? 'Under Review' : user?.kyc?.status || 'Action Required'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-amber-800/90 dark:text-amber-300/80 mt-1 leading-relaxed">
+                        Business creation inputs are blocked until your government identity document (Citizenship or Driving License) is verified by Platform Compliance.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="pt-2 border-t border-amber-200/60 dark:border-amber-900/40 flex items-center justify-between">
+                    <span className="text-[11px] text-amber-800 dark:text-amber-300">
+                      Status: <strong>{user?.kyc?.status === 'PENDING' ? 'Awaiting Review' : 'Documents Required'}</strong>
+                    </span>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      onClick={() => setKycModalOpen(true)}
+                      className="text-xs rounded-xl"
+                    >
+                      Verify KYC Now <ArrowRight className="h-3 w-3 ml-1" />
+                    </Button>
+                  </div>
+                </div>
+              )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <Select
-                  label="Category"
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  options={categories}
-                />
-
-                <Select
-                  label="Base Currency"
-                  value={formData.currency}
-                  onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                  options={currencies.map((curr) => ({ value: curr.code, label: curr.label }))}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <PhoneInput
-                  label="Contact Phone"
-                  id="bizPhone"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                />
-
+              <fieldset disabled={!business && !isKycVerified} className="space-y-4 disabled:opacity-60 disabled:cursor-not-allowed">
                 <Input
-                  label="Business Email"
-                  id="bizEmail"
-                  type="email"
-                  placeholder="contact@business.com"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <Input
-                  label="Tax / VAT Identification"
-                  id="bizTax"
+                  label="Store / Business Name"
+                  id="bizName"
                   type="text"
-                  placeholder="Optional (e.g. VAT-9920)"
-                  value={formData.taxNumber}
-                  onChange={(e) => setFormData({ ...formData, taxNumber: e.target.value })}
+                  placeholder="e.g. Apex Retail Labs"
+                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  helperText="Primary business identity across your inventory"
                 />
-              </div>
 
-              <div className="pt-1">
-                <LocationSelect
-                  label="Store / Warehouse Location"
-                  id="bizAddress"
-                  name="address"
-                  value={formData.address}
-                  onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                  isBusinessSetup={true}
-                />
-              </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <Select
+                    label="Category"
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    options={categories}
+                  />
 
-              <div className="pt-2 border-t border-black/[0.05] dark:border-white/[0.08]">
-                <CoordinateInput
-                  coordinates={formData.coordinates}
-                  googleMapsUrl={formData.googleMapsUrl}
-                  onChange={({ coordinates, googleMapsUrl }) => {
-                    setFormData((prev) => ({
-                      ...prev,
-                      coordinates,
-                      googleMapsUrl,
-                    }));
-                  }}
-                />
-              </div>
+                  <Select
+                    label="Base Currency"
+                    value={formData.currency}
+                    onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                    options={currencies.map((curr) => ({ value: curr.code, label: curr.label }))}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <PhoneInput
+                    label="Contact Phone"
+                    id="bizPhone"
+                    value={formData.phone}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  />
+
+                  <Input
+                    label="Business Email"
+                    id="bizEmail"
+                    type="email"
+                    placeholder="contact@business.com"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  />
+                </div>
+
+                <div>
+                  <Input
+                    label="Tax / VAT Identification"
+                    id="bizTax"
+                    type="text"
+                    placeholder="Optional (e.g. VAT-9920)"
+                    value={formData.taxNumber}
+                    onChange={(e) => setFormData({ ...formData, taxNumber: e.target.value })}
+                  />
+                </div>
+
+                <div className="pt-1">
+                  <LocationSelect
+                    label="Store / Warehouse Location"
+                    id="bizAddress"
+                    name="address"
+                    value={formData.address}
+                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                    isBusinessSetup={true}
+                  />
+                </div>
+
+                <div className="pt-2 border-t border-black/[0.05] dark:border-white/[0.08]">
+                  <CoordinateInput
+                    coordinates={formData.coordinates}
+                    googleMapsUrl={formData.googleMapsUrl}
+                    onChange={({ coordinates, googleMapsUrl }) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        coordinates,
+                        googleMapsUrl,
+                      }));
+                    }}
+                  />
+                </div>
+              </fieldset>
 
               <div className="flex justify-end pt-2">
-                <Button
-                  type="submit"
-                  variant="primary"
-                  loading={loading || loadingBusiness}
-                  className="rounded-xl"
-                >
-                  {business ? 'Save Business Changes' : 'Create & Activate Business'}
-                </Button>
+                {!business && !isKycVerified ? (
+                  <Button
+                    type="button"
+                    variant="primary"
+                    onClick={() => setKycModalOpen(true)}
+                    className="rounded-xl"
+                  >
+                    <ShieldAlert className="h-4 w-4 mr-1.5" />
+                    Verify KYC to Create Business
+                  </Button>
+                ) : (
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    loading={loading || loadingBusiness}
+                    className="rounded-xl"
+                  >
+                    {business ? 'Save Business Changes' : 'Create & Activate Business'}
+                  </Button>
+                )}
               </div>
             </form>
           </Card>
@@ -387,6 +443,59 @@ export const BusinessProfilePage = () => {
       </div>
     </>
   )}
+
+  {/* KYC Verification Required Modal Popup */}
+  <Modal
+    isOpen={kycModalOpen}
+    onClose={() => setKycModalOpen(false)}
+    title="Identity Verification Required"
+  >
+    <div className="space-y-4 text-left">
+      <div className="flex items-center gap-3 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-900 dark:text-amber-200">
+        <ShieldAlert className="h-6 w-6 text-amber-600 dark:text-amber-400 shrink-0" />
+        <div className="text-xs">
+          <p className="font-bold text-sm">Official Government ID Verification</p>
+          <p className="text-zinc-600 dark:text-zinc-400 mt-0.5">
+            To create and manage a business entity, laws require verification of your Nepali Citizenship or Driving License.
+          </p>
+        </div>
+      </div>
+
+      <div className="text-xs text-zinc-600 dark:text-zinc-400 space-y-2 leading-relaxed">
+        <p>
+          Current Status:{' '}
+          <strong className="text-zinc-900 dark:text-white uppercase font-mono">
+            {user?.kyc?.status || 'NOT SUBMITTED'}
+          </strong>
+        </p>
+        {user?.kyc?.status === 'PENDING' ? (
+          <p>
+            Your documents have been submitted and are currently under Platform Compliance review. Once verified, business creation inputs will unlock automatically.
+          </p>
+        ) : (
+          <p>
+            You must upload your government-issued identity documents (Nepali Citizenship or Driving License) in your Profile Settings before you can configure a business.
+          </p>
+        )}
+      </div>
+
+      <div className="pt-3 border-t border-black/[0.06] dark:border-white/[0.08] flex items-center justify-end gap-2.5">
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => setKycModalOpen(false)}
+          className="rounded-xl text-xs"
+        >
+          Close
+        </Button>
+        <Link to={ROUTES.PROFILE} onClick={() => setKycModalOpen(false)}>
+          <Button variant="primary" className="rounded-xl text-xs">
+            Go to Profile & Verify KYC <ArrowRight className="h-3.5 w-3.5 ml-1" />
+          </Button>
+        </Link>
+      </div>
+    </div>
+  </Modal>
 </div>
   );
 };

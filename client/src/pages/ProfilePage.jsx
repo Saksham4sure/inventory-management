@@ -10,6 +10,7 @@ import { Badge } from '../components/ui/Badge';
 import { Modal } from '../components/ui/Modal';
 import { LocationSelect } from '../components/ui/LocationSelect';
 import { formatDate } from '../utils/formatters';
+import { useSnackbar } from '../hooks/useSnackbar';
 import {
   User,
   KeyRound,
@@ -73,6 +74,7 @@ const calculateAge = (dateVal) => {
 export const ProfilePage = () => {
   const { user, updateUser } = useAuth();
   const { business } = useBusiness();
+  const { showSuccess, showError } = useSnackbar();
 
   // Profile details state
   const [name, setName] = useState(user?.name || '');
@@ -81,16 +83,12 @@ export const ProfilePage = () => {
   const [locationState, setLocationState] = useState(user?.location || {});
 
   const [profileLoading, setProfileLoading] = useState(false);
-  const [profileSuccess, setProfileSuccess] = useState('');
-  const [profileError, setProfileError] = useState('');
 
   // Password change state
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordLoading, setPasswordLoading] = useState(false);
-  const [passwordSuccess, setPasswordSuccess] = useState('');
-  const [passwordError, setPasswordError] = useState('');
 
   // KYC Upload state (for users who have not uploaded citizenship or driving license)
   const [kycDocType, setKycDocType] = useState('CITIZENSHIP'); // CITIZENSHIP | DRIVING_LICENSE
@@ -98,8 +96,6 @@ export const ProfilePage = () => {
   const [kycFrontImage, setKycFrontImage] = useState('');
   const [kycBackImage, setKycBackImage] = useState('');
   const [kycLoading, setKycLoading] = useState(false);
-  const [kycSuccess, setKycSuccess] = useState('');
-  const [kycError, setKycError] = useState('');
 
   // Lightbox preview modal for KYC documents
   const [previewImage, setPreviewImage] = useState(null);
@@ -134,16 +130,15 @@ export const ProfilePage = () => {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      setKycError('Please select a valid image file (JPEG, PNG, WEBP).');
+      showError('Please select a valid image file (JPEG, PNG, WEBP).');
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      setKycError('Document image size should be less than 5MB.');
+      showError('Document image size should be less than 5MB.');
       return;
     }
 
-    setKycError('');
     const reader = new FileReader();
     reader.onload = () => {
       if (side === 'front') {
@@ -158,23 +153,21 @@ export const ProfilePage = () => {
   // Submit KYC (Citizenship or Driving License)
   const handleUploadKyc = async (e) => {
     e.preventDefault();
-    setKycError('');
-    setKycSuccess('');
 
     if (!kycDocNumber.trim()) {
-      setKycError(
+      showError(
         `Please enter your ${kycDocType === 'CITIZENSHIP' ? 'Citizenship' : 'Driving License'} number.`
       );
       return;
     }
 
     if (!kycFrontImage) {
-      setKycError('Please upload the front side photo of your document.');
+      showError('Please upload the front side photo of your document.');
       return;
     }
 
     if (!kycBackImage) {
-      setKycError('Please upload the back side photo of your document.');
+      showError('Please upload the back side photo of your document.');
       return;
     }
 
@@ -190,14 +183,14 @@ export const ProfilePage = () => {
       if (res?.user) {
         updateUser(res.user);
       }
-      setKycSuccess(
-        'Identity document submitted for verification! Platform Compliance team has been notified and will review your documents.'
+      showSuccess(
+        'Identity document submitted for verification! Platform Compliance team will review your documents.'
       );
       setKycFrontImage('');
       setKycBackImage('');
       setKycDocNumber('');
     } catch (err) {
-      setKycError(err.message || 'Failed to submit identity document');
+      showError(err.message || 'Failed to submit identity document');
     } finally {
       setKycLoading(false);
     }
@@ -206,11 +199,9 @@ export const ProfilePage = () => {
   // Submit Profile Changes (Name, Phone, DOB, Address)
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
-    setProfileError('');
-    setProfileSuccess('');
 
     if (!name.trim()) {
-      setProfileError('Full name is required');
+      showError('Full name is required');
       return;
     }
 
@@ -227,10 +218,9 @@ export const ProfilePage = () => {
       if (res?.user) {
         updateUser(res.user);
       }
-      setProfileSuccess('Profile details and address updated successfully!');
-      setTimeout(() => setProfileSuccess(''), 4000);
+      showSuccess('Profile details and address updated successfully!');
     } catch (err) {
-      setProfileError(err.message || 'Failed to update profile');
+      showError(err.message || 'Failed to update profile');
     } finally {
       setProfileLoading(false);
     }
@@ -239,21 +229,19 @@ export const ProfilePage = () => {
   // Submit Password Change
   const handleChangePassword = async (e) => {
     e.preventDefault();
-    setPasswordError('');
-    setPasswordSuccess('');
 
     if (!currentPassword) {
-      setPasswordError('Current password is required');
+      showError('Current password is required');
       return;
     }
 
     if (newPassword.length < 6) {
-      setPasswordError('New password must be at least 6 characters');
+      showError('New password must be at least 6 characters');
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setPasswordError('New passwords do not match');
+      showError('New passwords do not match');
       return;
     }
 
@@ -264,13 +252,12 @@ export const ProfilePage = () => {
         currentPassword,
         newPassword,
       });
-      setPasswordSuccess('Password changed successfully');
+      showSuccess('Password changed successfully');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      setTimeout(() => setPasswordSuccess(''), 4000);
     } catch (err) {
-      setPasswordError(err.message || 'Failed to change password');
+      showError(err.message || 'Failed to change password');
     } finally {
       setPasswordLoading(false);
     }
@@ -460,20 +447,6 @@ export const ProfilePage = () => {
                 </div>
               </div>
             </div>
-
-            {profileSuccess && (
-              <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs text-emerald-800 dark:text-emerald-200">
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                <span>{profileSuccess}</span>
-              </div>
-            )}
-
-            {profileError && (
-              <div className="flex items-center gap-2 rounded-xl bg-rose-500/10 border border-rose-500/20 p-3 text-xs text-rose-700 dark:text-rose-300">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                <span>{profileError}</span>
-              </div>
-            )}
 
             <form onSubmit={handleUpdateProfile} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -796,20 +769,6 @@ export const ProfilePage = () => {
                   </div>
                 )}
 
-                {kycError && (
-                  <div className="flex items-center gap-2 rounded-xl bg-rose-500/10 border border-rose-500/20 p-3 text-xs text-rose-700 dark:text-rose-300">
-                    <AlertCircle className="h-4 w-4 shrink-0" />
-                    <span>{kycError}</span>
-                  </div>
-                )}
-
-                {kycSuccess && (
-                  <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs text-emerald-800 dark:text-emerald-200">
-                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                    <span>{kycSuccess}</span>
-                  </div>
-                )}
-
                 {/* Document Type Selector */}
                 <div className="space-y-1.5">
                   <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
@@ -1008,20 +967,6 @@ export const ProfilePage = () => {
                 </p>
               </div>
             </div>
-
-            {passwordSuccess && (
-              <div className="flex items-center gap-2 rounded-xl bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700/60 p-3 text-xs text-zinc-800 dark:text-zinc-200">
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-zinc-600 dark:text-zinc-400" />
-                <span>{passwordSuccess}</span>
-              </div>
-            )}
-
-            {passwordError && (
-              <div className="flex items-center gap-2 rounded-xl bg-rose-500/10 border border-rose-500/20 p-3 text-xs text-rose-700 dark:text-rose-300">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                <span>{passwordError}</span>
-              </div>
-            )}
 
             <form onSubmit={handleChangePassword} className="space-y-3.5">
               <Input

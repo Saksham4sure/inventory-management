@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useSnackbar } from '../hooks/useSnackbar';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { ROUTES } from '../constants/routes';
@@ -10,17 +11,16 @@ export const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
+  const { showError } = useSnackbar();
 
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
 
     try {
@@ -34,7 +34,7 @@ export const LoginPage = () => {
         navigate(ROUTES.BUSINESS_SETUP, { replace: true });
       }
     } catch (err) {
-      setError(err.message || 'Login failed. Please check your credentials.');
+      showError(err.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
@@ -50,13 +50,6 @@ export const LoginPage = () => {
           Access your inventory workspace and QR scanner
         </p>
       </div>
-
-      {error && (
-        <div className="mb-4 flex items-center gap-2 rounded-lg bg-rose-50/80 p-3 text-xs text-rose-700 border border-rose-200/80 dark:bg-rose-950/30 dark:text-rose-400 dark:border-rose-900/40">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input

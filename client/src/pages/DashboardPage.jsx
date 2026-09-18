@@ -270,11 +270,19 @@ export const DashboardPage = () => {
                 Subscribe to Plan
               </Button>
             </Link>
-            <Link to={ROUTES.BUSINESS_PROFILE}>
-              <Button variant="primary" size="sm" className="rounded-xl whitespace-nowrap">
-                Set Up Business <ArrowRight className="h-3.5 w-3.5 ml-1" />
-              </Button>
-            </Link>
+            {user?.kyc?.status !== 'VERIFIED' ? (
+              <Link to={ROUTES.PROFILE}>
+                <Button variant="primary" size="sm" className="rounded-xl whitespace-nowrap">
+                  Verify KYC Document <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                </Button>
+              </Link>
+            ) : (
+              <Link to={ROUTES.BUSINESS_PROFILE}>
+                <Button variant="primary" size="sm" className="rounded-xl whitespace-nowrap">
+                  Set Up Business <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                </Button>
+              </Link>
+            )}
           </div>
         </Card>
       )}

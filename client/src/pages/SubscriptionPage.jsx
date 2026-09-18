@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { businessService } from '../services/businessService';
 import { useBusiness } from '../hooks/useBusiness';
 import { useAuth } from '../hooks/useAuth';
+import { useSnackbar } from '../hooks/useSnackbar';
 import { ROUTES } from '../constants/routes';
 import {
   CreditCard,
@@ -36,6 +37,7 @@ const DURATION_PRESETS = [
 export const SubscriptionPage = () => {
   const { business, refreshBusiness } = useBusiness();
   const { user } = useAuth();
+  const { showSuccess, showError } = useSnackbar();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [data, setData] = useState(null);
@@ -47,7 +49,6 @@ export const SubscriptionPage = () => {
   const [requestNote, setRequestNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [cancelling, setCancelling] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
   const [noticeModal, setNoticeModal] = useState(null); // { title, message, type: 'business_required' | 'owner_required' | 'error' }
   const [confirmCancelModal, setConfirmCancelModal] = useState(false);
 
@@ -156,24 +157,18 @@ export const SubscriptionPage = () => {
         note: requestNote,
       });
 
-      setSuccessMessage(
+      showSuccess(
         selectedPlanModal.action === 'EXTEND'
-          ? `Subscription extension request (+${daysToSend} days) submitted! Platform Administration has been notified and will review your application.`
-          : `Application to switch to ${selectedPlanModal.plan.name} submitted! Platform Administration has been notified and will review your request.`
+          ? `Subscription extension request (+${daysToSend} days) submitted! Platform Administration will review your application.`
+          : `Application to switch to ${selectedPlanModal.plan.name} submitted! Platform Administration will review your request.`
       );
 
       setSelectedPlanModal(null);
       setRequestNote('');
       await fetchSubscriptionData();
       if (refreshBusiness) refreshBusiness();
-
-      setTimeout(() => setSuccessMessage(''), 6000);
     } catch (err) {
-      setNoticeModal({
-        title: 'Subscription Application Failed',
-        message: err.message || 'Failed to submit subscription application. Please try again.',
-        type: 'error',
-      });
+      showError(err.message || 'Failed to submit subscription application. Please try again.');
     } finally {
       setSubmitting(false);
     }
@@ -183,15 +178,10 @@ export const SubscriptionPage = () => {
     try {
       setCancelling(true);
       await businessService.cancelSubscriptionRequest();
-      setSuccessMessage('Your pending subscription application was cancelled.');
+      showSuccess('Your pending subscription application was cancelled.');
       await fetchSubscriptionData();
-      setTimeout(() => setSuccessMessage(''), 4000);
     } catch (err) {
-      setNoticeModal({
-        title: 'Cancellation Error',
-        message: err.message || 'Failed to cancel subscription request',
-        type: 'error',
-      });
+      showError(err.message || 'Failed to cancel subscription request');
     } finally {
       setCancelling(false);
       setConfirmCancelModal(false);
@@ -280,14 +270,6 @@ export const SubscriptionPage = () => {
           Refresh
         </button>
       </div>
-
-      {/* Success Notification */}
-      {successMessage && (
-        <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-300 flex items-center gap-2.5 shadow-xs">
-          <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
-          <span className="font-medium">{successMessage}</span>
-        </div>
-      )}
 
       {/* OWNER-ONLY RESTRICTION BANNER FOR TEAM MEMBERS & MANAGERS */}
       {!isOwner && (
