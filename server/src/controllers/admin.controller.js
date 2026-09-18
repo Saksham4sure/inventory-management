@@ -12,6 +12,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { sanitizeUser } from '../services/auth.service.js';
 import bcrypt from 'bcryptjs';
 import { ENV } from '../config/env.js';
+import { ROLES } from '../constants/roles.js';
 
 // =========================================================================
 // 1. OVERVIEW & METRICS
