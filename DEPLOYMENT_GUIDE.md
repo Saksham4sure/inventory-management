@@ -36,10 +36,6 @@ Cloudinary hosts KYC documents (citizenship, driving license photos) securely in
 | `JWT_EXPIRES_IN` | Token expiration lifespan | `7d` |
 | `CLIENT_URL` | Frontend URL(s) allowed by CORS (comma-separated if multiple) | `https://stockpulse.vercel.app` |
 | `BCRYPT_SALT_ROUNDS` | Salt rounds for password hashing | `10` |
-| `ADMIN_NAME` | Initial Platform Super Admin Name | `Platform Administrator` |
-| `ADMIN_USERNAME` | Super Admin login username | `admin` |
-| `ADMIN_EMAIL` | Super Admin login email | `admin@stockpulse.com` |
-| `ADMIN_PASSWORD` | Super Admin strong initial password | `SecureAdminPassword2026!` |
 | `CLOUDINARY_CLOUD_NAME` | Cloudinary account cloud name | `your_cloud_name` |
 | `CLOUDINARY_API_KEY` | Cloudinary API Key | `123456789012345` |
 | `CLOUDINARY_API_SECRET` | Cloudinary API Secret | `abcdefghijklmnopqrstuvwx_yz` |

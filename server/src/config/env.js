@@ -11,11 +11,6 @@ export const ENV = {
   CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:5173',
   BCRYPT_SALT_ROUNDS: parseInt(process.env.BCRYPT_SALT_ROUNDS, 10) || 10,
 
-  // Super Admin seed credentials
-  ADMIN_NAME: process.env.ADMIN_NAME || 'Platform Administrator',
-  ADMIN_USERNAME: process.env.ADMIN_USERNAME || 'admin',
-  ADMIN_EMAIL: process.env.ADMIN_EMAIL || 'admin@stockpulse.local',
-  ADMIN_PASSWORD: process.env.ADMIN_PASSWORD || 'password',
 
   // Cloudinary credentials (optional in local dev, recommended for production)
   CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME || '',

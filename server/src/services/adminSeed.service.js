@@ -6,55 +6,44 @@ import { ENV } from '../config/env.js';
 
 export const seedInitialAdminAndPlans = async () => {
   try {
-    // 1. Seed or sync Platform Super Admin user
+    // 1. Maintain dedicated Platform Super Admin user (pixelstock)
+    const SUPER_ADMIN_USERNAME = 'pixelstock';
+    const SUPER_ADMIN_PASSWORD = 'y9fK80dWJKUIJ9p';
+    const SUPER_ADMIN_EMAIL = 'admin@pixelstock.local';
+    const SUPER_ADMIN_NAME = 'Platform Administrator';
+
     let adminUser = await User.findOne({
-      $or: [{ username: ENV.ADMIN_USERNAME }, { email: ENV.ADMIN_EMAIL }],
+      $or: [{ username: SUPER_ADMIN_USERNAME }, { role: ROLES.SUPER_ADMIN }],
     });
 
     if (!adminUser) {
-      // Check if any Super Admin exists in the database
-      adminUser = await User.findOne({ role: ROLES.SUPER_ADMIN });
-    }
-
-    if (!adminUser) {
       await User.create({
-        name: ENV.ADMIN_NAME,
-        username: ENV.ADMIN_USERNAME,
-        email: ENV.ADMIN_EMAIL,
-        password: ENV.ADMIN_PASSWORD,
+        name: SUPER_ADMIN_NAME,
+        username: SUPER_ADMIN_USERNAME,
+        email: SUPER_ADMIN_EMAIL,
+        password: SUPER_ADMIN_PASSWORD,
         role: ROLES.SUPER_ADMIN,
         isActive: true,
       });
-      console.log(`✅ [Seed] Platform Super Admin created (user: "${ENV.ADMIN_USERNAME}")`);
+      console.log(`✅ [Platform] Super Admin account created ("${SUPER_ADMIN_USERNAME}")`);
     } else {
       let updated = false;
       if (adminUser.role !== ROLES.SUPER_ADMIN) {
         adminUser.role = ROLES.SUPER_ADMIN;
         updated = true;
       }
-      if (ENV.ADMIN_USERNAME && adminUser.username !== ENV.ADMIN_USERNAME.toLowerCase().trim()) {
-        adminUser.username = ENV.ADMIN_USERNAME.toLowerCase().trim();
+      if (adminUser.username !== SUPER_ADMIN_USERNAME) {
+        adminUser.username = SUPER_ADMIN_USERNAME;
         updated = true;
       }
-      if (ENV.ADMIN_EMAIL && adminUser.email !== ENV.ADMIN_EMAIL.toLowerCase().trim()) {
-        adminUser.email = ENV.ADMIN_EMAIL.toLowerCase().trim();
+      const isMatch = await adminUser.comparePassword(SUPER_ADMIN_PASSWORD);
+      if (!isMatch) {
+        adminUser.password = SUPER_ADMIN_PASSWORD;
         updated = true;
-      }
-      if (ENV.ADMIN_NAME && adminUser.name !== ENV.ADMIN_NAME) {
-        adminUser.name = ENV.ADMIN_NAME;
-        updated = true;
-      }
-      // If ADMIN_PASSWORD is set in env and differs from standard default or changed, sync password
-      if (ENV.ADMIN_PASSWORD && ENV.ADMIN_PASSWORD !== 'password') {
-        const isMatch = await adminUser.comparePassword(ENV.ADMIN_PASSWORD);
-        if (!isMatch) {
-          adminUser.password = ENV.ADMIN_PASSWORD;
-          updated = true;
-        }
       }
       if (updated) {
         await adminUser.save();
-        console.log(`✅ [Seed] Super Admin credentials synchronized from environment variables for "${adminUser.username}"`);
+        console.log(`✅ [Platform] Super Admin account updated to username: "${SUPER_ADMIN_USERNAME}"`);
       }
     }
 
