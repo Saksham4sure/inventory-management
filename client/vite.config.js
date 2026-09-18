@@ -23,9 +23,6 @@ export default defineConfig({
             if (id.includes('react-router') || id.includes('react-dom') || id.includes('react')) {
               return 'vendor-react';
             }
-            if (id.includes('axios')) {
-              return 'vendor-axios';
-            }
             return 'vendor';
           }
         },
