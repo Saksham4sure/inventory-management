@@ -4,7 +4,9 @@ export const ROUTES = {
   REGISTER: '/register',
   BUSINESS_SETUP: '/business/setup',
   BUSINESS_PROFILE: '/business/profile',
+  TEAM: '/team',
   PROFILE: '/profile',
+  SUBSCRIPTION: '/subscription',
   DASHBOARD: '/dashboard',
   PRODUCTS: '/products',
   SCAN: '/scan',
@@ -12,4 +14,11 @@ export const ROUTES = {
   PURCHASES: '/purchases',
   PARTIES: '/parties',
   TRANSACTIONS: '/transactions',
+  // Platform Admin (Super Admin) - Isolated routes
+  ADMIN_LOGIN: '/platform-admin/login',
+  ADMIN_DASHBOARD: '/platform-admin/dashboard',
+  ADMIN_BUSINESSES: '/platform-admin/businesses',
+  ADMIN_USERS: '/platform-admin/users',
+  ADMIN_SUBSCRIPTIONS: '/platform-admin/subscriptions',
+  ADMIN_SETTINGS: '/platform-admin/settings',
 };

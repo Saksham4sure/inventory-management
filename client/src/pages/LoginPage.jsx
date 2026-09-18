@@ -25,7 +25,9 @@ export const LoginPage = () => {
 
     try {
       const data = await login(formData);
-      if (data.hasBusiness) {
+      if (data.user?.role === 'SUPER_ADMIN') {
+        navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
+      } else if (data.hasBusiness) {
         const from = location.state?.from?.pathname || ROUTES.DASHBOARD;
         navigate(from, { replace: true });
       } else {
@@ -58,10 +60,10 @@ export const LoginPage = () => {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
-          label="Email Address"
+          label="Email or Username"
           id="email"
-          type="email"
-          placeholder="name@company.com"
+          type="text"
+          placeholder="admin or name@company.com"
           required
           value={formData.email}
           onChange={(e) => setFormData({ ...formData, email: e.target.value })}

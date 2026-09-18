@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useBusiness } from '../hooks/useBusiness';
 import { useAuth } from '../hooks/useAuth';
 import { Card } from '../components/ui/Card';
@@ -8,7 +9,9 @@ import { PhoneInput } from '../components/ui/PhoneInput';
 import { Select } from '../components/ui/Select';
 import { LocationSelect } from '../components/ui/LocationSelect';
 import { Badge } from '../components/ui/Badge';
+import { TeamManagement } from '../components/team/TeamManagement';
 import { validateNepaliPhone } from '../utils/phoneValidator';
+import { useSnackbar } from '../hooks/useSnackbar';
 import {
   Building2,
   ShieldCheck,
@@ -16,11 +19,15 @@ import {
   AlertCircle,
   Coins,
   QrCode,
+  Users,
 } from 'lucide-react';
 
 export const BusinessProfilePage = () => {
   const { business, loadingBusiness, updateBusiness, setupBusiness } = useBusiness();
   const { user } = useAuth();
+  const { showSuccess, showError } = useSnackbar();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') === 'team' ? 'team' : 'details';
 
   const categories = [
     'Retail Store',
@@ -55,8 +62,6 @@ export const BusinessProfilePage = () => {
   });
 
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState('');
-  const [error, setError] = useState('');
 
   useEffect(() => {
     if (business) {
@@ -74,18 +79,16 @@ export const BusinessProfilePage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
 
     if (!formData.name.trim()) {
-      setError('Business name is required');
+      showError('Business name is required');
       return;
     }
 
     if (formData.phone && formData.phone.trim()) {
       const phoneCheck = validateNepaliPhone(formData.phone, false);
       if (!phoneCheck.isValid) {
-        setError(phoneCheck.error || 'Please enter a valid Nepali contact number.');
+        showError(phoneCheck.error || 'Please enter a valid Nepali contact number.');
         return;
       }
     }
@@ -94,14 +97,13 @@ export const BusinessProfilePage = () => {
       setLoading(true);
       if (business) {
         await updateBusiness(formData);
-        setSuccess('Business profile updated successfully');
+        showSuccess('Business profile updated successfully');
       } else {
         await setupBusiness(formData);
-        setSuccess('Business profile created and activated successfully');
+        showSuccess('Business profile created and activated successfully');
       }
-      setTimeout(() => setSuccess(''), 4000);
     } catch (err) {
-      setError(err.message || 'Failed to save business profile');
+      showError(err.message || 'Failed to save business profile');
     } finally {
       setLoading(false);
     }
@@ -121,45 +123,75 @@ export const BusinessProfilePage = () => {
         </p>
       </div>
 
-      {!business && (
-        <div className="rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.04] p-4 sm:p-5 backdrop-blur-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 shadow-sm">
-              <Building2 className="h-5 w-5" />
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight">
-                No Business Profile Configured Yet
-              </h3>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 leading-relaxed">
-                You skipped business setup during registration. Fill in the form below to configure your business profile and unlock all inventory features.
-              </p>
-            </div>
-          </div>
+      {/* Tabs */}
+      {business && (
+        <div className="flex items-center gap-1.5 border-b border-black/[0.06] dark:border-white/[0.08] pb-2">
+          <button
+            type="button"
+            onClick={() => setSearchParams({ tab: 'details' })}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+              activeTab === 'details'
+                ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-black/[0.04] dark:hover:bg-white/[0.04]'
+            }`}
+          >
+            <Building2 className="h-4 w-4" />
+            <span>Store Profile</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSearchParams({ tab: 'team' })}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all ${
+              activeTab === 'team'
+                ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 shadow-xs'
+                : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-black/[0.04] dark:hover:bg-white/[0.04]'
+            }`}
+          >
+            <Users className="h-4 w-4" />
+            <span>Team & Permissions</span>
+            <span
+              className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono ${
+                activeTab === 'team'
+                  ? 'bg-zinc-700 text-white dark:bg-zinc-300 dark:text-zinc-950'
+                  : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
+              }`}
+            >
+              {(business?.members?.length || 0) + 1}
+            </span>
+          </button>
         </div>
       )}
 
-      {success && (
-        <div className="flex items-center gap-2.5 rounded-2xl bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700/60 p-4 text-xs text-zinc-800 dark:text-zinc-200 backdrop-blur-md">
-          <CheckCircle2 className="h-4 w-4 shrink-0 text-zinc-600 dark:text-zinc-400" />
-          <span>{success}</span>
-        </div>
-      )}
-
-      {error && (
-        <div className="flex items-center gap-2.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 p-4 text-xs text-rose-700 dark:text-rose-300 backdrop-blur-md">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-5 sm:gap-6">
-        {/* Left Column: Business Badge & Status Card */}
-        <div className="md:col-span-4 space-y-4">
-          <Card className="text-center p-6 flex flex-col items-center">
-            <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-bold text-2xl shadow-md ring-4 ring-black/[0.04] dark:ring-white/[0.06] mb-3.5">
-              <Building2 className="h-9 w-9" />
+      {activeTab === 'team' && business ? (
+        <TeamManagement />
+      ) : (
+        <>
+          {!business && (
+            <div className="rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.04] p-4 sm:p-5 backdrop-blur-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 shadow-sm">
+                  <Building2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight">
+                    No Business Profile Configured Yet
+                  </h3>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5 leading-relaxed">
+                    You skipped business setup during registration. Fill in the form below to configure your business profile and unlock all inventory features.
+                  </p>
+                </div>
+              </div>
             </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-5 sm:gap-6">
+            {/* Left Column: Business Badge & Status Card */}
+            <div className="md:col-span-4 space-y-4">
+              <Card className="text-center p-6 flex flex-col items-center">
+                <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-bold text-2xl shadow-md ring-4 ring-black/[0.04] dark:ring-white/[0.06] mb-3.5">
+                  <Building2 className="h-9 w-9" />
+                </div>
             <h2 className="text-base font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
               {business?.name || formData.name || 'Your Business'}
             </h2>
@@ -188,6 +220,16 @@ export const BusinessProfilePage = () => {
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1.5"><Coins className="h-3.5 w-3.5 text-zinc-400" /> Currency</span>
                 <span className="font-mono text-zinc-700 dark:text-zinc-300 font-medium">{formData.currency}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5 text-zinc-400" /> Team</span>
+                <button
+                  type="button"
+                  onClick={() => setSearchParams({ tab: 'team' })}
+                  className="font-mono text-zinc-700 dark:text-zinc-300 font-medium hover:underline text-xs"
+                >
+                  {(business?.members?.length || 0) + 1} active &rarr;
+                </button>
               </div>
             </div>
           </Card>
@@ -292,7 +334,9 @@ export const BusinessProfilePage = () => {
           </Card>
         </div>
       </div>
-    </div>
+    </>
+  )}
+</div>
   );
 };
 export default BusinessProfilePage;

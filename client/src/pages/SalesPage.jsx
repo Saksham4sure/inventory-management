@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useBusiness } from '../hooks/useBusiness';
 import { useConfirm } from '../hooks/useConfirm';
+import { useSnackbar } from '../hooks/useSnackbar';
 import { transactionService } from '../services/transactionService';
 import { productService } from '../services/productService';
 import { Card } from '../components/ui/Card';
@@ -40,6 +41,7 @@ import {
 export const SalesPage = () => {
   const { business } = useBusiness();
   const { confirm, alert } = useConfirm();
+  const { showSuccess, showError } = useSnackbar();
   const currency = business?.currency || 'USD';
 
   // Transactions data & loading
@@ -84,11 +86,11 @@ export const SalesPage = () => {
       const data = await transactionService.getTransactions(params);
       setTransactions(data?.transactions || []);
     } catch (err) {
-      setError(err.message || 'Failed to load sales history');
+      showError(err.message || 'Failed to load sales history');
     } finally {
       setLoading(false);
     }
-  }, [dateFilter, customStart, customEnd, typeFilter, search]);
+  }, [dateFilter, customStart, customEnd, typeFilter, search, showError]);
 
   useEffect(() => {
     fetchSales();
@@ -108,15 +110,13 @@ export const SalesPage = () => {
 
     try {
       await transactionService.deleteTransaction(id);
+      showSuccess(`Transaction #${refNum} deleted`);
       setTransactions((prev) => prev.filter((t) => t._id !== id));
       if (selectedTxn?._id === id) {
         setSelectedTxn(null);
       }
     } catch (err) {
-      await alert({
-        title: 'Action Failed',
-        message: err.message || 'Failed to delete transaction record',
-      });
+      showError(err.message || 'Failed to delete transaction record');
     }
   };
 
@@ -161,10 +161,11 @@ export const SalesPage = () => {
         scannedViaQR: false,
       });
 
+      showSuccess('Customer return recorded successfully');
       setIsReturnModalOpen(false);
       fetchSales();
     } catch (err) {
-      setError(err.message || 'Failed to process return');
+      showError(err.message || 'Failed to process return');
     } finally {
       setSubmittingReturn(false);
     }
@@ -209,13 +210,6 @@ export const SalesPage = () => {
           </Button>
         </div>
       </div>
-
-      {error && (
-        <div className="flex items-center gap-2 rounded-xl bg-rose-50/80 border border-rose-200/80 p-3 text-xs text-rose-700 dark:bg-rose-950/30 dark:border-rose-900/40 dark:text-rose-400">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
 
       {/* Overview Summary Cards for Active Filter */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5">

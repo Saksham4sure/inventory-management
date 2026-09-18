@@ -19,5 +19,7 @@ export const generateAuthToken = (user) => {
 export const sanitizeUser = (user) => {
   const obj = user.toObject ? user.toObject() : { ...user };
   delete obj.password;
+  obj.isSuperAdmin = obj.role === 'SUPER_ADMIN';
   return obj;
 };
+

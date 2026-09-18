@@ -76,6 +76,15 @@ const businessSchema = new mongoose.Schema(
           type: String,
           default: ROLES.STAFF,
         },
+        limits: {
+          maxTransactionAmount: { type: Number, default: 0 },
+          canRecordSale: { type: Boolean, default: true },
+          canRecordPurchase: { type: Boolean, default: true },
+          canManageProducts: { type: Boolean, default: false },
+          canManageParties: { type: Boolean, default: false },
+          canDeleteRecords: { type: Boolean, default: false },
+          canViewReports: { type: Boolean, default: false },
+        },
         joinedAt: {
           type: Date,
           default: Date.now,

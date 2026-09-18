@@ -33,9 +33,11 @@ import {
   UserCheck,
   Search,
 } from 'lucide-react';
+import { useSnackbar } from '../hooks/useSnackbar';
 
 export const QRScanPage = () => {
   const { business } = useBusiness();
+  const { showSuccess, showError } = useSnackbar();
   const currency = business?.currency || 'USD';
 
   // Transaction Mode: SALE or PURCHASE
@@ -613,12 +615,15 @@ export const QRScanPage = () => {
       };
 
       const result = await transactionService.createTransaction(payload);
+      showSuccess(`Transaction #${result.referenceNumber} completed successfully`);
       setCompletedTxn(result);
       setCart([]);
       setNotes('');
       setCreditParty(null);
     } catch (err) {
-      setError(err.message || 'Failed to complete transaction');
+      const msg = err.message || 'Failed to complete transaction';
+      setError(msg);
+      showError(msg);
     } finally {
       setSubmitting(false);
     }
@@ -691,13 +696,6 @@ export const QRScanPage = () => {
           </button>
         </div>
       </div>
-
-      {error && (
-        <div className="flex items-center gap-2 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 text-xs">
-          <AlertTriangle className="h-4 w-4 shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
 
       {/* Main Grid: Left = Scanner/Manual, Right = Live Item Register */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">

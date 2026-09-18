@@ -15,4 +15,24 @@ export const businessService = {
     const response = await api.put('/business/my-business', businessData);
     return response.data.data.business;
   },
+
+  getSubscription: async () => {
+    const response = await api.get('/business/subscription');
+    return response.data.data;
+  },
+
+  changeSubscription: async (data) => {
+    const response = await api.post('/business/subscription/change', data);
+    return response.data.data;
+  },
+
+  applySubscription: async (data) => {
+    const response = await api.post('/business/subscription/change', data);
+    return response.data.data;
+  },
+
+  cancelSubscriptionRequest: async () => {
+    const response = await api.post('/business/subscription/cancel-request');
+    return response.data.data;
+  },
 };

@@ -1,4 +1,6 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, Link } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
+import { useBusiness } from '../../hooks/useBusiness';
 import {
   LayoutDashboard,
   Boxes,
@@ -12,10 +14,17 @@ import {
   Users,
   Building2,
   User,
+  CreditCard,
+  LogOut,
+  ChevronRight,
+  Sparkles,
 } from 'lucide-react';
 import { ROUTES } from '../../constants/routes';
 
 export const Sidebar = ({ isMobileOpen, onClose }) => {
+  const { user, logout } = useAuth();
+  const { business } = useBusiness();
+
   const mainNavItems = [
     { label: 'Dashboard', path: ROUTES.DASHBOARD, icon: LayoutDashboard },
     { label: 'Products & Stock', path: ROUTES.PRODUCTS, icon: Boxes },
@@ -28,6 +37,8 @@ export const Sidebar = ({ isMobileOpen, onClose }) => {
 
   const profileNavItems = [
     { label: 'Business Profile', path: ROUTES.BUSINESS_PROFILE, icon: Building2 },
+    { label: 'Team Members', path: ROUTES.TEAM, icon: Users },
+    { label: 'Subscription & Plans', path: ROUTES.SUBSCRIPTION, icon: CreditCard },
     { label: 'User Profile', path: ROUTES.PROFILE, icon: User },
   ];
 
@@ -126,19 +137,63 @@ export const Sidebar = ({ isMobileOpen, onClose }) => {
         </div>
       </div>
 
-      {/* Subscription info badge card */}
-      <div className="group/pro rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-white/70 dark:bg-[#181b22]/70 p-4 shadow-2xs backdrop-blur-xl hover:border-black/[0.12] dark:hover:border-white/[0.15] transition-all duration-200 active:scale-[0.98]">
-        <div className="flex items-center gap-2">
-          <div className="flex h-6 w-6 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 group-hover/pro:scale-110 transition-transform duration-200">
-            <ShieldCheck className="h-3.5 w-3.5" />
+      {/* Footer controls: Subscription Status & User Logout */}
+      <div className="space-y-2.5 pt-3 border-t border-black/[0.05] dark:border-white/[0.06]">
+        {/* Dynamic Subscription card linking to /subscription */}
+        <Link
+          to={ROUTES.SUBSCRIPTION}
+          onClick={onClose}
+          className="group/sub block rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-zinc-50 dark:bg-[#181b22]/70 p-3 shadow-2xs hover:border-indigo-500/40 dark:hover:border-indigo-500/40 transition-all duration-200 active:scale-[0.98]"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 group-hover/sub:scale-110 transition-transform">
+                <Sparkles className="h-3.5 w-3.5" />
+              </div>
+              <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight">
+                {business?.subscription?.plan?.replace('_', ' ') || 'Starter Plan'}
+              </span>
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 font-mono">
+              {business?.subscription?.status || 'TRIAL'}
+            </span>
           </div>
-          <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight">
-            Pro Engine Active
-          </p>
+          <div className="flex items-center justify-between mt-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">
+            <span>Manage & Extend Tier</span>
+            <ChevronRight className="h-3 w-3 text-zinc-400 group-hover/sub:translate-x-0.5 transition-transform" />
+          </div>
+        </Link>
+
+        {/* User Account Capsule with Logout button */}
+        <div className="flex items-center justify-between p-2 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.04] dark:border-white/[0.05]">
+          <Link
+            to={ROUTES.PROFILE}
+            onClick={onClose}
+            className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-80 transition-opacity"
+          >
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-bold text-xs shrink-0 shadow-2xs">
+              {user?.name ? user.name[0].toUpperCase() : 'U'}
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate">
+                {user?.name || 'User'}
+              </span>
+              <span className="text-[10px] text-zinc-400 dark:text-zinc-500 truncate max-w-[110px]">
+                {user?.email || ''}
+              </span>
+            </div>
+          </Link>
+
+          <button
+            type="button"
+            onClick={logout}
+            title="Sign out of StockPulse"
+            aria-label="Sign out"
+            className="flex h-8 w-8 items-center justify-center rounded-xl text-zinc-400 hover:bg-rose-500/10 hover:text-rose-600 hover:border-rose-500/20 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 transition-all duration-200 active:scale-90 shrink-0 cursor-pointer ml-1"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
         </div>
-        <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-1.5 leading-relaxed">
-          High-performance QR generation, camera scanning, and stock metrics active.
-        </p>
       </div>
     </div>
   );

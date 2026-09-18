@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useBusiness } from '../hooks/useBusiness';
 import { useConfirm } from '../hooks/useConfirm';
+import { useSnackbar } from '../hooks/useSnackbar';
 import { transactionService } from '../services/transactionService';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -20,6 +21,7 @@ import {
 export const TransactionsPage = () => {
   const { business } = useBusiness();
   const { confirm } = useConfirm();
+  const { showSuccess, showError } = useSnackbar();
   const currency = business?.currency || 'USD';
 
   const [transactions, setTransactions] = useState([]);
@@ -40,11 +42,11 @@ export const TransactionsPage = () => {
       const data = await transactionService.getTransactions(params);
       setTransactions(data.transactions || []);
     } catch (err) {
-      setError(err.message || 'Failed to fetch transactions');
+      showError(err.message || 'Failed to fetch transactions');
     } finally {
       setLoading(false);
     }
-  }, [typeFilter, search]);
+  }, [typeFilter, search, showError]);
 
   useEffect(() => {
     fetchTransactions();
@@ -62,12 +64,13 @@ export const TransactionsPage = () => {
 
     try {
       await transactionService.deleteTransaction(id);
+      showSuccess(`Audit record #${refNum} deleted`);
       setTransactions((prev) => prev.filter((t) => t._id !== id));
       if (selectedTxn?._id === id) {
         setSelectedTxn(null);
       }
     } catch (err) {
-      setError(err.message || 'Failed to delete transaction record');
+      showError(err.message || 'Failed to delete transaction record');
     }
   };
 
@@ -89,12 +92,6 @@ export const TransactionsPage = () => {
           <span className="hidden sm:inline">Refresh</span>
         </Button>
       </div>
-
-      {error && (
-        <div className="rounded-xl bg-rose-50/80 border border-rose-200/80 p-3.5 text-xs text-rose-700 dark:bg-rose-950/30 dark:border-rose-900/40 dark:text-rose-400">
-          {error}
-        </div>
-      )}
 
       {/* Filter and Search */}
       <Card compact className="p-3 sm:p-4">

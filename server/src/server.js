@@ -1,10 +1,14 @@
 import app from './app.js';
 import { connectDB } from './config/db.js';
 import { ENV } from './config/env.js';
+import { seedInitialAdminAndPlans } from './services/adminSeed.service.js';
 
 const startServer = async () => {
   // Connect to MongoDB
   await connectDB();
+
+  // Seed default Super Admin & Subscription Plans if needed
+  await seedInitialAdminAndPlans();
 
   // Start HTTP listener
   app.listen(ENV.PORT, () => {

@@ -2,7 +2,9 @@ import { BrowserRouter } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import { BusinessProvider } from './context/BusinessContext';
+import { NotificationProvider } from './context/NotificationContext';
 import { ConfirmProvider } from './context/ConfirmContext';
+import { SnackbarProvider } from './context/SnackbarContext';
 import { AppRoutes } from './routes/AppRoutes';
 
 function App() {
@@ -11,9 +13,13 @@ function App() {
       <BrowserRouter>
         <AuthProvider>
           <BusinessProvider>
-            <ConfirmProvider>
-              <AppRoutes />
-            </ConfirmProvider>
+            <NotificationProvider>
+              <ConfirmProvider>
+                <SnackbarProvider>
+                  <AppRoutes />
+                </SnackbarProvider>
+              </ConfirmProvider>
+            </NotificationProvider>
           </BusinessProvider>
         </AuthProvider>
       </BrowserRouter>

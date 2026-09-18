@@ -3,6 +3,9 @@ import {
   setupBusiness,
   getMyBusiness,
   updateBusiness,
+  getBusinessSubscription,
+  changeBusinessSubscription,
+  cancelSubscriptionRequest,
 } from '../controllers/business.controller.js';
 import { authenticate, authorize } from '../middlewares/auth.middleware.js';
 import { requireBusiness } from '../middlewares/business.middleware.js';
@@ -23,6 +26,24 @@ router.put(
   requireBusiness,
   authorize(ROLES.OWNER, ROLES.ADMIN),
   updateBusiness
+);
+
+// Subscription details & plan switching for tenant users
+// Strictly limited to Business OWNER only (no managers or members)
+router.get('/subscription', authenticate, getBusinessSubscription);
+router.post(
+  '/subscription/change',
+  authenticate,
+  requireBusiness,
+  authorize(ROLES.OWNER),
+  changeBusinessSubscription
+);
+router.post(
+  '/subscription/cancel-request',
+  authenticate,
+  requireBusiness,
+  authorize(ROLES.OWNER),
+  cancelSubscriptionRequest
 );
 
 export default router;

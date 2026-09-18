@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useBusiness } from '../hooks/useBusiness';
 import { useConfirm } from '../hooks/useConfirm';
+import { useSnackbar } from '../hooks/useSnackbar';
 import { productService } from '../services/productService';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -25,6 +26,7 @@ export const ProductsPage = () => {
   const { business } = useBusiness();
   const currency = business?.currency || 'USD';
   const { confirm, alert } = useConfirm();
+  const { showSuccess, showError } = useSnackbar();
 
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -68,11 +70,11 @@ export const ProductsPage = () => {
       const data = await productService.getProducts(params);
       setProducts(data.products || []);
     } catch (err) {
-      setError(err.message || 'Failed to load products');
+      showError(err.message || 'Failed to load products');
     } finally {
       setLoading(false);
     }
-  }, [search, selectedCategory, showLowStockOnly]);
+  }, [search, selectedCategory, showLowStockOnly, showError]);
 
   useEffect(() => {
     fetchProducts();
@@ -85,11 +87,14 @@ export const ProductsPage = () => {
 
     try {
       await productService.createProduct(formData);
+      showSuccess(`Product "${formData.name}" added to inventory`);
       setIsAddModalOpen(false);
       setFormData(initialFormState);
       fetchProducts();
     } catch (err) {
-      setError(err.message || 'Failed to create product');
+      const msg = err.message || 'Failed to create product';
+      setError(msg);
+      showError(msg);
     } finally {
       setSubmitting(false);
     }
@@ -107,13 +112,11 @@ export const ProductsPage = () => {
 
     try {
       await productService.deleteProduct(id);
+      showSuccess(`Product "${name}" deleted`);
       setActiveDetailProduct(null);
       fetchProducts();
     } catch (err) {
-      await alert({
-        title: 'Action Failed',
-        message: err.message || 'Failed to delete product',
-      });
+      showError(err.message || 'Failed to delete product');
     }
   };
 
@@ -158,13 +161,6 @@ export const ProductsPage = () => {
           </Button>
         </div>
       </div>
-
-      {error && (
-        <div className="flex items-center gap-2 rounded-xl bg-rose-50/80 border border-rose-200/80 p-3 text-xs text-rose-700 dark:bg-rose-950/30 dark:border-rose-900/40 dark:text-rose-400">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
 
       {/* Filter and Search Bar */}
       <Card compact className="p-3.5">

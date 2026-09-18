@@ -2,12 +2,13 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useBusiness } from '../../hooks/useBusiness';
 import { ThemeToggle } from '../ui/ThemeToggle';
-import { LogOut, Building2, Menu } from 'lucide-react';
+import { NotificationBell } from './NotificationBell';
+import { Building2, Menu } from 'lucide-react';
 import { Badge } from '../ui/Badge';
 import { ROUTES } from '../../constants/routes';
 
 export const Navbar = ({ onOpenMobileMenu }) => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { business } = useBusiness();
 
   return (
@@ -65,6 +66,9 @@ export const Navbar = ({ onOpenMobileMenu }) => {
         {/* Dynamic Theme Switcher */}
         <ThemeToggle />
 
+        {/* Notifications Bell for Admin & Every User */}
+        <NotificationBell />
+
         {/* User profile capsule */}
         <Link
           to={ROUTES.PROFILE}
@@ -83,16 +87,6 @@ export const Navbar = ({ onOpenMobileMenu }) => {
             {user?.name ? user.name[0].toUpperCase() : 'U'}
           </div>
         </Link>
-
-        {/* Sign out button */}
-        <button
-          onClick={logout}
-          title="Sign out"
-          aria-label="Sign out"
-          className="flex h-9 w-9 items-center justify-center rounded-xl border border-black/[0.06] bg-black/[0.03] text-zinc-500 hover:bg-rose-500/10 hover:text-rose-600 hover:border-rose-500/20 dark:border-white/[0.08] dark:bg-white/[0.06] dark:text-zinc-400 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 dark:hover:border-rose-800/40 transition-all duration-200 active:scale-90"
-        >
-          <LogOut className="h-4 w-4" />
-        </button>
       </div>
     </header>
   );

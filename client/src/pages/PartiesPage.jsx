@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useBusiness } from '../hooks/useBusiness';
 import { useConfirm } from '../hooks/useConfirm';
+import { useSnackbar } from '../hooks/useSnackbar';
 import { partyService } from '../services/partyService';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -33,6 +34,7 @@ import {
 export const PartiesPage = () => {
   const { business } = useBusiness();
   const { confirm, alert } = useConfirm();
+  const { showSuccess, showError } = useSnackbar();
   const currency = business?.currency || 'USD';
 
   // State
@@ -125,11 +127,11 @@ export const PartiesPage = () => {
         setSummary(summaryRes);
       }
     } catch (err) {
-      setError(err.message || 'Failed to load parties data');
+      showError(err.message || 'Failed to load parties data');
     } finally {
       setLoading(false);
     }
-  }, [activeTab, balanceFilter, search]);
+  }, [activeTab, balanceFilter, search, showError]);
 
   useEffect(() => {
     fetchData();
@@ -172,19 +174,13 @@ export const PartiesPage = () => {
   const handleSubmitParty = async (e) => {
     e.preventDefault();
     if (!partyFormData.name.trim() || !partyFormData.phone.trim()) {
-      await alert({
-        title: 'Validation Error',
-        message: 'Name and Phone number are required.',
-      });
+      showError('Name and Phone number are required.');
       return;
     }
 
     const phoneCheck = validateNepaliPhone(partyFormData.phone);
     if (!phoneCheck.isValid) {
-      await alert({
-        title: 'Invalid Phone Number',
-        message: phoneCheck.error || 'Please enter a valid Nepali contact number (10-digit mobile starting with 98/97/96 or 8-digit landline).',
-      });
+      showError(phoneCheck.error || 'Please enter a valid Nepali contact number.');
       return;
     }
 
@@ -192,16 +188,15 @@ export const PartiesPage = () => {
       setSubmittingParty(true);
       if (editingParty) {
         await partyService.updateParty(editingParty._id, partyFormData);
+        showSuccess('Party details updated successfully');
       } else {
         await partyService.createParty(partyFormData);
+        showSuccess('Party registered successfully');
       }
       setIsPartyModalOpen(false);
       fetchData();
     } catch (err) {
-      await alert({
-        title: 'Action Failed',
-        message: err.message || 'Failed to save party record',
-      });
+      showError(err.message || 'Failed to save party record');
     } finally {
       setSubmittingParty(false);
     }
@@ -221,16 +216,14 @@ export const PartiesPage = () => {
 
     try {
       await partyService.deleteParty(party._id);
+      showSuccess(`Party "${party.name}" deleted`);
       setParties((prev) => prev.filter((p) => p._id !== party._id));
       if (ledgerParty?._id === party._id) {
         setIsLedgerModalOpen(false);
       }
       partyService.getPartiesCreditSummary().then((res) => setSummary(res));
     } catch (err) {
-      await alert({
-        title: 'Action Failed',
-        message: err.message || 'Failed to delete party',
-      });
+      showError(err.message || 'Failed to delete party');
     }
   };
 
@@ -261,16 +254,14 @@ export const PartiesPage = () => {
   const handleSubmitCredit = async (e) => {
     e.preventDefault();
     if (!selectedPartyForCredit || !creditFormData.amount || Number(creditFormData.amount) <= 0) {
-      await alert({
-        title: 'Validation Error',
-        message: 'Please provide a valid transaction amount greater than 0.',
-      });
+      showError('Please provide a valid transaction amount greater than 0.');
       return;
     }
 
     try {
       setSubmittingCredit(true);
       await partyService.recordCreditTransaction(selectedPartyForCredit._id, creditFormData);
+      showSuccess('Credit entry successfully recorded');
       setIsCreditModalOpen(false);
       fetchData();
 
@@ -279,10 +270,7 @@ export const PartiesPage = () => {
         openLedger(selectedPartyForCredit);
       }
     } catch (err) {
-      await alert({
-        title: 'Action Failed',
-        message: err.message || 'Failed to record credit transaction',
-      });
+      showError(err.message || 'Failed to record credit transaction');
     } finally {
       setSubmittingCredit(false);
     }
@@ -357,13 +345,6 @@ export const PartiesPage = () => {
           </Button>
         </div>
       </div>
-
-      {error && (
-        <div className="flex items-center gap-2 rounded-xl bg-rose-50/80 border border-rose-200/80 p-3 text-xs text-rose-700 dark:bg-rose-950/30 dark:border-rose-900/40 dark:text-rose-400">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          <span>{error}</span>
-        </div>
-      )}
 
       {/* Credit Summary Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5">

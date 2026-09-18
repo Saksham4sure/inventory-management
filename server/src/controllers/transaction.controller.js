@@ -7,6 +7,7 @@ import { ApiError } from '../utils/apiError.js';
 import { ApiResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { TRANSACTION_TYPES } from '../constants/transactionTypes.js';
+import { ROLES } from '../constants/roles.js';
 import { validateNepaliPhone, extractNepaliLocalDigits } from '../utils/phoneValidator.js';
 
 export const createTransaction = asyncHandler(async (req, res) => {
@@ -130,6 +131,30 @@ export const createTransaction = asyncHandler(async (req, res) => {
   const timestamp = Date.now().toString().slice(-6);
   const randomSuffix = Math.floor(1000 + Math.random() * 9000);
   const referenceNumber = `${prefix}-${timestamp}-${randomSuffix}`;
+
+  // Enforce member limits if not business owner or admin
+  if (req.user.role !== ROLES.OWNER && req.user.role !== ROLES.ADMIN) {
+    const memberRecord = req.business?.members?.find(
+      (m) => m.user && m.user.toString() === req.user._id.toString()
+    );
+    if (memberRecord && memberRecord.limits) {
+      if (type === TRANSACTION_TYPES.SALE && memberRecord.limits.canRecordSale === false) {
+        throw new ApiError(403, 'Your account does not have permission to record sales');
+      }
+      if (type === TRANSACTION_TYPES.PURCHASE && memberRecord.limits.canRecordPurchase === false) {
+        throw new ApiError(403, 'Your account does not have permission to record purchases');
+      }
+      if (
+        memberRecord.limits.maxTransactionAmount > 0 &&
+        totalAmount > memberRecord.limits.maxTransactionAmount
+      ) {
+        throw new ApiError(
+          403,
+          `Transaction amount (${totalAmount}) exceeds your authorized limit of ${memberRecord.limits.maxTransactionAmount}`
+        );
+      }
+    }
+  }
 
   // Save stock updates
   await Promise.all(productsToUpdate.map((p) => p.save()));
@@ -408,6 +433,15 @@ export const getDashboardSummary = asyncHandler(async (req, res) => {
 
 export const deleteTransaction = asyncHandler(async (req, res) => {
   const { id } = req.params;
+
+  if (req.user.role !== ROLES.OWNER && req.user.role !== ROLES.ADMIN) {
+    const memberRecord = req.business?.members?.find(
+      (m) => m.user && m.user.toString() === req.user._id.toString()
+    );
+    if (memberRecord && memberRecord.limits?.canDeleteRecords === false) {
+      throw new ApiError(403, 'Your account does not have permission to delete transactions');
+    }
+  }
 
   const transaction = await Transaction.findOne({
     _id: id,
