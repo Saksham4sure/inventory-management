@@ -12,7 +12,7 @@ export const generateProductQR = async (businessId, sku) => {
     margin: 2,
     scale: 8,
     color: {
-      dark: '#1e293b', // slate-800
+      dark: '#000000', // pure pitch black for maximum contrast and readability
       light: '#ffffff',
     },
   });

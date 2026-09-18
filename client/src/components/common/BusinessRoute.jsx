@@ -5,7 +5,7 @@ import { Building2, ArrowRight } from 'lucide-react';
 import { Button } from '../ui/Button';
 
 export const BusinessRoute = () => {
-  const { hasBusiness, isLoading } = useAuth();
+  const { user, hasBusiness, isLoading } = useAuth();
 
   if (isLoading) {
     return null;

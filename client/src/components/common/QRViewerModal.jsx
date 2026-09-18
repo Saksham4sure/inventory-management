@@ -34,7 +34,7 @@ export const QRViewerModal = ({ isOpen, onClose, product, currency = 'USD' }) =>
 
       // Product Name (truncated if too long)
       ctx.fillStyle = '#09090b';
-      ctx.font = 'bold 34px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.font = 'bold 44px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       ctx.textAlign = 'center';
       let title = product.name || 'Product';
       if (ctx.measureText(title).width > 520) {
@@ -46,26 +46,43 @@ export const QRViewerModal = ({ isOpen, onClose, product, currency = 'USD' }) =>
       ctx.fillText(title, width / 2, 75);
 
       // QR Code Image
-      const qrSize = 400;
+      const qrSize = 390;
       const qrX = (width - qrSize) / 2;
-      const qrY = 105;
+      const qrY = 100;
       ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
+
+      // Boost contrast: convert dark QR pixels to pure solid black (#000000)
+      const qrImageData = ctx.getImageData(qrX, qrY, qrSize, qrSize);
+      const data = qrImageData.data;
+      for (let i = 0; i < data.length; i += 4) {
+        // If pixel is not white/very bright, crush it to pure solid black
+        if (data[i] < 200 || data[i + 1] < 200 || data[i + 2] < 200) {
+          data[i] = 0;
+          data[i + 1] = 0;
+          data[i + 2] = 0;
+        } else {
+          data[i] = 255;
+          data[i + 1] = 255;
+          data[i + 2] = 255;
+        }
+      }
+      ctx.putImageData(qrImageData, qrX, qrY);
 
       // SKU / Code Below QR
       ctx.fillStyle = '#71717a';
       ctx.font = 'bold 24px monospace';
-      ctx.fillText(`CODE: ${product.sku || product.qrCodeData || ''}`, width / 2, 545);
+      ctx.fillText(`CODE: ${product.sku || product.qrCodeData || ''}`, width / 2, 535);
 
       // Price Below Code
       ctx.fillStyle = '#059669';
-      ctx.font = 'bold 36px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.font = 'bold 52px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
       const formattedPrice = formatCurrency(product.sellingPrice, currency);
       ctx.fillText(formattedPrice, width / 2, 605);
 
       // Small Branding / Footer
       ctx.fillStyle = '#a1a1aa';
       ctx.font = '18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
-      ctx.fillText('Scan with StockPulse QR Scanner', width / 2, 655);
+      ctx.fillText('Scan with StockPulse QR Scanner', width / 2, 660);
 
       // Download triggered
       const link = document.createElement('a');
