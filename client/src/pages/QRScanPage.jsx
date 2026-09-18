@@ -34,9 +34,11 @@ import {
   Search,
 } from 'lucide-react';
 import { useSnackbar } from '../hooks/useSnackbar';
+import { useConfirm } from '../hooks/useConfirm';
 
 export const QRScanPage = () => {
   const { business } = useBusiness();
+  const { alert } = useConfirm();
   const { showSuccess, showError } = useSnackbar();
   const currency = business?.currency || 'USD';
 
@@ -565,9 +567,11 @@ export const QRScanPage = () => {
   }, [existingParties, partySearch]);
 
   // Complete batch transaction
+  // Complete batch transaction
   const handleCompleteTransaction = async () => {
     if (cart.length === 0) {
       setError('Your stack is empty. Scan QR or enter amount before completing.');
+      showError('Your stack is empty. Scan QR or enter amount before completing.');
       return;
     }
 
@@ -576,9 +580,15 @@ export const QRScanPage = () => {
       for (const item of cart) {
         if (!item.isManual && item.product) {
           if (item.product.currentStock < item.quantity) {
-            setError(
-              `Insufficient stock for "${item.product.name}". Available: ${item.product.currentStock} ${item.product.unit}, in stack: ${item.quantity}`
-            );
+            const stockMsg = `Cannot complete sale for "${item.product.name}". Available inventory is only ${item.product.currentStock} ${item.product.unit}, but you are trying to sell ${item.quantity} ${item.product.unit}.`;
+            setError(stockMsg);
+            showError(`Out of stock: Only ${item.product.currentStock} ${item.product.unit} available for "${item.product.name}"`);
+            await alert({
+              title: 'Stock Out of Bound Warning',
+              message: stockMsg,
+              buttonText: 'Understood',
+              variant: 'warning',
+            });
             return;
           }
         }
@@ -587,7 +597,9 @@ export const QRScanPage = () => {
 
     // If payment method is CREDIT, party identity is required!
     if (paymentMethod === 'CREDIT' && !creditParty) {
-      setError(`Please select or specify a ${txnType === 'SALE' ? 'Customer' : 'Supplier'} for this credit transaction.`);
+      const partyMsg = `Please select or specify a ${txnType === 'SALE' ? 'Customer' : 'Supplier'} for this credit transaction.`;
+      setError(partyMsg);
+      showError(partyMsg);
       setIsCreditPartyModalOpen(true);
       fetchPartiesForCredit();
       return;
@@ -624,6 +636,21 @@ export const QRScanPage = () => {
       const msg = err.message || 'Failed to complete transaction';
       setError(msg);
       showError(msg);
+
+      // If backend throws insufficient stock or out of bounds error, show popup warning
+      const isStockError =
+        msg.toLowerCase().includes('insufficient stock') ||
+        msg.toLowerCase().includes('out of bound') ||
+        msg.toLowerCase().includes('exceeds available');
+
+      if (isStockError) {
+        await alert({
+          title: 'Stock Limit Exceeded',
+          message: msg,
+          buttonText: 'Review Stack',
+          variant: 'warning',
+        });
+      }
     } finally {
       setSubmitting(false);
     }
@@ -631,9 +658,9 @@ export const QRScanPage = () => {
 
   return (
     <div className="space-y-4 sm:space-y-5 relative">
-      {/* Floating Status Snackbar */}
+      {/* Floating Status Snackbar at bottom */}
       {snackbar && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-sm animate-in fade-in slide-in-from-top-4 duration-300 pointer-events-auto">
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-sm animate-in fade-in slide-in-from-bottom-4 duration-300 pointer-events-auto">
           <div className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-zinc-900/95 dark:bg-[#181b22]/95 text-white shadow-2xl backdrop-blur-xl border border-white/10 ring-1 ring-black/10">
             <div className="flex items-center gap-3 min-w-0">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-800 text-zinc-100 border border-zinc-700">

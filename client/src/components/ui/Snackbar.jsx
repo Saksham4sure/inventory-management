@@ -67,7 +67,7 @@ export const SnackbarContainer = ({ snackbars, onDismiss }) => {
   return createPortal(
     <div
       aria-live="polite"
-      className="fixed bottom-4 sm:bottom-6 right-4 sm:right-6 z-[9999] flex flex-col gap-2.5 max-w-sm sm:max-w-md w-[calc(100vw-2rem)] sm:w-full pointer-events-none"
+      className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-center gap-2.5 max-w-sm sm:max-w-md w-[calc(100vw-2rem)] sm:w-full pointer-events-none"
     >
       {snackbars.map((s) => (
         <SnackbarItem key={s.id} snackbar={s} onDismiss={onDismiss} />

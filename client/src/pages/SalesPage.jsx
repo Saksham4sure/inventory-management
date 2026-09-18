@@ -166,7 +166,19 @@ export const SalesPage = () => {
       setIsReturnModalOpen(false);
       fetchSales();
     } catch (err) {
-      showError(err.message || 'Failed to process return');
+      const errMsg = err.message || 'Failed to process return';
+      showError(errMsg);
+      const isStockError =
+        errMsg.toLowerCase().includes('insufficient stock') ||
+        errMsg.toLowerCase().includes('out of bound');
+      if (isStockError) {
+        await alert({
+          title: 'Stock Limit Exceeded',
+          message: errMsg,
+          buttonText: 'Understood',
+          variant: 'warning',
+        });
+      }
     } finally {
       setSubmittingReturn(false);
     }

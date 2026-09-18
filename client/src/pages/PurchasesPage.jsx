@@ -147,9 +147,15 @@ export const PurchasesPage = () => {
 
     const prod = allProducts.find((p) => p._id === returnProduct);
     if (prod && prod.currentStock < Number(returnQty)) {
-      const msg = `Cannot return ${returnQty} items. Only ${prod.currentStock} ${prod.unit} currently in stock.`;
+      const msg = `Cannot return ${returnQty} ${prod.unit || 'items'}. Only ${prod.currentStock} ${prod.unit || 'items'} currently in stock.`;
       setError(msg);
       showError(msg);
+      await alert({
+        title: 'Stock Out of Bound Warning',
+        message: msg,
+        buttonText: 'Understood',
+        variant: 'warning',
+      });
       return;
     }
 
@@ -175,7 +181,19 @@ export const PurchasesPage = () => {
       setIsReturnModalOpen(false);
       fetchPurchases();
     } catch (err) {
-      showError(err.message || 'Failed to process vendor return');
+      const errMsg = err.message || 'Failed to process vendor return';
+      showError(errMsg);
+      const isStockError =
+        errMsg.toLowerCase().includes('insufficient stock') ||
+        errMsg.toLowerCase().includes('out of bound');
+      if (isStockError) {
+        await alert({
+          title: 'Stock Limit Exceeded',
+          message: errMsg,
+          buttonText: 'Understood',
+          variant: 'warning',
+        });
+      }
     } finally {
       setSubmittingReturn(false);
     }
