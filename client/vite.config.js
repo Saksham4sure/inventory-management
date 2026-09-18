@@ -9,25 +9,7 @@ export default defineConfig({
     tailwindcss(),
   ],
   build: {
-    chunkSizeWarningLimit: 600,
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('html5-qrcode') || id.includes('zxing') || id.includes('qrcode.react')) {
-              return 'vendor-qr';
-            }
-            if (id.includes('lucide-react')) {
-              return 'vendor-icons';
-            }
-            if (id.includes('react-router') || id.includes('react-dom') || id.includes('react')) {
-              return 'vendor-react';
-            }
-            return 'vendor';
-          }
-        },
-      },
-    },
+    chunkSizeWarningLimit: 1000,
   },
   server: {
     host: true,
