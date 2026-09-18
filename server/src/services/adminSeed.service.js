@@ -12,6 +12,11 @@ export const seedInitialAdminAndPlans = async () => {
     });
 
     if (!adminUser) {
+      // Check if any Super Admin exists in the database
+      adminUser = await User.findOne({ role: ROLES.SUPER_ADMIN });
+    }
+
+    if (!adminUser) {
       await User.create({
         name: ENV.ADMIN_NAME,
         username: ENV.ADMIN_USERNAME,
@@ -27,13 +32,29 @@ export const seedInitialAdminAndPlans = async () => {
         adminUser.role = ROLES.SUPER_ADMIN;
         updated = true;
       }
-      if (!adminUser.username) {
-        adminUser.username = ENV.ADMIN_USERNAME;
+      if (ENV.ADMIN_USERNAME && adminUser.username !== ENV.ADMIN_USERNAME.toLowerCase().trim()) {
+        adminUser.username = ENV.ADMIN_USERNAME.toLowerCase().trim();
         updated = true;
+      }
+      if (ENV.ADMIN_EMAIL && adminUser.email !== ENV.ADMIN_EMAIL.toLowerCase().trim()) {
+        adminUser.email = ENV.ADMIN_EMAIL.toLowerCase().trim();
+        updated = true;
+      }
+      if (ENV.ADMIN_NAME && adminUser.name !== ENV.ADMIN_NAME) {
+        adminUser.name = ENV.ADMIN_NAME;
+        updated = true;
+      }
+      // If ADMIN_PASSWORD is set in env and differs from standard default or changed, sync password
+      if (ENV.ADMIN_PASSWORD && ENV.ADMIN_PASSWORD !== 'password') {
+        const isMatch = await adminUser.comparePassword(ENV.ADMIN_PASSWORD);
+        if (!isMatch) {
+          adminUser.password = ENV.ADMIN_PASSWORD;
+          updated = true;
+        }
       }
       if (updated) {
         await adminUser.save();
-        console.log('✅ [Seed] Super Admin role and username updated for existing admin user');
+        console.log(`✅ [Seed] Super Admin credentials synchronized from environment variables for "${adminUser.username}"`);
       }
     }
 

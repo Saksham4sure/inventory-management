@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { ROUTES } from '../../constants/routes';
-import { ShieldAlert, Lock, User, AlertCircle, ArrowRight, Sparkles } from 'lucide-react';
+import { ShieldAlert, Lock, User, AlertCircle, ArrowRight } from 'lucide-react';
 import { ThemeToggle } from '../../components/ui/ThemeToggle';
 
 export const PlatformAdminLoginPage = () => {
@@ -10,8 +10,8 @@ export const PlatformAdminLoginPage = () => {
   const location = useLocation();
   const { login } = useAuth();
 
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('password');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -32,11 +32,6 @@ export const PlatformAdminLoginPage = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleAutofill = () => {
-    setUsername('admin');
-    setPassword('password');
   };
 
   return (
@@ -60,22 +55,7 @@ export const PlatformAdminLoginPage = () => {
           </p>
         </div>
 
-        {/* Notice helper pill for testing */}
-        <div className="mb-5 rounded-xl bg-indigo-950/50 border border-indigo-800/40 p-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-indigo-400 shrink-0" />
-            <div className="text-[11px] text-zinc-300">
-              Dev Credentials: <code className="font-mono text-indigo-300 bg-indigo-900/40 px-1 py-0.5 rounded">admin</code> / <code className="font-mono text-indigo-300 bg-indigo-900/40 px-1 py-0.5 rounded">password</code>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={handleAutofill}
-            className="text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 underline shrink-0 cursor-pointer ml-2"
-          >
-            Autofill
-          </button>
-        </div>
+        {/* Notice helper pill for testing - removed for security */}
 
         {error && (
           <div className="mb-4 flex items-center gap-2 rounded-xl bg-rose-950/50 p-3 text-xs text-rose-300 border border-rose-800/50">
