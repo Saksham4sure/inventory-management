@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useNotifications } from '../../hooks/useNotifications';
+import { useAuth } from '../../hooks/useAuth';
 import { useSnackbar } from '../../hooks/useSnackbar';
 import { formatDate } from '../../utils/formatters';
 import {
@@ -14,9 +15,13 @@ import {
   Shield,
   Loader2,
   CreditCard,
+  ArrowRight,
+  FileCheck2,
+  ShieldCheck,
 } from 'lucide-react';
 
 export const NotificationBell = () => {
+  const { user } = useAuth();
   const {
     notifications,
     unreadCount,
@@ -25,6 +30,9 @@ export const NotificationBell = () => {
     respondToInvitation,
   } = useNotifications();
   const { showSuccess, showError, showInfo } = useSnackbar();
+
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const notificationsRoute = isSuperAdmin ? '/platform-admin/notifications' : '/notifications';
 
   const [isOpen, setIsOpen] = useState(false);
   const [respondingId, setRespondingId] = useState(null);
@@ -92,6 +100,12 @@ export const NotificationBell = () => {
         return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
       case 'SUBSCRIPTION_REJECTED':
         return <XCircle className="h-4 w-4 text-rose-500" />;
+      case 'KYC_SUBMITTED':
+        return <FileCheck2 className="h-4 w-4 text-amber-500" />;
+      case 'KYC_APPROVED':
+        return <ShieldCheck className="h-4 w-4 text-emerald-500" />;
+      case 'KYC_REJECTED':
+        return <AlertCircle className="h-4 w-4 text-rose-500" />;
       default:
         return <AlertCircle className="h-4 w-4 text-zinc-500" />;
     }
@@ -244,7 +258,7 @@ export const NotificationBell = () => {
                         {notif.type === 'SUBSCRIPTION_REQUEST' && (
                           <div className="mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
                             <Link
-                              to="/admin/subscriptions"
+                              to="/platform-admin/subscriptions"
                               onClick={() => {
                                 setIsOpen(false);
                                 if (!notif.isRead) markAsRead(notif._id);
@@ -253,6 +267,57 @@ export const NotificationBell = () => {
                             >
                               <CreditCard className="h-3 w-3" />
                               <span>Review Applications</span>
+                            </Link>
+                          </div>
+                        )}
+
+                        {notif.type === 'KYC_SUBMITTED' && isSuperAdmin && (
+                          <div className="mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                            <Link
+                              to={
+                                notif.data?.targetUserId
+                                  ? `/platform-admin/users?kyc=PENDING&userId=${notif.data.targetUserId}`
+                                  : '/platform-admin/users?kyc=PENDING'
+                              }
+                              onClick={() => {
+                                setIsOpen(false);
+                                if (!notif.isRead) markAsRead(notif._id);
+                              }}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-[10px] font-bold shadow-2xs transition-colors"
+                            >
+                              <FileCheck2 className="h-3 w-3" />
+                              <span>Review User Identity</span>
+                            </Link>
+                          </div>
+                        )}
+
+                        {notif.type === 'KYC_REJECTED' && (
+                          <div className="mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                            <Link
+                              to="/profile"
+                              onClick={() => {
+                                setIsOpen(false);
+                                if (!notif.isRead) markAsRead(notif._id);
+                              }}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-bold shadow-2xs transition-colors"
+                            >
+                              <span>Fix & Re-upload</span>
+                            </Link>
+                          </div>
+                        )}
+
+                        {notif.type === 'KYC_APPROVED' && (
+                          <div className="mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+                            <Link
+                              to="/profile"
+                              onClick={() => {
+                                setIsOpen(false);
+                                if (!notif.isRead) markAsRead(notif._id);
+                              }}
+                              className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
+                            >
+                              <ShieldCheck className="h-3 w-3" />
+                              <span>Verified Profile</span>
                             </Link>
                           </div>
                         )}
@@ -266,6 +331,18 @@ export const NotificationBell = () => {
                 );
               })
             )}
+          </div>
+
+          {/* Footer link to View All Notifications page */}
+          <div className="p-2.5 bg-zinc-50 dark:bg-zinc-900/90 border-t border-zinc-100 dark:border-zinc-800 text-center">
+            <Link
+              to={notificationsRoute}
+              onClick={() => setIsOpen(false)}
+              className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 transition-colors w-full py-1.5 rounded-xl hover:bg-indigo-500/10 cursor-pointer"
+            >
+              <span>View all notifications</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
           </div>
         </div>
       )}

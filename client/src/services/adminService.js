@@ -54,6 +54,16 @@ export const adminService = {
     return res.data;
   },
 
+  getUserKyc: async (id) => {
+    const res = await api.get(`/admin/users/${id}/kyc`);
+    return res.data.data;
+  },
+
+  verifyUserKyc: async (id, data) => {
+    const res = await api.post(`/admin/users/${id}/verify-kyc`, data);
+    return res.data.data;
+  },
+
   // 4. Dynamic Subscription Tiers Management
   getPlans: async () => {
     const res = await api.get('/admin/plans');

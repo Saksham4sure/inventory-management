@@ -16,6 +16,7 @@ import { SuperAdminRoute } from '../components/common/SuperAdminRoute';
 // Lazy-loaded pages for standard tenant workspace
 const LoginPage = lazy(() => import('../pages/LoginPage'));
 const RegisterPage = lazy(() => import('../pages/RegisterPage'));
+const OnboardingPage = lazy(() => import('../pages/OnboardingPage'));
 const BusinessSetupPage = lazy(() => import('../pages/BusinessSetupPage'));
 const DashboardPage = lazy(() => import('../pages/DashboardPage'));
 const ProfilePage = lazy(() => import('../pages/ProfilePage'));
@@ -28,6 +29,7 @@ const PurchasesPage = lazy(() => import('../pages/PurchasesPage'));
 const PartiesPage = lazy(() => import('../pages/PartiesPage'));
 const TransactionsPage = lazy(() => import('../pages/TransactionsPage'));
 const SubscriptionPage = lazy(() => import('../pages/SubscriptionPage'));
+const NotificationsPage = lazy(() => import('../pages/NotificationsPage'));
 
 // Lazy-loaded Platform Admin pages (Isolated from regular users)
 const PlatformAdminLoginPage = lazy(() => import('../pages/admin/PlatformAdminLoginPage'));
@@ -129,19 +131,22 @@ export const AppRoutes = () => {
             <Route path={ROUTES.ADMIN_USERS} element={<AdminUsersPage />} />
             <Route path={ROUTES.ADMIN_SUBSCRIPTIONS} element={<AdminSubscriptionsPage />} />
             <Route path={ROUTES.ADMIN_SETTINGS} element={<AdminSettingsPage />} />
+            <Route path={ROUTES.ADMIN_NOTIFICATIONS} element={<NotificationsPage />} />
             <Route path="/platform-admin" element={<Navigate to={ROUTES.ADMIN_DASHBOARD} replace />} />
           </Route>
         </Route>
 
         {/* Protected Routes for Standard Tenant Users (Requires login) */}
         <Route element={<ProtectedRoute />}>
-          {/* Standalone Business Onboarding Setup (optional) */}
-          <Route path={ROUTES.BUSINESS_SETUP} element={<BusinessSetupPage />} />
+          {/* Multi-step Onboarding Wizard Modal */}
+          <Route path={ROUTES.ONBOARDING} element={<OnboardingPage />} />
+          <Route path={ROUTES.BUSINESS_SETUP} element={<OnboardingPage />} />
 
           {/* Dashboard Shell */}
           <Route element={<DashboardLayout />}>
             {/* General routes accessible regardless of business setup */}
             <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
+            <Route path={ROUTES.NOTIFICATIONS} element={<NotificationsPage />} />
             <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
             <Route path={ROUTES.SUBSCRIPTION} element={<SubscriptionPage />} />
             <Route path={ROUTES.BUSINESS_PROFILE} element={<BusinessProfilePage />} />

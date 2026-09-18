@@ -17,6 +17,7 @@ import {
   X,
   Server,
   Zap,
+  Bell,
 } from 'lucide-react';
 
 export const PlatformAdminLayout = () => {
@@ -55,6 +56,12 @@ export const PlatformAdminLayout = () => {
       description: 'Dynamic 3 tiers & trial system',
     },
     {
+      label: 'Notifications & Alerts',
+      path: ROUTES.ADMIN_NOTIFICATIONS,
+      icon: Bell,
+      description: 'Incoming requests & alerts',
+    },
+    {
       label: 'Platform Settings',
       path: ROUTES.ADMIN_SETTINGS,
       icon: Settings,
@@ -78,7 +85,7 @@ export const PlatformAdminLayout = () => {
                   ROOT
                 </span>
               </div>
-              <p className="text-[11px] text-zinc-400">Platform Super Admin</p>
+              <p className="text-[11px] text-zinc-400">Platform Administrator</p>
             </div>
           </div>
           {mobileOpen && (
@@ -175,7 +182,7 @@ export const PlatformAdminLayout = () => {
             </div>
             <div className="flex flex-col leading-tight">
               <span className="text-xs font-semibold text-zinc-200">{user?.username || 'admin'}</span>
-              <span className="text-[10px] text-zinc-400">Super Admin</span>
+              <span className="text-[10px] text-zinc-400">Administrator</span>
             </div>
           </div>
           <button
@@ -225,7 +232,7 @@ export const PlatformAdminLayout = () => {
                 Platform Administration Console
               </span>
               <span className="hidden sm:inline-block rounded-full bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/60">
-                Super Admin Protected
+                Restricted Access
               </span>
             </div>
           </div>

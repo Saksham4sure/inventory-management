@@ -2,6 +2,7 @@ export const ROUTES = {
   HOME: '/',
   LOGIN: '/login',
   REGISTER: '/register',
+  ONBOARDING: '/onboarding',
   BUSINESS_SETUP: '/business/setup',
   BUSINESS_PROFILE: '/business/profile',
   TEAM: '/team',
@@ -14,11 +15,13 @@ export const ROUTES = {
   PURCHASES: '/purchases',
   PARTIES: '/parties',
   TRANSACTIONS: '/transactions',
-  // Platform Admin (Super Admin) - Isolated routes
+  NOTIFICATIONS: '/notifications',
+  // Platform Admin - Isolated routes
   ADMIN_LOGIN: '/platform-admin/login',
   ADMIN_DASHBOARD: '/platform-admin/dashboard',
   ADMIN_BUSINESSES: '/platform-admin/businesses',
   ADMIN_USERS: '/platform-admin/users',
   ADMIN_SUBSCRIPTIONS: '/platform-admin/subscriptions',
   ADMIN_SETTINGS: '/platform-admin/settings',
+  ADMIN_NOTIFICATIONS: '/platform-admin/notifications',
 };

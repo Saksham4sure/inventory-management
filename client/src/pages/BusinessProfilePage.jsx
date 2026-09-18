@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { useBusiness } from '../hooks/useBusiness';
 import { useAuth } from '../hooks/useAuth';
 import { Card } from '../components/ui/Card';
@@ -8,6 +8,7 @@ import { Input } from '../components/ui/Input';
 import { PhoneInput } from '../components/ui/PhoneInput';
 import { Select } from '../components/ui/Select';
 import { LocationSelect } from '../components/ui/LocationSelect';
+import { CoordinateInput } from '../components/ui/CoordinateInput';
 import { Badge } from '../components/ui/Badge';
 import { TeamManagement } from '../components/team/TeamManagement';
 import { validateNepaliPhone } from '../utils/phoneValidator';
@@ -20,6 +21,9 @@ import {
   Coins,
   QrCode,
   Users,
+  MapPin,
+  ExternalLink,
+  Lock,
 } from 'lucide-react';
 
 export const BusinessProfilePage = () => {
@@ -58,6 +62,8 @@ export const BusinessProfilePage = () => {
     phone: '',
     email: '',
     address: '',
+    coordinates: { latitude: null, longitude: null },
+    googleMapsUrl: '',
     taxNumber: '',
   });
 
@@ -72,6 +78,11 @@ export const BusinessProfilePage = () => {
         phone: business.phone || '',
         email: business.email || user?.email || '',
         address: business.address || '',
+        coordinates: {
+          latitude: business.coordinates?.latitude ?? null,
+          longitude: business.coordinates?.longitude ?? null,
+        },
+        googleMapsUrl: business.googleMapsUrl || '',
         taxNumber: business.taxNumber || '',
       });
     }
@@ -79,6 +90,13 @@ export const BusinessProfilePage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!business && user?.kyc?.status !== 'VERIFIED') {
+      showError(
+        'Your identity documents (KYC) must be verified by Platform Compliance before you can configure a business profile.'
+      );
+      return;
+    }
 
     if (!formData.name.trim()) {
       showError('Business name is required');
@@ -108,6 +126,8 @@ export const BusinessProfilePage = () => {
       setLoading(false);
     }
   };
+
+  const isKycVerified = user?.kyc?.status === 'VERIFIED';
 
   return (
     <div className="space-y-6 sm:space-y-8 max-w-4xl mx-auto">
@@ -157,7 +177,7 @@ export const BusinessProfilePage = () => {
                   : 'bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
               }`}
             >
-              {(business?.members?.length || 0) + 1}
+              {(business?.members?.length || 0)}
             </span>
           </button>
         </div>
@@ -221,6 +241,23 @@ export const BusinessProfilePage = () => {
                 <span className="flex items-center gap-1.5"><Coins className="h-3.5 w-3.5 text-zinc-400" /> Currency</span>
                 <span className="font-mono text-zinc-700 dark:text-zinc-300 font-medium">{formData.currency}</span>
               </div>
+              {business?.coordinates?.latitude !== null &&
+                business?.coordinates?.latitude !== undefined &&
+                business?.coordinates?.longitude !== null &&
+                business?.coordinates?.longitude !== undefined && (
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1.5"><MapPin className="h-3.5 w-3.5 text-zinc-400" /> GPS</span>
+                    <a
+                      href={`https://www.google.com/maps?q=${business.coordinates.latitude},${business.coordinates.longitude}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono text-[11px] text-zinc-700 dark:text-zinc-300 font-medium hover:underline hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1"
+                    >
+                      {business.coordinates.latitude.toFixed(4)}, {business.coordinates.longitude.toFixed(4)}
+                      <ExternalLink className="h-2.5 w-2.5" />
+                    </a>
+                  </div>
+                )}
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5 text-zinc-400" /> Team</span>
                 <button
@@ -317,6 +354,20 @@ export const BusinessProfilePage = () => {
                   value={formData.address}
                   onChange={(e) => setFormData({ ...formData, address: e.target.value })}
                   isBusinessSetup={true}
+                />
+              </div>
+
+              <div className="pt-2 border-t border-black/[0.05] dark:border-white/[0.08]">
+                <CoordinateInput
+                  coordinates={formData.coordinates}
+                  googleMapsUrl={formData.googleMapsUrl}
+                  onChange={({ coordinates, googleMapsUrl }) => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      coordinates,
+                      googleMapsUrl,
+                    }));
+                  }}
                 />
               </div>
 

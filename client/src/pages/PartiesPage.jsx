@@ -9,6 +9,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { PhoneInput } from '../components/ui/PhoneInput';
 import { Select } from '../components/ui/Select';
+import { DatePicker } from '../components/ui/DatePicker';
 import { Modal } from '../components/ui/Modal';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { validateNepaliPhone } from '../utils/phoneValidator';
@@ -1041,9 +1042,8 @@ export const PartiesPage = () => {
                 onChange={(e) => setCreditFormData({ ...creditFormData, amount: e.target.value })}
               />
 
-              <Input
+              <DatePicker
                 label="Date *"
-                type="date"
                 required
                 value={creditFormData.date}
                 onChange={(e) => setCreditFormData({ ...creditFormData, date: e.target.value })}

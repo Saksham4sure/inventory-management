@@ -190,7 +190,7 @@ export const AdminOverviewPage = () => {
                     </span>
                   </div>
                   <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
-                    Tenant business owners have applied for subscription changes or extensions. Super admins can review and approve below.
+                    Tenant business owners have applied for subscription changes or extensions. Platform administrators can review and approve below.
                   </p>
                 </div>
               </div>
@@ -492,7 +492,7 @@ export const AdminOverviewPage = () => {
                     {count} <span className="text-xs font-normal text-zinc-500">businesses</span>
                   </span>
                   <span className="text-xs font-mono font-semibold text-zinc-600 dark:text-zinc-400">
-                    ${p.monthlyPriceUSD}/mo
+                    Rs. {(p.monthlyPriceNPR || p.monthlyPriceUSD || 0).toLocaleString('en-IN')}/mo
                   </span>
                 </div>
                 {/* Progress bar */}

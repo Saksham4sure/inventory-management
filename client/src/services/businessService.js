@@ -35,4 +35,9 @@ export const businessService = {
     const response = await api.post('/business/subscription/cancel-request');
     return response.data.data;
   },
+
+  resolveMapLink: async (url) => {
+    const response = await api.post('/business/resolve-map-link', { url });
+    return response.data.data;
+  },
 };

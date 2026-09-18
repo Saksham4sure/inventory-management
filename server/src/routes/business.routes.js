@@ -3,6 +3,7 @@ import {
   setupBusiness,
   getMyBusiness,
   updateBusiness,
+  resolveMapLink,
   getBusinessSubscription,
   changeBusinessSubscription,
   cancelSubscriptionRequest,
@@ -15,6 +16,9 @@ const router = Router();
 
 // Setup initial business after registration
 router.post('/setup', authenticate, setupBusiness);
+
+// Resolve Google Maps link to coordinates
+router.post('/resolve-map-link', authenticate, resolveMapLink);
 
 // Get current user's business profile
 router.get('/my-business', authenticate, requireBusiness, getMyBusiness);

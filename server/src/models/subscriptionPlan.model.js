@@ -24,6 +24,16 @@ const subscriptionPlanSchema = new mongoose.Schema(
       required: true,
       default: 1,
     },
+    currency: {
+      type: String,
+      default: 'NPR',
+      trim: true,
+    },
+    monthlyPriceNPR: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
     monthlyPriceUSD: {
       type: Number,
       required: true,

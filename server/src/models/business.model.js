@@ -24,6 +24,21 @@ const businessSchema = new mongoose.Schema(
       default: '',
       trim: true,
     },
+    coordinates: {
+      latitude: {
+        type: Number,
+        default: null,
+      },
+      longitude: {
+        type: Number,
+        default: null,
+      },
+    },
+    googleMapsUrl: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     phone: {
       type: String,
       default: '',

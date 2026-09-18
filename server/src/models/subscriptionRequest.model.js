@@ -5,12 +5,12 @@ const subscriptionRequestSchema = new mongoose.Schema(
     businessId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Business',
-      required: true,
+      default: null,
       index: true,
     },
     businessName: {
       type: String,
-      required: true,
+      default: '',
       trim: true,
     },
     requestedBy: {

@@ -1,7 +1,7 @@
 import { OnboardingModal } from '../components/onboarding/OnboardingModal';
 import { ThemeToggle } from '../components/ui/ThemeToggle';
 
-export const BusinessSetupPage = () => {
+export const OnboardingPage = () => {
   return (
     <div className="relative min-h-screen bg-[#F4F5F7] dark:bg-[#0f1117] flex items-center justify-center p-4">
       <div className="app-ambient-glow" />
@@ -13,4 +13,4 @@ export const BusinessSetupPage = () => {
   );
 };
 
-export default BusinessSetupPage;
+export default OnboardingPage;

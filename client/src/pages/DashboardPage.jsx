@@ -23,6 +23,11 @@ import {
   Package,
   Trash2,
   Building2,
+  CreditCard,
+  ShieldCheck,
+  FileCheck2,
+  Clock,
+  XCircle,
 } from 'lucide-react';
 
 export const DashboardPage = () => {
@@ -127,12 +132,32 @@ export const DashboardPage = () => {
                 <span className="h-1.5 w-1.5 rounded-full bg-zinc-400 dark:bg-zinc-500" />
                 {business?.name || 'StockPulse Workspace'}
               </span>
+
+              {/* KYC Status Pill */}
+              {user?.kyc?.status === 'VERIFIED' && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                  <ShieldCheck className="h-3 w-3" />
+                  Verified Identity
+                </span>
+              )}
+              {user?.kyc?.status === 'PENDING' && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 border border-amber-500/20 px-2.5 py-0.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400 animate-pulse">
+                  <Clock className="h-3 w-3" />
+                  KYC Under Review
+                </span>
+              )}
+              {user?.kyc?.status === 'REJECTED' && (
+                <Link to={ROUTES.PROFILE} className="inline-flex items-center gap-1 rounded-full bg-rose-500/10 border border-rose-500/20 px-2.5 py-0.5 text-[11px] font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition-colors">
+                  <XCircle className="h-3 w-3" />
+                  KYC Rejected (Action Needed)
+                </Link>
+              )}
             </div>
 
             {/* Hello and User Name */}
             <div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-zinc-900 dark:text-white">
-                Hello, {firstName} <span className="inline-block">👋</span>
+                Hello, {firstName}
               </h1>
               {/* Description */}
               <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1 leading-relaxed">
@@ -186,6 +211,42 @@ export const DashboardPage = () => {
         </div>
       </div>
 
+      {/* KYC Alert Banners if Pending or Rejected */}
+      {user?.kyc?.status === 'REJECTED' && (
+        <div className="rounded-2xl bg-rose-500/10 border border-rose-500/20 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-rose-800 dark:text-rose-200">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="h-9 w-9 rounded-xl bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0">
+              <XCircle className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="font-bold text-xs">Identity Document Verification Rejected</p>
+              <p className="text-[11px] text-rose-700 dark:text-rose-300 mt-0.5">
+                Reason: {user?.kyc?.rejectionReason || 'Document details could not be validated.'} Please update your document number or upload clearer photos.
+              </p>
+            </div>
+          </div>
+          <Link to={ROUTES.PROFILE} className="shrink-0">
+            <Button variant="danger" size="sm" className="rounded-xl whitespace-nowrap text-xs">
+              Re-upload Documents <ArrowRight className="h-3 w-3 ml-1" />
+            </Button>
+          </Link>
+        </div>
+      )}
+
+      {user?.kyc?.status === 'PENDING' && (
+        <div className="rounded-2xl bg-amber-500/10 border border-amber-500/20 p-4 flex items-center gap-3 text-amber-800 dark:text-amber-200">
+          <div className="h-8 w-8 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+            <Clock className="h-4 w-4 animate-spin" />
+          </div>
+          <div className="text-xs">
+            <p className="font-bold">Identity Verification Under Review</p>
+            <p className="text-[11px] text-amber-700 dark:text-amber-300">
+              Your {user?.kyc?.documentType === 'DRIVING_LICENSE' ? 'driving license' : 'citizenship'} documents have been submitted to the Platform Compliance team for validation. You can continue operating while review is in progress.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Onboarding Banner if Business Setup was Skipped */}
       {!hasBusiness && (
         <Card className="border-black/[0.06] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.04] p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -195,18 +256,26 @@ export const DashboardPage = () => {
             </div>
             <div>
               <h3 className="text-sm sm:text-base font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight">
-                Complete Your Business Setup
+                No Business Profile Configured Yet
               </h3>
               <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-                Configure your business profile to generate QR labels, track inventory, and record sales transactions.
+                You can create a business profile anytime, or subscribe directly to a platform plan for your account.
               </p>
             </div>
           </div>
-          <Link to={ROUTES.BUSINESS_PROFILE} className="shrink-0">
-            <Button variant="primary" size="sm" className="rounded-xl whitespace-nowrap">
-              Set Up Business <ArrowRight className="h-3.5 w-3.5 ml-1" />
-            </Button>
-          </Link>
+          <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+            <Link to={ROUTES.SUBSCRIPTION}>
+              <Button variant="secondary" size="sm" className="rounded-xl whitespace-nowrap">
+                <CreditCard className="h-3.5 w-3.5 mr-1" />
+                Subscribe to Plan
+              </Button>
+            </Link>
+            <Link to={ROUTES.BUSINESS_PROFILE}>
+              <Button variant="primary" size="sm" className="rounded-xl whitespace-nowrap">
+                Set Up Business <ArrowRight className="h-3.5 w-3.5 ml-1" />
+              </Button>
+            </Link>
+          </div>
         </Card>
       )}
 

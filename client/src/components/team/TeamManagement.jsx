@@ -30,7 +30,7 @@ import {
 
 export const TeamManagement = () => {
   const { user } = useAuth();
-  const { business } = useBusiness();
+  const { business, refreshBusiness } = useBusiness();
   const { confirm } = useConfirm();
   const { showSuccess, showError } = useSnackbar();
   const currency = business?.currency || 'USD';
@@ -149,6 +149,7 @@ export const TeamManagement = () => {
       showSuccess(`Invitation sent to ${inviteEmail}. They will see it in their website notifications.`);
       setIsInviteOpen(false);
       fetchTeam();
+      refreshBusiness();
     } catch (err) {
       const errorMsg = err.message || 'Failed to send invitation';
       setInviteError(errorMsg);
@@ -220,6 +221,7 @@ export const TeamManagement = () => {
       await teamService.removeMember(member.user._id);
       showSuccess(`${member.user?.name} was removed from the business team.`);
       fetchTeam();
+      refreshBusiness();
     } catch (err) {
       showError(err.message || 'Failed to remove member');
     }
@@ -240,6 +242,7 @@ export const TeamManagement = () => {
       await teamService.cancelInvitation(invitation._id);
       showSuccess('Invitation cancelled.');
       fetchTeam();
+      refreshBusiness();
     } catch (err) {
       showError(err.message || 'Failed to cancel invitation');
     }

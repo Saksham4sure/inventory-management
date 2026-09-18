@@ -7,15 +7,55 @@ import { ApiResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 export const getMyNotifications = asyncHandler(async (req, res) => {
-  const notifications = await Notification.find({ recipient: req.user._id })
-    .populate('sender', 'name email')
-    .sort({ createdAt: -1 })
-    .limit(50);
+  const { filter = 'all', search = '', page = 1, limit = 50 } = req.query;
 
-  const unreadCount = await Notification.countDocuments({
-    recipient: req.user._id,
-    isRead: false,
-  });
+  const query = { recipient: req.user._id };
+
+  if (filter === 'unread') {
+    query.isRead = false;
+  } else if (filter === 'read') {
+    query.isRead = true;
+  } else if (filter === 'subscriptions') {
+    query.type = {
+      $in: ['SUBSCRIPTION_REQUEST', 'SUBSCRIPTION_APPROVED', 'SUBSCRIPTION_REJECTED'],
+    };
+  } else if (filter === 'team') {
+    query.type = {
+      $in: [
+        'TEAM_INVITATION',
+        'INVITATION_ACCEPTED',
+        'INVITATION_REJECTED',
+        'INVITATION_CANCELLED',
+        'MEMBER_REMOVED',
+        'ROLE_UPDATED',
+        'LIMITS_UPDATED',
+      ],
+    };
+  } else if (filter === 'system') {
+    query.type = 'SYSTEM';
+  }
+
+  if (search && search.trim()) {
+    const searchRegex = new RegExp(search.trim(), 'i');
+    query.$or = [{ title: searchRegex }, { message: searchRegex }];
+  }
+
+  const pageNum = Math.max(1, parseInt(page, 10) || 1);
+  const limitNum = Math.max(1, Math.min(100, parseInt(limit, 10) || 50));
+  const skip = (pageNum - 1) * limitNum;
+
+  const [notifications, totalCount, unreadCount] = await Promise.all([
+    Notification.find(query)
+      .populate('sender', 'name email')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum),
+    Notification.countDocuments(query),
+    Notification.countDocuments({
+      recipient: req.user._id,
+      isRead: false,
+    }),
+  ]);
 
   // Attach invitation status dynamically for pending invitations
   const enriched = await Promise.all(
@@ -32,7 +72,13 @@ export const getMyNotifications = asyncHandler(async (req, res) => {
   res.status(200).json(
     new ApiResponse(
       200,
-      { notifications: enriched, unreadCount },
+      {
+        notifications: enriched,
+        totalCount,
+        unreadCount,
+        page: pageNum,
+        totalPages: Math.ceil(totalCount / limitNum) || 1,
+      },
       'Notifications retrieved successfully'
     )
   );
@@ -58,6 +104,32 @@ export const markAllAsRead = asyncHandler(async (req, res) => {
   await Notification.updateMany({ recipient: req.user._id, isRead: false }, { isRead: true });
 
   res.status(200).json(new ApiResponse(200, null, 'All notifications marked as read'));
+});
+
+export const deleteNotification = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const deleted = await Notification.findOneAndDelete({
+    _id: id,
+    recipient: req.user._id,
+  });
+
+  if (!deleted) {
+    throw new ApiError(404, 'Notification not found');
+  }
+
+  res.status(200).json(new ApiResponse(200, null, 'Notification deleted successfully'));
+});
+
+export const clearReadNotifications = asyncHandler(async (req, res) => {
+  const result = await Notification.deleteMany({
+    recipient: req.user._id,
+    isRead: true,
+  });
+
+  res.status(200).json(
+    new ApiResponse(200, { deletedCount: result.deletedCount }, 'Cleared all read notifications')
+  );
 });
 
 export const respondToInvitation = asyncHandler(async (req, res) => {

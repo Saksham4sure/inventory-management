@@ -1,10 +1,18 @@
 export const formatCurrency = (amount, currency = 'USD') => {
   const numeric = Number(amount) || 0;
+  if (currency === 'NPR') {
+    return `Rs. ${numeric.toLocaleString('en-IN')}`;
+  }
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: currency,
     minimumFractionDigits: 2,
   }).format(numeric);
+};
+
+export const formatNPR = (amount) => {
+  const numeric = Number(amount) || 0;
+  return `Rs. ${numeric.toLocaleString('en-IN')}`;
 };
 
 export const formatDate = (dateString) => {

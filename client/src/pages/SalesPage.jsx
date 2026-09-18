@@ -9,6 +9,7 @@ import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
+import { DatePicker } from '../components/ui/DatePicker';
 import { Modal } from '../components/ui/Modal';
 import { formatCurrency, formatPaymentMethod } from '../utils/formatters';
 import {
@@ -357,24 +358,20 @@ export const SalesPage = () => {
 
           {/* Custom Date Range Picker (shown if dateFilter === 'custom') */}
           {dateFilter === 'custom' && (
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-300">
-                <Calendar className="h-3.5 w-3.5 text-zinc-400" />
-                <span className="text-[11px] font-medium">From:</span>
-                <input
-                  type="date"
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <div className="w-40 sm:w-44">
+                <DatePicker
+                  placeholder="From date"
                   value={customStart}
                   onChange={(e) => setCustomStart(e.target.value)}
-                  className="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-500"
                 />
               </div>
-              <div className="flex items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-300">
-                <span className="text-[11px] font-medium">To:</span>
-                <input
-                  type="date"
+              <span className="text-xs text-zinc-400">to</span>
+              <div className="w-40 sm:w-44">
+                <DatePicker
+                  placeholder="To date"
                   value={customEnd}
                   onChange={(e) => setCustomEnd(e.target.value)}
-                  className="rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 py-1 text-xs text-zinc-800 dark:text-zinc-200 focus:outline-none focus:ring-1 focus:ring-zinc-400 dark:focus:ring-zinc-500"
                 />
               </div>
               {(customStart || customEnd) && (

@@ -103,7 +103,7 @@ export const getPlatformOverview = asyncHandler(async (req, res) => {
       .lean(),
   ]);
 
-  // Build dynamic headlines for super admin dashboard
+  // Build dynamic headlines for platform admin dashboard
   const headlines = [];
 
   if (pendingRequestsCount > 0) {
@@ -394,7 +394,7 @@ export const deleteBusiness = asyncHandler(async (req, res) => {
 // =========================================================================
 
 export const getAllUsers = asyncHandler(async (req, res) => {
-  const { search, role, isActive, page = 1, limit = 50 } = req.query;
+  const { search, role, isActive, kycStatus, page = 1, limit = 50 } = req.query;
 
   const query = {};
 
@@ -412,6 +412,10 @@ export const getAllUsers = asyncHandler(async (req, res) => {
 
   if (isActive !== undefined && isActive !== 'ALL') {
     query.isActive = isActive === 'true' || isActive === true;
+  }
+
+  if (kycStatus && kycStatus.trim() !== 'ALL') {
+    query['kyc.status'] = kycStatus.trim().toUpperCase();
   }
 
   const skip = (Number(page) - 1) * Number(limit);
@@ -490,7 +494,7 @@ export const deleteUser = asyncHandler(async (req, res) => {
   const { id } = req.params;
 
   if (req.user._id.toString() === id) {
-    throw new ApiError(400, 'Cannot delete your own super admin account');
+    throw new ApiError(400, 'Cannot delete your own platform administrator account');
   }
 
   const user = await User.findByIdAndDelete(id);
@@ -516,6 +520,8 @@ export const createPlan = asyncHandler(async (req, res) => {
     name,
     description,
     tierOrder,
+    currency = 'NPR',
+    monthlyPriceNPR,
     monthlyPriceUSD,
     yearlyPriceUSD,
     maxProducts,
@@ -541,13 +547,17 @@ export const createPlan = asyncHandler(async (req, res) => {
     await SubscriptionPlan.updateMany({}, { isDefaultTrial: false });
   }
 
+  const resolvedPrice = Number(monthlyPriceNPR) || Number(monthlyPriceUSD) || 0;
+
   const plan = await SubscriptionPlan.create({
     planId: planId.toUpperCase().trim(),
     name: name.trim(),
     description: description ? description.trim() : '',
     tierOrder: Number(tierOrder) || 1,
-    monthlyPriceUSD: Number(monthlyPriceUSD) || 0,
-    yearlyPriceUSD: Number(yearlyPriceUSD) || 0,
+    currency: currency || 'NPR',
+    monthlyPriceNPR: resolvedPrice,
+    monthlyPriceUSD: resolvedPrice,
+    yearlyPriceUSD: Number(yearlyPriceUSD) || resolvedPrice * 10,
     maxProducts: Number(maxProducts) ?? 100,
     maxMembers: Number(maxMembers) ?? 3,
     features: Array.isArray(features) ? features : [],
@@ -572,6 +582,8 @@ export const updatePlan = asyncHandler(async (req, res) => {
     name,
     description,
     tierOrder,
+    currency,
+    monthlyPriceNPR,
     monthlyPriceUSD,
     yearlyPriceUSD,
     maxProducts,
@@ -590,7 +602,14 @@ export const updatePlan = asyncHandler(async (req, res) => {
   if (name) plan.name = name.trim();
   if (description !== undefined) plan.description = description.trim();
   if (tierOrder !== undefined) plan.tierOrder = Number(tierOrder);
-  if (monthlyPriceUSD !== undefined) plan.monthlyPriceUSD = Number(monthlyPriceUSD);
+  if (currency) plan.currency = currency;
+  if (monthlyPriceNPR !== undefined) {
+    plan.monthlyPriceNPR = Number(monthlyPriceNPR);
+    plan.monthlyPriceUSD = Number(monthlyPriceNPR);
+  } else if (monthlyPriceUSD !== undefined) {
+    plan.monthlyPriceUSD = Number(monthlyPriceUSD);
+    plan.monthlyPriceNPR = Number(monthlyPriceUSD);
+  }
   if (yearlyPriceUSD !== undefined) plan.yearlyPriceUSD = Number(yearlyPriceUSD);
   if (maxProducts !== undefined) plan.maxProducts = Number(maxProducts);
   if (maxMembers !== undefined) plan.maxMembers = Number(maxMembers);
@@ -836,34 +855,45 @@ export const approveSubscriptionRequest = asyncHandler(async (req, res) => {
     throw new ApiError(400, `This request has already been ${request.status.toLowerCase()}`);
   }
 
-  const business = await Business.findById(request.businessId);
-  if (!business) {
-    throw new ApiError(404, 'Business associated with this request not found');
-  }
-
   const now = new Date();
+  let business = null;
 
-  // Apply subscription update to the business
-  if (request.action === 'EXTEND') {
-    const days = Number(request.extendDays) || 14;
-    const currentEnd = business.subscription?.endDate
-      ? new Date(business.subscription.endDate)
-      : now;
-    const baseDate = currentEnd > now ? currentEnd : now;
-    business.subscription.endDate = new Date(baseDate.getTime() + days * 24 * 60 * 60 * 1000);
-    if (business.subscription.status === 'PAST_DUE' || business.subscription.status === 'CANCELED') {
-      business.subscription.status = 'ACTIVE';
+  if (request.businessId) {
+    business = await Business.findById(request.businessId);
+    if (business) {
+      if (request.action === 'EXTEND') {
+        const days = Number(request.extendDays) || 14;
+        const currentEnd = business.subscription?.endDate
+          ? new Date(business.subscription.endDate)
+          : now;
+        const baseDate = currentEnd > now ? currentEnd : now;
+        business.subscription.endDate = new Date(baseDate.getTime() + days * 24 * 60 * 60 * 1000);
+        if (business.subscription.status === 'PAST_DUE' || business.subscription.status === 'CANCELED') {
+          business.subscription.status = 'ACTIVE';
+        }
+      } else {
+        // CHANGE or ACTIVATE
+        business.subscription.plan = request.requestedPlan;
+        business.subscription.status = 'ACTIVE';
+        business.subscription.startDate = now;
+        // 30 days subscription duration
+        business.subscription.endDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+      }
+      await business.save();
     }
-  } else {
-    // CHANGE or ACTIVATE
-    business.subscription.plan = request.requestedPlan;
-    business.subscription.status = 'ACTIVE';
-    business.subscription.startDate = now;
-    // 30 days subscription duration
-    business.subscription.endDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
   }
 
-  await business.save();
+  // Also update user's account-level subscription
+  const user = await User.findById(request.requestedBy);
+  if (user) {
+    user.subscriptionPlan = request.requestedPlan;
+    user.subscriptionStatus = 'ACTIVE';
+    user.subscriptionStartDate = user.subscriptionStartDate || now;
+    const durationDays = request.action === 'EXTEND' ? (Number(request.extendDays) || 14) : 30;
+    const baseDate = user.subscriptionEndDate && new Date(user.subscriptionEndDate) > now ? new Date(user.subscriptionEndDate) : now;
+    user.subscriptionEndDate = new Date(baseDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
+    await user.save();
+  }
 
   // Mark request approved
   request.status = 'APPROVED';
@@ -874,17 +904,17 @@ export const approveSubscriptionRequest = asyncHandler(async (req, res) => {
   }
   await request.save();
 
-  // Mark related super admin notifications for this request as read
+  // Mark related platform admin notifications for this request as read
   await Notification.updateMany(
     { 'data.requestId': request._id, recipient: req.user._id },
     { isRead: true }
   );
 
-  // Notify the business owner
+  // Notify the subscriber
   await Notification.create({
     recipient: request.requestedBy,
     sender: req.user._id,
-    businessId: business._id,
+    businessId: business ? business._id : null,
     title: 'Subscription Request Approved 🎉',
     message: `Your request to ${
       request.action === 'EXTEND'
@@ -894,7 +924,7 @@ export const approveSubscriptionRequest = asyncHandler(async (req, res) => {
     type: 'SUBSCRIPTION_APPROVED',
     data: {
       requestId: request._id,
-      businessName: business.name,
+      businessName: request.businessName,
       planId: request.requestedPlan,
       planName: request.requestedPlanName,
       action: request.action,
@@ -904,8 +934,8 @@ export const approveSubscriptionRequest = asyncHandler(async (req, res) => {
   res.status(200).json(
     new ApiResponse(
       200,
-      { request, business },
-      `Subscription request approved. ${business.name} plan updated successfully.`
+      { request, business, user: user ? sanitizeUser(user) : null },
+      `Subscription request approved. ${request.businessName} plan updated successfully.`
     )
   );
 });
@@ -932,17 +962,17 @@ export const rejectSubscriptionRequest = asyncHandler(async (req, res) => {
   }
   await request.save();
 
-  // Mark related super admin notifications for this request as read
+  // Mark related platform admin notifications for this request as read
   await Notification.updateMany(
     { 'data.requestId': request._id, recipient: req.user._id },
     { isRead: true }
   );
 
-  // Notify the business owner
+  // Notify the subscriber
   await Notification.create({
     recipient: request.requestedBy,
     sender: req.user._id,
-    businessId: request.businessId,
+    businessId: request.businessId || null,
     title: 'Subscription Request Declined',
     message: `Your subscription request for "${request.requestedPlanName || request.requestedPlan}" was declined.${
       adminNotes && adminNotes.trim() ? ` Note: "${adminNotes.trim()}"` : ' Please contact support for details.'
@@ -958,6 +988,115 @@ export const rejectSubscriptionRequest = asyncHandler(async (req, res) => {
   });
 
   res.status(200).json(
-    new ApiResponse(200, { request }, 'Subscription request declined')
+    new ApiResponse(200, { request }, 'Subscription request has been declined.')
+  );
+});
+
+// =========================================================================
+// 8. USER KYC DOCUMENT VALIDATION (PLATFORM COMPLIANCE APPROVAL / REJECTION)
+// =========================================================================
+
+export const getUserKyc = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const user = await User.findById(id)
+    .populate('businessId', 'name category')
+    .populate('kyc.reviewedBy', 'name email')
+    .lean();
+
+  if (!user) {
+    throw new ApiError(404, 'User not found');
+  }
+
+  res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        user: sanitizeUser(user),
+        kyc: user.kyc,
+      },
+      'User KYC details fetched successfully'
+    )
+  );
+});
+
+export const verifyUserKyc = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { status, rejectionReason } = req.body;
+
+  if (!['VERIFIED', 'REJECTED'].includes(status)) {
+    throw new ApiError(400, 'Invalid status. Must be VERIFIED or REJECTED');
+  }
+
+  const user = await User.findById(id);
+  if (!user) {
+    throw new ApiError(404, 'User not found');
+  }
+
+  if (!user.kyc || (!user.kyc.frontImage && !user.kyc.backImage)) {
+    throw new ApiError(400, 'User has not submitted identity documents for verification.');
+  }
+
+  const now = new Date();
+  const docTypeLabel =
+    user.kyc.documentType === 'DRIVING_LICENSE' ? 'Driving License' : 'Citizenship';
+
+  user.kyc.status = status;
+  user.kyc.reviewedAt = now;
+  user.kyc.reviewedBy = req.user._id;
+
+  if (status === 'VERIFIED') {
+    user.kyc.rejectionReason = '';
+  } else {
+    user.kyc.rejectionReason = rejectionReason && rejectionReason.trim()
+      ? rejectionReason.trim()
+      : 'Document image quality or identification number could not be validated.';
+  }
+
+  await user.save();
+
+  // Notify the user
+  if (status === 'VERIFIED') {
+    await Notification.create({
+      recipient: user._id,
+      sender: req.user._id,
+      businessId: user.businessId || null,
+      title: 'Identity Verification Approved ✅',
+      message: `Congratulations! Your ${docTypeLabel} (ID: ${user.kyc.documentNumber || 'N/A'}) has been verified and approved by the platform administrator. You can now operate StockPulse with full verified status.`,
+      type: 'KYC_APPROVED',
+      data: {
+        targetUserId: user._id,
+        documentType: user.kyc.documentType,
+        kycStatus: 'VERIFIED',
+      },
+    });
+  } else {
+    await Notification.create({
+      recipient: user._id,
+      sender: req.user._id,
+      businessId: user.businessId || null,
+      title: 'Identity Verification Rejected ⚠️',
+      message: `Your ${docTypeLabel} verification was not approved. Reason: "${user.kyc.rejectionReason}". Please go to your profile to review and re-upload valid documents.`,
+      type: 'KYC_REJECTED',
+      data: {
+        targetUserId: user._id,
+        documentType: user.kyc.documentType,
+        kycStatus: 'REJECTED',
+        rejectionReason: user.kyc.rejectionReason,
+      },
+    });
+  }
+
+  // Mark all pending KYC notifications for this user as read
+  await Notification.updateMany(
+    { 'data.targetUserId': user._id, type: 'KYC_SUBMITTED' },
+    { isRead: true }
+  );
+
+  res.status(200).json(
+    new ApiResponse(
+      200,
+      { user: sanitizeUser(user) },
+      `User identity document has been ${status === 'VERIFIED' ? 'approved' : 'rejected'}. Notification dispatched to user.`
+    )
   );
 });

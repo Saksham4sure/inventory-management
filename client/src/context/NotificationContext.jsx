@@ -103,6 +103,34 @@ export const NotificationProvider = ({ children }) => {
     }
   };
 
+  const deleteNotification = async (id) => {
+    setNotifications((prev) => {
+      const target = prev.find((n) => n._id === id);
+      if (target && !target.isRead) {
+        setUnreadCount((c) => Math.max(0, c - 1));
+      }
+      return prev.filter((n) => n._id !== id);
+    });
+
+    try {
+      await notificationService.deleteNotification(id);
+    } catch (err) {
+      console.error('Failed to delete notification', err);
+      fetchNotifications(true);
+    }
+  };
+
+  const clearReadNotifications = async () => {
+    setNotifications((prev) => prev.filter((n) => !n.isRead));
+
+    try {
+      await notificationService.clearReadNotifications();
+    } catch (err) {
+      console.error('Failed to clear read notifications', err);
+      fetchNotifications(true);
+    }
+  };
+
   return (
     <NotificationContext.Provider
       value={{
@@ -112,6 +140,8 @@ export const NotificationProvider = ({ children }) => {
         fetchNotifications,
         markAsRead,
         markAllAsRead,
+        deleteNotification,
+        clearReadNotifications,
         respondToInvitation,
       }}
     >

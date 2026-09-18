@@ -32,11 +32,11 @@ export const Input = ({
           placeholder={placeholder}
           disabled={disabled}
           required={required}
-          className={`w-full rounded-xl border px-3.5 py-2.5 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 transition-all duration-200 focus:outline-none ${
+          className={`w-full rounded-xl border px-3.5 py-2.5 text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 shadow-xs transition-all duration-200 focus:outline-none ${
             error
-              ? 'border-rose-400/80 bg-rose-500/5 dark:border-rose-800 dark:bg-rose-950/20 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/15'
-              : 'border-black/[0.08] bg-black/[0.025] hover:border-black/[0.14] hover:bg-black/[0.035] focus:bg-white focus:border-zinc-700 focus:ring-2 focus:ring-zinc-400/25 dark:border-white/[0.09] dark:bg-white/[0.05] dark:hover:border-white/[0.15] dark:hover:bg-white/[0.07] dark:focus:bg-zinc-900/90 dark:focus:border-zinc-400 dark:focus:ring-zinc-600/30'
-          } ${disabled ? 'opacity-50 cursor-not-allowed bg-zinc-100/50 dark:bg-zinc-800/40' : ''} ${
+              ? 'border-rose-400/80 bg-rose-500/5 dark:border-rose-800 dark:bg-rose-950/20 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20'
+              : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 hover:border-zinc-300 dark:hover:border-zinc-700 focus:border-zinc-900 dark:focus:border-zinc-100 focus:ring-2 focus:ring-zinc-900/10 dark:focus:ring-zinc-100/10'
+          } ${disabled ? 'opacity-50 cursor-not-allowed bg-zinc-100/60 dark:bg-zinc-900/60' : ''} ${
             rightElement ? 'pr-10' : ''
           } ${className}`}
           {...props}

@@ -11,9 +11,24 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { ROLES } from '../constants/roles.js';
 import { sanitizeUser } from '../services/auth.service.js';
 import { validateNepaliPhone } from '../utils/phoneValidator.js';
+import {
+  parseMapCoordinates,
+  resolveGoogleMapsUrl,
+  isValidCoordinates,
+} from '../utils/mapCoordinates.js';
 
 export const setupBusiness = asyncHandler(async (req, res) => {
-  const { name, category, currency, address, phone, email, taxNumber } = req.body;
+  const {
+    name,
+    category,
+    currency,
+    address,
+    phone,
+    email,
+    taxNumber,
+    coordinates,
+    googleMapsUrl,
+  } = req.body;
 
   if (!name || !name.trim()) {
     throw new ApiError(400, 'Business name is required');
@@ -33,6 +48,14 @@ export const setupBusiness = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'You have already configured a business');
   }
 
+  // Verify user KYC status before permitting business configuration
+  if (req.user.kyc?.status !== 'VERIFIED') {
+    throw new ApiError(
+      403,
+      'Your identity documents (KYC) must be verified by Platform Compliance before you can configure a business profile.'
+    );
+  }
+
   // Fetch dynamic platform trial settings
   const settings = await PlatformSettings.getSettings();
   const isTrialEnabled = settings.trialConfig?.enabled ?? true;
@@ -42,11 +65,39 @@ export const setupBusiness = asyncHandler(async (req, res) => {
   const startDate = new Date();
   const endDate = new Date(startDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
 
+  let parsedCoordinates = { latitude: null, longitude: null };
+  let finalMapUrl = googleMapsUrl ? googleMapsUrl.trim() : '';
+
+  if (coordinates) {
+    if (typeof coordinates === 'string') {
+      const parsed = parseMapCoordinates(coordinates);
+      if (parsed) {
+        parsedCoordinates = { latitude: parsed.latitude, longitude: parsed.longitude };
+        if (!finalMapUrl) finalMapUrl = parsed.googleMapsUrl;
+      }
+    } else if (typeof coordinates === 'object' && coordinates !== null) {
+      const lat = parseFloat(coordinates.latitude);
+      const lng = parseFloat(coordinates.longitude);
+      if (isValidCoordinates(lat, lng)) {
+        parsedCoordinates = { latitude: lat, longitude: lng };
+      }
+    }
+  }
+
+  if (finalMapUrl && (parsedCoordinates.latitude === null || parsedCoordinates.longitude === null)) {
+    const parsed = parseMapCoordinates(finalMapUrl);
+    if (parsed) {
+      parsedCoordinates = { latitude: parsed.latitude, longitude: parsed.longitude };
+    }
+  }
+
   const business = await Business.create({
     name: name.trim(),
     category: category ? category.trim() : 'General Retail',
     currency: (currency || 'USD').toUpperCase().trim(),
     address: address ? address.trim() : '',
+    coordinates: parsedCoordinates,
+    googleMapsUrl: finalMapUrl,
     phone: formattedPhone,
     email: email ? email.toLowerCase().trim() : req.user.email,
     taxNumber: taxNumber ? taxNumber.trim() : '',
@@ -105,7 +156,17 @@ export const getMyBusiness = asyncHandler(async (req, res) => {
 });
 
 export const updateBusiness = asyncHandler(async (req, res) => {
-  const { name, category, currency, address, phone, email, taxNumber } = req.body;
+  const {
+    name,
+    category,
+    currency,
+    address,
+    phone,
+    email,
+    taxNumber,
+    coordinates,
+    googleMapsUrl,
+  } = req.body;
 
   const updateFields = {};
   if (name) updateFields.name = name.trim();
@@ -126,12 +187,65 @@ export const updateBusiness = asyncHandler(async (req, res) => {
   if (email !== undefined) updateFields.email = email.toLowerCase().trim();
   if (taxNumber !== undefined) updateFields.taxNumber = taxNumber.trim();
 
+  // Coordinates and Google Maps URL handling
+  if (coordinates !== undefined) {
+    if (coordinates === null || coordinates === '') {
+      updateFields.coordinates = { latitude: null, longitude: null };
+    } else if (typeof coordinates === 'string') {
+      const parsed = parseMapCoordinates(coordinates);
+      if (parsed) {
+        updateFields.coordinates = { latitude: parsed.latitude, longitude: parsed.longitude };
+        if (!updateFields.googleMapsUrl && parsed.googleMapsUrl) {
+          updateFields.googleMapsUrl = parsed.googleMapsUrl;
+        }
+      }
+    } else if (typeof coordinates === 'object' && coordinates !== null) {
+      const lat = parseFloat(coordinates.latitude);
+      const lng = parseFloat(coordinates.longitude);
+      if (isValidCoordinates(lat, lng)) {
+        updateFields.coordinates = { latitude: lat, longitude: lng };
+      } else {
+        updateFields.coordinates = { latitude: null, longitude: null };
+      }
+    }
+  }
+
+  if (googleMapsUrl !== undefined) {
+    const trimmedUrl = (googleMapsUrl || '').trim();
+    updateFields.googleMapsUrl = trimmedUrl;
+    if (trimmedUrl && (!updateFields.coordinates || updateFields.coordinates.latitude === null)) {
+      const parsed = parseMapCoordinates(trimmedUrl);
+      if (parsed) {
+        updateFields.coordinates = { latitude: parsed.latitude, longitude: parsed.longitude };
+      }
+    }
+  }
+
   const business = await Business.findByIdAndUpdate(req.user.businessId, updateFields, {
     new: true,
     runValidators: true,
   });
 
   res.status(200).json(new ApiResponse(200, { business }, 'Business updated successfully'));
+});
+
+export const resolveMapLink = asyncHandler(async (req, res) => {
+  const { url } = req.body;
+  if (!url || typeof url !== 'string' || !url.trim()) {
+    throw new ApiError(400, 'Google Maps URL or coordinates string is required');
+  }
+
+  const result = await resolveGoogleMapsUrl(url.trim());
+  if (!result) {
+    throw new ApiError(
+      400,
+      'Could not extract valid GPS coordinates from the provided Google Maps link or coordinates'
+    );
+  }
+
+  res.status(200).json(
+    new ApiResponse(200, result, 'Coordinates extracted successfully from Google Maps link')
+  );
 });
 
 export const getBusinessSubscription = asyncHandler(async (req, res) => {
@@ -141,17 +255,64 @@ export const getBusinessSubscription = asyncHandler(async (req, res) => {
   ]);
 
   if (!req.user.businessId) {
+    const pendingRequest = await SubscriptionRequest.findOne({
+      requestedBy: req.user._id,
+      status: 'PENDING',
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const userHasActiveSub = Boolean(
+      req.user.subscriptionPlan && req.user.subscriptionStatus === 'ACTIVE'
+    );
+
+    let userSubscription = null;
+    if (req.user.subscriptionPlan) {
+      let planDetails = plans.find((p) => p.planId === req.user.subscriptionPlan) || plans[0];
+      const now = new Date();
+      const endDate = req.user.subscriptionEndDate ? new Date(req.user.subscriptionEndDate) : null;
+      let daysRemaining = 0;
+      let isExpired = false;
+      if (endDate) {
+        const diffMs = endDate.getTime() - now.getTime();
+        daysRemaining = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+        if (daysRemaining <= 0) {
+          isExpired = true;
+          daysRemaining = 0;
+        }
+      }
+
+      userSubscription = {
+        plan: req.user.subscriptionPlan,
+        status: req.user.subscriptionStatus || 'ACTIVE',
+        startDate: req.user.subscriptionStartDate || new Date(),
+        endDate,
+        daysRemaining,
+        isExpired,
+        isTrial: false,
+        isActive: userHasActiveSub && !isExpired,
+        planDetails,
+        usage: {
+          productsCount: 0,
+          membersCount: 1,
+        },
+      };
+    }
+
     return res.status(200).json(
       new ApiResponse(
         200,
         {
           hasBusiness: false,
-          hasSubscribed: false,
-          subscription: null,
+          hasSubscribed: userHasActiveSub,
+          isOwner: true,
+          businessName: `${req.user.name}'s Account`,
+          subscription: userSubscription,
+          pendingRequest: pendingRequest || null,
           availablePlans: plans,
           trialConfig: settings?.trialConfig,
         },
-        'No business configured'
+        'No business configured - user account subscription status fetched'
       )
     );
   }
@@ -240,8 +401,16 @@ export const getBusinessSubscription = asyncHandler(async (req, res) => {
 export const changeBusinessSubscription = asyncHandler(async (req, res) => {
   const { planId, action = 'CHANGE', extendDays = 14, note = '' } = req.body;
 
-  // 1. Strict Owner Verification: only the business owner can request or change subscription
-  if (req.user.role !== ROLES.OWNER) {
+  // Prevent sending request if the business is not configured
+  if (!req.user.businessId) {
+    throw new ApiError(
+      400,
+      'A configured business profile is required to apply for or extend subscription plans. Please configure your business first.'
+    );
+  }
+
+  // 1. Strict Owner Verification: only the business owner can request subscription
+  if (req.user.role && req.user.role !== ROLES.OWNER && req.user.role !== ROLES.SUPER_ADMIN) {
     throw new ApiError(
       403,
       'Subscription plan can be changed or extended only by the business owner. Members and managers cannot perform this action.'
@@ -252,7 +421,6 @@ export const changeBusinessSubscription = asyncHandler(async (req, res) => {
   if (!business) {
     throw new ApiError(404, 'Business not found');
   }
-
   if (business.owner.toString() !== req.user._id.toString()) {
     throw new ApiError(
       403,
@@ -269,7 +437,7 @@ export const changeBusinessSubscription = asyncHandler(async (req, res) => {
   if (existingPending) {
     throw new ApiError(
       400,
-      'You already have a subscription request pending super admin review. Please wait for it to be processed or cancel it before submitting a new one.'
+      'You already have a subscription request pending review by Platform Administration. Please wait for it to be processed or cancel it before submitting a new one.'
     );
   }
 
@@ -286,14 +454,15 @@ export const changeBusinessSubscription = asyncHandler(async (req, res) => {
     throw new ApiError(404, 'Subscription plan not found or inactive');
   }
 
-  const currentPlanId = business.subscription?.plan || 'FREE_TRIAL';
+  const currentPlanId = business ? business.subscription?.plan || 'FREE_TRIAL' : req.user.subscriptionPlan || 'FREE_TRIAL';
   const requestedPlanId = targetPlan ? targetPlan.planId : currentPlanId;
   const requestedPlanName = targetPlan ? targetPlan.name : currentPlanId;
+  const businessLabel = business ? business.name : `${req.user.name}'s Account`;
 
   // 4. Create the Subscription Request
   const subRequest = await SubscriptionRequest.create({
-    businessId: business._id,
-    businessName: business.name,
+    businessId: business ? business._id : null,
+    businessName: businessLabel,
     requestedBy: req.user._id,
     action,
     currentPlan: currentPlanId,
@@ -304,7 +473,7 @@ export const changeBusinessSubscription = asyncHandler(async (req, res) => {
     status: 'PENDING',
   });
 
-  // 5. Notify all Super Admins in platform admin panel
+  // 5. Notify all Platform Admins in platform admin panel
   const superAdmins = await User.find({
     role: ROLES.SUPER_ADMIN,
     isActive: true,
@@ -319,15 +488,15 @@ export const changeBusinessSubscription = asyncHandler(async (req, res) => {
     const notifications = superAdmins.map((admin) => ({
       recipient: admin._id,
       sender: req.user._id,
-      businessId: business._id,
-      title: `Subscription Plan Request: ${business.name}`,
-      message: `${req.user.name} (Owner of "${business.name}") applied to ${actionText}.${
+      businessId: business ? business._id : null,
+      title: `Subscription Plan Request: ${businessLabel}`,
+      message: `${req.user.name} (${business ? `Owner of "${business.name}"` : 'Personal Account'}) applied to ${actionText}.${
         note && note.trim() ? ` Note: "${note.trim()}"` : ''
       }`,
       type: 'SUBSCRIPTION_REQUEST',
       data: {
         requestId: subRequest._id,
-        businessName: business.name,
+        businessName: businessLabel,
         planId: requestedPlanId,
         planName: requestedPlanName,
         action,
@@ -338,7 +507,7 @@ export const changeBusinessSubscription = asyncHandler(async (req, res) => {
   }
 
   // [Note]: Email integration skipped for now as requested. Once email provider is integrated,
-  // trigger email notification to platform super admins here.
+  // trigger email notification to platform admins here.
 
   res.status(201).json(
     new ApiResponse(
@@ -346,21 +515,17 @@ export const changeBusinessSubscription = asyncHandler(async (req, res) => {
       {
         request: subRequest,
       },
-      'Subscription application submitted successfully! Super admin has been notified and will review your request.'
+      'Subscription application submitted successfully! Platform Administration has been notified and will review your request.'
     )
   );
 });
 
 export const cancelSubscriptionRequest = asyncHandler(async (req, res) => {
-  if (req.user.role !== ROLES.OWNER) {
-    throw new ApiError(
-      403,
-      'Only the business owner is authorized to cancel subscription applications.'
-    );
-  }
-
   const request = await SubscriptionRequest.findOne({
-    businessId: req.user.businessId,
+    $or: [
+      req.user.businessId ? { businessId: req.user.businessId } : null,
+      { requestedBy: req.user._id },
+    ].filter(Boolean),
     status: 'PENDING',
   });
 
@@ -371,7 +536,7 @@ export const cancelSubscriptionRequest = asyncHandler(async (req, res) => {
   request.status = 'CANCELLED';
   await request.save();
 
-  // Mark super admin notifications for this request as read
+  // Mark platform admin notifications for this request as read
   await Notification.updateMany(
     { 'data.requestId': request._id },
     { isRead: true }

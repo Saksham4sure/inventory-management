@@ -23,12 +23,12 @@ export const PlatformAdminLoginPage = () => {
     try {
       const data = await login({ username, password });
       if (data.user?.role !== 'SUPER_ADMIN') {
-        throw new Error('Access denied. This account does not possess Super Admin privileges.');
+        throw new Error('Access denied. This account does not possess Platform Administrator privileges.');
       }
       const from = location.state?.from?.pathname || ROUTES.ADMIN_DASHBOARD;
       navigate(from, { replace: true });
     } catch (err) {
-      setError(err.message || 'Super admin authentication failed');
+      setError(err.message || 'Platform administrator authentication failed');
     } finally {
       setLoading(false);
     }
@@ -54,7 +54,7 @@ export const PlatformAdminLoginPage = () => {
           <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-full border border-indigo-500/20 mb-1">
             Restricted Clearance
           </span>
-          <h1 className="text-xl font-bold tracking-tight text-white mt-1">Platform Super Admin</h1>
+          <h1 className="text-xl font-bold tracking-tight text-white mt-1">Platform Administrator</h1>
           <p className="text-xs text-zinc-400 mt-1 max-w-xs">
             Direct console access for multi-tenant businesses, global user base, and dynamic subscription controls.
           </p>
@@ -88,7 +88,7 @@ export const PlatformAdminLoginPage = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-zinc-300 mb-1.5">
-              Super Admin Username / Email
+              Administrator Username / Email
             </label>
             <div className="relative">
               <User className="h-4 w-4 text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2" />

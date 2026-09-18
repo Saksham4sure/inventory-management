@@ -36,7 +36,7 @@ export const seedInitialAdminAndPlans = async () => {
       }
     }
 
-    // 2. Seed default 3 Subscription Tiers if none exist
+    // 2. Seed default 3 Subscription Tiers in Nepalese Rupees (NPR)
     const plansCount = await SubscriptionPlan.countDocuments();
     if (plansCount === 0) {
       const defaultTiers = [
@@ -45,8 +45,10 @@ export const seedInitialAdminAndPlans = async () => {
           name: 'Starter Plan',
           description: 'Essential inventory tracking for emerging stores & small businesses',
           tierOrder: 1,
-          monthlyPriceUSD: 19,
-          yearlyPriceUSD: 190,
+          currency: 'NPR',
+          monthlyPriceNPR: 1499,
+          monthlyPriceUSD: 1499,
+          yearlyPriceUSD: 14990,
           maxProducts: 250,
           maxMembers: 3,
           features: [
@@ -66,8 +68,10 @@ export const seedInitialAdminAndPlans = async () => {
           name: 'Growth Pro Plan',
           description: 'Advanced stock control, team management, and detailed analytics',
           tierOrder: 2,
-          monthlyPriceUSD: 49,
-          yearlyPriceUSD: 490,
+          currency: 'NPR',
+          monthlyPriceNPR: 3499,
+          monthlyPriceUSD: 3499,
+          yearlyPriceUSD: 34990,
           maxProducts: 2500,
           maxMembers: 15,
           features: [
@@ -88,8 +92,10 @@ export const seedInitialAdminAndPlans = async () => {
           name: 'Enterprise Scale',
           description: 'Unlimited scale, multi-warehouse control, and priority API access',
           tierOrder: 3,
-          monthlyPriceUSD: 129,
-          yearlyPriceUSD: 1290,
+          currency: 'NPR',
+          monthlyPriceNPR: 7999,
+          monthlyPriceUSD: 7999,
+          yearlyPriceUSD: 79990,
           maxProducts: -1,
           maxMembers: -1,
           features: [
@@ -108,7 +114,21 @@ export const seedInitialAdminAndPlans = async () => {
       ];
 
       await SubscriptionPlan.insertMany(defaultTiers);
-      console.log('✅ [Seed] Default 3 subscription tiers created successfully (Starter, Pro, Enterprise)');
+      console.log('✅ [Seed] Default 3 subscription tiers created in NPR (Starter Rs. 1,499, Pro Rs. 3,499, Enterprise Rs. 7,999)');
+    } else {
+      // Sync existing plans to Nepalese Rupees (NPR) if they still have old USD values
+      await SubscriptionPlan.updateMany(
+        { planId: 'STARTER', $or: [{ monthlyPriceUSD: { $lt: 500 } }, { currency: { $ne: 'NPR' } }] },
+        { $set: { currency: 'NPR', monthlyPriceNPR: 1499, monthlyPriceUSD: 1499, yearlyPriceUSD: 14990 } }
+      );
+      await SubscriptionPlan.updateMany(
+        { planId: 'PRO', $or: [{ monthlyPriceUSD: { $lt: 500 } }, { currency: { $ne: 'NPR' } }] },
+        { $set: { currency: 'NPR', monthlyPriceNPR: 3499, monthlyPriceUSD: 3499, yearlyPriceUSD: 34990 } }
+      );
+      await SubscriptionPlan.updateMany(
+        { planId: 'ENTERPRISE', $or: [{ monthlyPriceUSD: { $lt: 500 } }, { currency: { $ne: 'NPR' } }] },
+        { $set: { currency: 'NPR', monthlyPriceNPR: 7999, monthlyPriceUSD: 7999, yearlyPriceUSD: 79990 } }
+      );
     }
 
     // 3. Seed or verify Platform Settings

@@ -20,4 +20,14 @@ export const authService = {
     const response = await api.put('/auth/profile', data);
     return response.data.data;
   },
+
+  updateOnboarding: async (data) => {
+    const response = await api.put('/auth/onboarding', data);
+    return response.data.data;
+  },
+
+  uploadKyc: async (data) => {
+    const response = await api.post('/auth/kyc', data);
+    return response.data.data;
+  },
 };

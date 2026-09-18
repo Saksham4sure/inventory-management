@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { adminService } from '../../services/adminService';
+import { Select } from '../../components/ui/Select';
+import { DatePicker } from '../../components/ui/DatePicker';
 import {
   Building2,
   Search,
@@ -203,39 +205,36 @@ export const AdminBusinessesPage = () => {
           />
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-1.5 text-xs text-zinc-500">
-            <SlidersHorizontal className="h-3.5 w-3.5" />
-            <span>Status:</span>
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="w-40 sm:w-44">
+            <Select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              options={[
+                { value: 'ALL', label: 'All Statuses' },
+                { value: 'TRIAL', label: 'In Trial' },
+                { value: 'ACTIVE', label: 'Active Paid' },
+                { value: 'PAST_DUE', label: 'Past Due' },
+                { value: 'CANCELED', label: 'Canceled' },
+              ]}
+              compact
+            />
           </div>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 px-3 py-2 text-xs text-zinc-900 dark:text-white focus:outline-hidden"
-          >
-            <option value="ALL">All Statuses</option>
-            <option value="TRIAL">In Trial</option>
-            <option value="ACTIVE">Active Paid</option>
-            <option value="PAST_DUE">Past Due</option>
-            <option value="CANCELED">Canceled</option>
-          </select>
 
-          <div className="flex items-center gap-1.5 text-xs text-zinc-500 ml-2">
-            <Layers className="h-3.5 w-3.5" />
-            <span>Plan:</span>
+          <div className="w-44 sm:w-48">
+            <Select
+              value={planFilter}
+              onChange={(e) => setPlanFilter(e.target.value)}
+              options={[
+                { value: 'ALL', label: 'All Plans' },
+                ...plans.map((p) => ({
+                  value: p.planId,
+                  label: `${p.name} (${p.planId})`,
+                })),
+              ]}
+              compact
+            />
           </div>
-          <select
-            value={planFilter}
-            onChange={(e) => setPlanFilter(e.target.value)}
-            className="rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 px-3 py-2 text-xs text-zinc-900 dark:text-white focus:outline-hidden"
-          >
-            <option value="ALL">All Plans</option>
-            {plans.map((p) => (
-              <option key={p.planId} value={p.planId}>
-                {p.name} ({p.planId})
-              </option>
-            ))}
-          </select>
         </div>
       </div>
 
@@ -430,47 +429,40 @@ export const AdminBusinessesPage = () => {
 
             <form onSubmit={handleUpdateSubscription} className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                  Subscription Tier (Dynamic Tiers)
-                </label>
-                <select
+                <Select
+                  label="Subscription Tier (Dynamic Tiers)"
                   value={selectedPlan}
                   onChange={(e) => setSelectedPlan(e.target.value)}
-                  className="w-full rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 px-3 py-2 text-xs text-zinc-900 dark:text-white font-medium"
-                >
-                  {plans.map((p) => (
-                    <option key={p.planId} value={p.planId}>
-                      Tier {p.tierOrder}: {p.name} (${p.monthlyPriceUSD}/mo) {p.isDefaultTrial ? '★ Default Trial' : ''}
-                    </option>
-                  ))}
-                </select>
+                  options={plans.map((p) => ({
+                    value: p.planId,
+                    label: `Tier ${p.tierOrder}: ${p.name} (Rs. ${(p.monthlyPriceNPR || p.monthlyPriceUSD || 0).toLocaleString('en-IN')}/mo)${p.isDefaultTrial ? ' ★ Default Trial' : ''}`,
+                  }))}
+                />
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                  Status
-                </label>
-                <select
+                <Select
+                  label="Status"
                   value={selectedStatus}
                   onChange={(e) => setSelectedStatus(e.target.value)}
-                  className="w-full rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 px-3 py-2 text-xs text-zinc-900 dark:text-white font-medium"
-                >
-                  <option value="TRIAL">TRIAL (Evaluation Mode)</option>
-                  <option value="ACTIVE">ACTIVE (Paid Subscription)</option>
-                  <option value="PAST_DUE">PAST_DUE (Payment Required)</option>
-                  <option value="CANCELED">CANCELED (Terminated)</option>
-                </select>
+                  options={[
+                    { value: 'TRIAL', label: 'TRIAL (Evaluation Mode)' },
+                    { value: 'ACTIVE', label: 'ACTIVE (Paid Subscription)' },
+                    { value: 'PAST_DUE', label: 'PAST_DUE (Payment Required)' },
+                    { value: 'CANCELED', label: 'CANCELED (Terminated)' },
+                  ]}
+                />
               </div>
 
               {/* Trial quick extension */}
-              <div className="p-3 rounded-xl bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900/60">
-                <label className="block text-xs font-semibold text-indigo-950 dark:text-indigo-300 mb-1.5 flex items-center justify-between">
+              <div className="p-3.5 rounded-xl bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900/60 space-y-2.5">
+                <div className="text-xs font-semibold text-indigo-950 dark:text-indigo-300 flex items-center justify-between">
                   <span>Extend Trial Period</span>
                   <span className="text-[10px] text-indigo-500 font-normal">
                     Currently: {subscriptionModal.daysRemaining} days left
                   </span>
-                </label>
-                <div className="flex gap-2 mb-2">
+                </div>
+                <div className="flex gap-2">
                   {[7, 14, 30].map((days) => (
                     <button
                       key={days}
@@ -486,16 +478,15 @@ export const AdminBusinessesPage = () => {
                     </button>
                   ))}
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-zinc-500">Or custom end date:</span>
-                  <input
-                    type="date"
+                <div className="pt-1">
+                  <DatePicker
+                    label="Or custom end date"
+                    placeholder="Select expiration date"
                     value={customEndDate}
                     onChange={(e) => {
                       setCustomEndDate(e.target.value);
                       setExtendDays('');
                     }}
-                    className="rounded-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 px-2 py-1 text-xs text-zinc-800 dark:text-zinc-200"
                   />
                 </div>
               </div>

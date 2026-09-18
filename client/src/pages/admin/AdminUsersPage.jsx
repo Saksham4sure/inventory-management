@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { adminService } from '../../services/adminService';
+import { Select } from '../../components/ui/Select';
 import {
   Users,
   Search,
@@ -13,9 +15,24 @@ import {
   Building2,
   X,
   AlertTriangle,
+  FileCheck2,
+  Eye,
+  Clock,
+  ShieldCheck,
+  MapPin,
+  Phone,
+  Calendar,
+  AlertCircle,
+  Copy,
+  Check,
+  ZoomIn,
 } from 'lucide-react';
 
 export const AdminUsersPage = () => {
+  const [searchParams] = useSearchParams();
+  const urlKyc = searchParams.get('kyc');
+  const urlUserId = searchParams.get('userId');
+
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -23,11 +40,22 @@ export const AdminUsersPage = () => {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [activeFilter, setActiveFilter] = useState('ALL');
+  const [kycFilter, setKycFilter] = useState(urlKyc || 'ALL');
 
   // Modals
   const [editModal, setEditModal] = useState(null);
   const [passwordModal, setPasswordModal] = useState(null);
   const [deleteModal, setDeleteModal] = useState(null);
+
+  // KYC Verification Modal States
+  const [kycModal, setKycModal] = useState(null); // { user, kyc }
+  const [kycLoading, setKycLoading] = useState(false);
+  const [kycActionLoading, setKycActionLoading] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
+  const [showRejectForm, setShowRejectForm] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null); // { url, title }
+  const [copiedDoc, setCopiedDoc] = useState(false);
+
   const [actionLoading, setActionLoading] = useState(false);
   const [actionSuccess, setActionSuccess] = useState('');
 
@@ -49,6 +77,7 @@ export const AdminUsersPage = () => {
         search,
         role: roleFilter,
         isActive: activeFilter,
+        kycStatus: kycFilter,
       });
       setUsers(res.users || []);
     } catch (err) {
@@ -63,7 +92,84 @@ export const AdminUsersPage = () => {
       fetchUsers();
     }, 250);
     return () => clearTimeout(timer);
-  }, [search, roleFilter, activeFilter]);
+  }, [search, roleFilter, activeFilter, kycFilter]);
+
+  // Auto-open user KYC modal if requested via notification or URL
+  useEffect(() => {
+    if (urlUserId) {
+      setKycLoading(true);
+      adminService
+        .getUserKyc(urlUserId)
+        .then((data) => {
+          if (data?.user) {
+            setKycModal(data);
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to load user KYC via URL param:', err);
+        })
+        .finally(() => {
+          setKycLoading(false);
+        });
+    }
+  }, [urlUserId]);
+
+  // KYC Modal Handlers
+  const openKycModal = async (u) => {
+    try {
+      setKycLoading(true);
+      setShowRejectForm(false);
+      setRejectionReason('');
+      setActionSuccess('');
+      const data = await adminService.getUserKyc(u._id);
+      setKycModal(data);
+    } catch (err) {
+      alert(err.message || 'Failed to load user KYC identity documents');
+    } finally {
+      setKycLoading(false);
+    }
+  };
+
+  const handleVerifyKyc = async (status) => {
+    if (!kycModal?.user) return;
+
+    if (status === 'REJECTED' && !rejectionReason.trim()) {
+      alert('Please enter or select a rejection reason so the user knows what to correct.');
+      return;
+    }
+
+    try {
+      setKycActionLoading(true);
+      await adminService.verifyUserKyc(kycModal.user._id, {
+        status,
+        rejectionReason: rejectionReason.trim(),
+      });
+
+      setActionSuccess(
+        `User identity document has been ${
+          status === 'VERIFIED' ? 'approved' : 'rejected'
+        }! Notification sent to user.`
+      );
+
+      // Refresh modal state and background users table
+      const updated = await adminService.getUserKyc(kycModal.user._id);
+      setKycModal(updated);
+      setShowRejectForm(false);
+      setRejectionReason('');
+      fetchUsers();
+    } catch (err) {
+      alert(err.message || 'Failed to update KYC status');
+    } finally {
+      setKycActionLoading(false);
+    }
+  };
+
+  const handleCopyDocNumber = (num) => {
+    if (!num) return;
+    navigator.clipboard.writeText(num);
+    setCopiedDoc(true);
+    setTimeout(() => setCopiedDoc(false), 2000);
+  };
 
   // Edit User
   const openEditModal = (u) => {
@@ -164,7 +270,7 @@ export const AdminUsersPage = () => {
             Platform Users Directory
           </h1>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-            Global accounts, roles (Super Admin, Owner, Manager, Staff), password overrides, and access governance.
+            Global accounts, roles (Platform Admin, Owner, Manager, Staff), password overrides, and access governance.
           </p>
         </div>
 
@@ -186,36 +292,49 @@ export const AdminUsersPage = () => {
           />
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="flex items-center gap-1.5 text-xs text-zinc-500">
-            <Shield className="h-3.5 w-3.5" />
-            <span>Role:</span>
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="w-40 sm:w-44">
+            <Select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              options={[
+                { value: 'ALL', label: 'All Roles' },
+                { value: 'SUPER_ADMIN', label: 'SUPER_ADMIN' },
+                { value: 'OWNER', label: 'OWNER' },
+                { value: 'MANAGER', label: 'MANAGER' },
+                { value: 'STAFF', label: 'STAFF' },
+              ]}
+              compact
+            />
           </div>
-          <select
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-            className="rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 px-3 py-2 text-xs text-zinc-900 dark:text-white focus:outline-hidden"
-          >
-            <option value="ALL">All Roles</option>
-            <option value="SUPER_ADMIN">SUPER_ADMIN</option>
-            <option value="OWNER">OWNER</option>
-            <option value="MANAGER">MANAGER</option>
-            <option value="STAFF">STAFF</option>
-          </select>
 
-          <div className="flex items-center gap-1.5 text-xs text-zinc-500 ml-2">
-            <Filter className="h-3.5 w-3.5" />
-            <span>Status:</span>
+          <div className="w-40 sm:w-44">
+            <Select
+              value={activeFilter}
+              onChange={(e) => setActiveFilter(e.target.value)}
+              options={[
+                { value: 'ALL', label: 'All Statuses' },
+                { value: 'true', label: 'Active Only' },
+                { value: 'false', label: 'Suspended Only' },
+              ]}
+              compact
+            />
           </div>
-          <select
-            value={activeFilter}
-            onChange={(e) => setActiveFilter(e.target.value)}
-            className="rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 px-3 py-2 text-xs text-zinc-900 dark:text-white focus:outline-hidden"
-          >
-            <option value="ALL">All Statuses</option>
-            <option value="true">Active Only</option>
-            <option value="false">Suspended Only</option>
-          </select>
+
+          <div className="w-44 sm:w-48">
+            <Select
+              value={kycFilter}
+              onChange={(e) => setKycFilter(e.target.value)}
+              options={[
+                { value: 'ALL', label: 'All KYC Statuses' },
+                { value: 'PENDING', label: 'Pending Review' },
+                { value: 'VERIFIED', label: 'Verified' },
+                { value: 'REJECTED', label: 'Rejected' },
+                { value: 'NOT_SUBMITTED', label: 'Not Submitted' },
+              ]}
+              compact
+            />
+          </div>
         </div>
       </div>
 
@@ -244,6 +363,7 @@ export const AdminUsersPage = () => {
                   <th className="px-4 py-3">Role</th>
                   <th className="px-4 py-3">Tenant Business</th>
                   <th className="px-4 py-3">Account Status</th>
+                  <th className="px-4 py-3">Identity (KYC)</th>
                   <th className="px-4 py-3">Joined</th>
                   <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
@@ -332,12 +452,64 @@ export const AdminUsersPage = () => {
                         </button>
                       </td>
 
+                      {/* KYC Status Column */}
+                      <td className="px-4 py-3.5">
+                        {u.kyc?.status === 'VERIFIED' ? (
+                          <button
+                            type="button"
+                            onClick={() => openKycModal(u)}
+                            className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 cursor-pointer transition-colors"
+                            title="Click to view verified documents"
+                          >
+                            <ShieldCheck className="h-3 w-3" />
+                            Verified
+                          </button>
+                        ) : u.kyc?.status === 'PENDING' ? (
+                          <button
+                            type="button"
+                            onClick={() => openKycModal(u)}
+                            className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 hover:bg-amber-500/25 cursor-pointer transition-all animate-pulse"
+                            title="Submitted documents need review"
+                          >
+                            <Clock className="h-3 w-3" />
+                            Needs Review
+                          </button>
+                        ) : u.kyc?.status === 'REJECTED' ? (
+                          <button
+                            type="button"
+                            onClick={() => openKycModal(u)}
+                            className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 cursor-pointer transition-colors"
+                            title="Click to view rejection details"
+                          >
+                            <XCircle className="h-3 w-3" />
+                            Rejected
+                          </button>
+                        ) : (
+                          <span className="text-zinc-400 dark:text-zinc-500 text-[11px] italic">
+                            Not submitted
+                          </span>
+                        )}
+                      </td>
+
                       <td className="px-4 py-3.5 text-zinc-500 text-[11px]">
                         {new Date(u.createdAt).toLocaleDateString()}
                       </td>
 
                       <td className="px-4 py-3.5 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {/* Review KYC Button */}
+                          <button
+                            onClick={() => openKycModal(u)}
+                            title="Review Identity (KYC) Documents"
+                            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                              u.kyc?.status === 'PENDING'
+                                ? 'bg-amber-500 text-white hover:bg-amber-600 shadow-xs'
+                                : 'bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 hover:bg-purple-100'
+                            }`}
+                          >
+                            <FileCheck2 className="h-3.5 w-3.5" />
+                          </button>
+
                           <button
                             onClick={() => openPasswordModal(u)}
                             title="Reset Password"
@@ -436,20 +608,18 @@ export const AdminUsersPage = () => {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                  Platform Role
-                </label>
-                <select
+                <Select
+                  label="Platform Role"
                   value={editForm.role}
                   onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
-                  className="w-full rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 px-3 py-2 text-xs text-zinc-900 dark:text-white"
-                >
-                  <option value="SUPER_ADMIN">SUPER_ADMIN (Platform Administrator)</option>
-                  <option value="OWNER">OWNER (Business Account Holder)</option>
-                  <option value="MANAGER">MANAGER (Business Manager)</option>
-                  <option value="STAFF">STAFF (Operational)</option>
-                  <option value="USER">USER (General User)</option>
-                </select>
+                  options={[
+                    { value: 'SUPER_ADMIN', label: 'SUPER_ADMIN (Platform Administrator)' },
+                    { value: 'OWNER', label: 'OWNER (Business Account Holder)' },
+                    { value: 'MANAGER', label: 'MANAGER (Business Manager)' },
+                    { value: 'STAFF', label: 'STAFF (Operational)' },
+                    { value: 'USER', label: 'USER (General User)' },
+                  ]}
+                />
               </div>
 
               <div className="flex items-center gap-2 pt-2">
@@ -584,6 +754,404 @@ export const AdminUsersPage = () => {
               >
                 {actionLoading ? 'Deleting...' : 'Delete User'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* MODAL: KYC Document Inspection & Verification */}
+      {kycModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm overflow-y-auto">
+          <div className="w-full max-w-2xl bg-white dark:bg-[#14161f] border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-2xl p-6 relative my-auto max-h-[92vh] overflow-y-auto">
+            <button
+              onClick={() => {
+                setKycModal(null);
+                setShowRejectForm(false);
+                setRejectionReason('');
+              }}
+              className="absolute right-4 top-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-white p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            {/* Modal Header */}
+            <div className="flex items-center gap-3 mb-5">
+              <div className="h-10 w-10 rounded-2xl bg-purple-600 text-white flex items-center justify-center shadow-md shadow-purple-600/25 shrink-0">
+                <FileCheck2 className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/60 px-2 py-0.5 rounded-md border border-purple-200 dark:border-purple-800">
+                    KYC Validation
+                  </span>
+                  <span className="text-xs text-zinc-400 font-medium">
+                    {kycModal.user?.name}
+                  </span>
+                </div>
+                <h3 className="font-bold text-base text-zinc-900 dark:text-white mt-0.5">
+                  Identity Document Verification Review
+                </h3>
+              </div>
+            </div>
+
+            {actionSuccess && (
+              <div className="mb-4 p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+                <span>{actionSuccess}</span>
+              </div>
+            )}
+
+            {/* 1. User Profile Summary Grid */}
+            <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 mb-5 space-y-3">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 block">
+                User Profile Summary
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div>
+                  <span className="text-zinc-400 block text-[11px]">Full Name</span>
+                  <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+                    {kycModal.user?.name}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-zinc-400 block text-[11px]">Email Address</span>
+                  <span className="font-mono font-medium text-zinc-800 dark:text-zinc-200">
+                    {kycModal.user?.email}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-zinc-400 block text-[11px]">Contact Phone</span>
+                  <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+                    {kycModal.user?.phone || 'Not provided'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-zinc-400 block text-[11px]">Date of Birth</span>
+                  <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+                    {kycModal.user?.dob
+                      ? new Date(kycModal.user.dob).toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })
+                      : 'Not provided'}
+                  </span>
+                </div>
+                <div className="sm:col-span-2">
+                  <span className="text-zinc-400 block text-[11px]">Registered Address</span>
+                  <span className="font-medium text-zinc-800 dark:text-zinc-200">
+                    {kycModal.user?.location?.formattedAddress ||
+                      (kycModal.user?.location?.district
+                        ? `${kycModal.user.location.street || ''} ${kycModal.user.location.ward || ''}, ${kycModal.user.location.municipality || ''}, ${kycModal.user.location.district || ''}, ${kycModal.user.location.province || ''}`
+                        : 'Not specified')}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Identity Document Attributes */}
+            <div className="p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-200/60 dark:border-indigo-900/40 mb-5 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">
+                  Government Document Details
+                </span>
+                <span className="flex items-center gap-1.5">
+                  {kycModal.kyc?.status === 'VERIFIED' && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                      <ShieldCheck className="h-3 w-3" /> VERIFIED
+                    </span>
+                  )}
+                  {kycModal.kyc?.status === 'PENDING' && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 dark:text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded-full border border-amber-500/30 animate-pulse">
+                      <Clock className="h-3 w-3" /> PENDING REVIEW
+                    </span>
+                  )}
+                  {kycModal.kyc?.status === 'REJECTED' && (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-600 dark:text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded-full border border-rose-500/20">
+                      <XCircle className="h-3 w-3" /> REJECTED
+                    </span>
+                  )}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div>
+                  <span className="text-zinc-500 dark:text-zinc-400 block text-[11px]">Document Type</span>
+                  <span className="font-bold text-zinc-900 dark:text-white">
+                    {kycModal.kyc?.documentType === 'DRIVING_LICENSE'
+                      ? 'Driving License'
+                      : 'Nepali Citizenship'}
+                  </span>
+                </div>
+
+                <div>
+                  <span className="text-zinc-500 dark:text-zinc-400 block text-[11px]">Identification Number</span>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="font-mono font-bold text-zinc-900 dark:text-white">
+                      {kycModal.kyc?.documentNumber || 'N/A'}
+                    </span>
+                    {kycModal.kyc?.documentNumber && (
+                      <button
+                        type="button"
+                        onClick={() => handleCopyDocNumber(kycModal.kyc.documentNumber)}
+                        className="text-zinc-400 hover:text-indigo-600 transition-colors p-0.5 cursor-pointer"
+                        title="Copy document number"
+                      >
+                        {copiedDoc ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {kycModal.kyc?.submittedAt && (
+                  <div>
+                    <span className="text-zinc-500 dark:text-zinc-400 block text-[11px]">Submitted On</span>
+                    <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                      {new Date(kycModal.kyc.submittedAt).toLocaleDateString()} at{' '}
+                      {new Date(kycModal.kyc.submittedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                )}
+
+                {kycModal.kyc?.reviewedAt && (
+                  <div>
+                    <span className="text-zinc-500 dark:text-zinc-400 block text-[11px]">Reviewed On</span>
+                    <span className="font-medium text-zinc-700 dark:text-zinc-300">
+                      {new Date(kycModal.kyc.reviewedAt).toLocaleDateString()}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Previous Rejection Reason Display */}
+              {kycModal.kyc?.status === 'REJECTED' && kycModal.kyc?.rejectionReason && (
+                <div className="mt-2 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 text-xs text-rose-800 dark:text-rose-300">
+                  <strong>Previous Rejection Reason:</strong> "{kycModal.kyc.rejectionReason}"
+                </div>
+              )}
+            </div>
+
+            {/* 3. Document Photos (Front & Back) */}
+            <div className="space-y-2 mb-6">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 block">
+                Uploaded Document Copies
+              </span>
+
+              {kycModal.kyc?.frontImage || kycModal.kyc?.backImage ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Front Side */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-semibold text-zinc-700 dark:text-zinc-300">
+                        Front Side Photo
+                      </span>
+                      <span className="text-[10px] text-indigo-600 dark:text-indigo-400 flex items-center gap-1 font-medium">
+                        <ZoomIn className="h-3 w-3" /> Click to zoom
+                      </span>
+                    </div>
+                    {kycModal.kyc.frontImage ? (
+                      <div
+                        onClick={() =>
+                          setPreviewImage({
+                            url: kycModal.kyc.frontImage,
+                            title: `${kycModal.user?.name} - Front Side Document`,
+                          })
+                        }
+                        className="relative rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden group cursor-pointer aspect-[16/10] bg-zinc-100 dark:bg-zinc-900 shadow-sm"
+                      >
+                        <img
+                          src={kycModal.kyc.frontImage}
+                          alt="Front Side"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white text-xs font-semibold">
+                          <Eye className="h-4 w-4" />
+                          <span>Inspect Full Resolution</span>
+                        </div>
+                        <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-md text-[10px] text-white font-medium">
+                          Front Side
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-700 p-6 text-center text-xs text-zinc-400">
+                        Front image missing
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Back Side */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-semibold text-zinc-700 dark:text-zinc-300">
+                        Back Side Photo
+                      </span>
+                      <span className="text-[10px] text-indigo-600 dark:text-indigo-400 flex items-center gap-1 font-medium">
+                        <ZoomIn className="h-3 w-3" /> Click to zoom
+                      </span>
+                    </div>
+                    {kycModal.kyc.backImage ? (
+                      <div
+                        onClick={() =>
+                          setPreviewImage({
+                            url: kycModal.kyc.backImage,
+                            title: `${kycModal.user?.name} - Back Side Document`,
+                          })
+                        }
+                        className="relative rounded-2xl border border-zinc-200 dark:border-zinc-800 overflow-hidden group cursor-pointer aspect-[16/10] bg-zinc-100 dark:bg-zinc-900 shadow-sm"
+                      >
+                        <img
+                          src={kycModal.kyc.backImage}
+                          alt="Back Side"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 text-white text-xs font-semibold">
+                          <Eye className="h-4 w-4" />
+                          <span>Inspect Full Resolution</span>
+                        </div>
+                        <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-md text-[10px] text-white font-medium">
+                          Back Side
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-700 p-6 text-center text-xs text-zinc-400">
+                        Back image missing
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-8 rounded-2xl border border-dashed border-zinc-200 dark:border-zinc-800 text-center text-xs text-zinc-400">
+                  No document images have been submitted by this user yet.
+                </div>
+              )}
+            </div>
+
+            {/* 4. Platform Compliance Review & Approval Controls */}
+            {Boolean(kycModal.kyc?.frontImage || kycModal.kyc?.backImage) && (
+              <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800">
+                {showRejectForm ? (
+                  /* Rejection Reason Form */
+                  <div className="space-y-3 p-4 rounded-2xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/60">
+                    <div>
+                      <label className="block text-xs font-bold text-rose-900 dark:text-rose-200 mb-1">
+                        Specify Rejection Reason (sent directly to user):
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={rejectionReason}
+                        onChange={(e) => setRejectionReason(e.target.value)}
+                        placeholder="e.g. Image is blurry, document ID number mismatch, expired license..."
+                        className="w-full rounded-xl bg-white dark:bg-zinc-900 border border-rose-300 dark:border-rose-800 p-3 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-hidden focus:ring-1 focus:ring-rose-500"
+                      />
+                    </div>
+
+                    {/* Quick reason pills */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-[10px] font-semibold text-rose-700 dark:text-rose-300">
+                        Quick presets:
+                      </span>
+                      {[
+                        'Photos are too blurry or unreadable',
+                        'Document ID number does not match photos',
+                        'Document appears expired or invalid',
+                        'Back side of document is missing or wrong',
+                      ].map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => setRejectionReason(preset)}
+                          className="px-2 py-0.5 rounded-md bg-white dark:bg-zinc-900 border border-rose-200 dark:border-rose-800 text-[10px] text-zinc-700 dark:text-zinc-300 hover:bg-rose-100 dark:hover:bg-zinc-800 cursor-pointer"
+                        >
+                          {preset}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center justify-end gap-2 pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowRejectForm(false)}
+                        className="px-3.5 py-1.5 rounded-xl text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
+                      >
+                        Back
+                      </button>
+                      <button
+                        type="button"
+                        disabled={kycActionLoading || !rejectionReason.trim()}
+                        onClick={() => handleVerifyKyc('REJECTED')}
+                        className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-sm transition-all cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                      >
+                        <XCircle className="h-3.5 w-3.5" />
+                        <span>Confirm Rejection</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  /* Main Action Buttons: Approve or Reject */
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                      {kycModal.kyc?.status === 'VERIFIED'
+                        ? 'Document is currently marked as verified.'
+                        : kycModal.kyc?.status === 'REJECTED'
+                        ? 'Document is currently rejected. User can re-upload anytime.'
+                        : 'Review the document copies and validate the user identity.'}
+                    </p>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowRejectForm(true)}
+                        disabled={kycActionLoading}
+                        className="px-4 py-2 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                      >
+                        <XCircle className="h-3.5 w-3.5" />
+                        <span>Reject Document</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={kycActionLoading || kycModal.kyc?.status === 'VERIFIED'}
+                        onClick={() => handleVerifyKyc('VERIFIED')}
+                        className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        <span>
+                          {kycModal.kyc?.status === 'VERIFIED' ? 'Verified' : 'Approve Identity'}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* FULL RESOLUTION IMAGE INSPECT MODAL */}
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/90 backdrop-blur-md animate-in fade-in duration-200"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div
+            className="relative max-w-4xl max-h-[90vh] bg-zinc-950 rounded-3xl overflow-hidden shadow-2xl border border-zinc-800 flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 bg-zinc-900/90 border-b border-zinc-800 text-white">
+              <span className="text-xs font-semibold">{previewImage.title}</span>
+              <button
+                onClick={() => setPreviewImage(null)}
+                className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="p-3 flex items-center justify-center overflow-auto max-h-[80vh]">
+              <img
+                src={previewImage.url}
+                alt={previewImage.title}
+                className="max-h-[75vh] max-w-full object-contain rounded-xl"
+              />
             </div>
           </div>
         </div>

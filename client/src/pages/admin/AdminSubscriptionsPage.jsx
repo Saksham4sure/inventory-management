@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { adminService } from '../../services/adminService';
+import { Select } from '../../components/ui/Select';
 import {
   CreditCard,
   Clock,
@@ -531,17 +532,14 @@ export const AdminSubscriptionsPage = () => {
               <p className="text-[11px] text-zinc-400 mb-2">
                 Which subscription tier is provisioned for trial tenants.
               </p>
-              <select
+              <Select
                 value={trialPlanId}
                 onChange={(e) => setTrialPlanId(e.target.value)}
-                className="w-full rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 px-3 py-2 text-xs text-zinc-900 dark:text-white font-medium"
-              >
-                {plans.map((p) => (
-                  <option key={p.planId} value={p.planId}>
-                    Tier {p.tierOrder}: {p.name} ({p.planId})
-                  </option>
-                ))}
-              </select>
+                options={plans.map((p) => ({
+                  value: p.planId,
+                  label: `Tier ${p.tierOrder}: ${p.name} (${p.planId})`,
+                }))}
+              />
             </div>
 
             {/* Trial Duration */}
@@ -645,7 +643,7 @@ export const AdminSubscriptionsPage = () => {
                   {/* Pricing */}
                   <div className="mt-4 flex items-baseline gap-1">
                     <span className="text-3xl font-extrabold text-zinc-900 dark:text-white">
-                      ${p.monthlyPriceUSD}
+                      Rs. {(p.monthlyPriceNPR || p.monthlyPriceUSD || 0).toLocaleString('en-IN')}
                     </span>
                     <span className="text-xs text-zinc-500 dark:text-zinc-400 font-medium">/ month</span>
                   </div>
@@ -819,7 +817,7 @@ export const AdminSubscriptionsPage = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                    Monthly Price ($ USD)
+                    Monthly Price (Rs. NPR)
                   </label>
                   <input
                     type="number"
@@ -827,7 +825,11 @@ export const AdminSubscriptionsPage = () => {
                     required
                     value={planForm.monthlyPriceUSD}
                     onChange={(e) =>
-                      setPlanForm({ ...planForm, monthlyPriceUSD: Number(e.target.value) })
+                      setPlanForm({
+                        ...planForm,
+                        monthlyPriceUSD: Number(e.target.value),
+                        monthlyPriceNPR: Number(e.target.value),
+                      })
                     }
                     className="w-full rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 px-3 py-2 text-xs text-zinc-900 dark:text-white font-mono"
                   />

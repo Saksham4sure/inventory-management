@@ -29,6 +29,71 @@ const userSchema = new mongoose.Schema(
       minlength: [6, 'Password must be at least 6 characters'],
       select: false,
     },
+    phone: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    dob: {
+      type: Date,
+      default: null,
+    },
+    location: {
+      province: { type: String, default: '' },
+      district: { type: String, default: '' },
+      municipality: { type: String, default: '' },
+      ward: { type: String, default: '' },
+      street: { type: String, default: '' },
+      formattedAddress: { type: String, default: '' },
+    },
+    kyc: {
+      documentType: {
+        type: String,
+        enum: ['CITIZENSHIP', 'DRIVING_LICENSE', 'PASSPORT', 'NONE'],
+        default: 'NONE',
+      },
+      documentNumber: { type: String, default: '', trim: true },
+      frontImage: { type: String, default: '' },
+      backImage: { type: String, default: '' },
+      status: {
+        type: String,
+        enum: ['PENDING', 'VERIFIED', 'REJECTED', 'NOT_SUBMITTED'],
+        default: 'NOT_SUBMITTED',
+      },
+      submittedAt: { type: Date, default: null },
+      reviewedAt: { type: Date, default: null },
+      reviewedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null,
+      },
+      rejectionReason: { type: String, default: '', trim: true },
+    },
+    subscriptionPlan: {
+      type: String,
+      default: null,
+    },
+    subscriptionStatus: {
+      type: String,
+      enum: ['NONE', 'TRIAL', 'ACTIVE', 'EXPIRED'],
+      default: 'NONE',
+    },
+    subscriptionStartDate: {
+      type: Date,
+      default: null,
+    },
+    subscriptionEndDate: {
+      type: Date,
+      default: null,
+    },
+    onboardingStep: {
+      type: Number,
+      default: 1,
+    },
+    onboardingCompleted: {
+      type: Boolean,
+      default: false,
+    },
     businessId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Business',

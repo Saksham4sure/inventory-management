@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { adminService } from '../../services/adminService';
+import { Select } from '../../components/ui/Select';
 import {
   Settings,
   Save,
@@ -195,7 +196,7 @@ export const AdminSettingsPage = () => {
                   Platform Maintenance Mode
                 </span>
                 <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                  Puts the application into read-only or maintenance notice mode. Super admins retain access.
+                  Puts the application into read-only or maintenance notice mode. Platform administrators retain access.
                 </span>
               </div>
               <button
@@ -270,11 +271,9 @@ export const AdminSettingsPage = () => {
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300 mb-1.5">
-                Severity Level
-              </label>
-              <select
+            <div className="w-full sm:w-64">
+              <Select
+                label="Severity Level"
                 value={form.noticeBanner.level}
                 onChange={(e) =>
                   setForm({
@@ -285,12 +284,12 @@ export const AdminSettingsPage = () => {
                     },
                   })
                 }
-                className="w-full sm:w-64 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 px-3 py-2 text-xs text-zinc-900 dark:text-white"
-              >
-                <option value="info">Info (Blue Notice)</option>
-                <option value="warning">Warning (Amber Notice)</option>
-                <option value="critical">Critical (Rose Notice)</option>
-              </select>
+                options={[
+                  { value: 'info', label: 'Info (Blue Notice)' },
+                  { value: 'warning', label: 'Warning (Amber Notice)' },
+                  { value: 'critical', label: 'Critical (Rose Notice)' },
+                ]}
+              />
             </div>
           </div>
         </div>

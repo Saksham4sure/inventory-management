@@ -22,6 +22,8 @@ import {
   getAllSubscriptionRequests,
   approveSubscriptionRequest,
   rejectSubscriptionRequest,
+  getUserKyc,
+  verifyUserKyc,
 } from '../controllers/admin.controller.js';
 
 const router = Router();
@@ -39,9 +41,11 @@ router.patch('/businesses/:id', updateBusiness);
 router.patch('/businesses/:id/subscription', updateBusinessSubscription);
 router.delete('/businesses/:id', deleteBusiness);
 
-// 3. Users Management
+// 3. Users Management & Identity KYC Validation
 router.get('/users', getAllUsers);
 router.get('/users/:id', getUserById);
+router.get('/users/:id/kyc', getUserKyc);
+router.post('/users/:id/verify-kyc', verifyUserKyc);
 router.patch('/users/:id', updateUser);
 router.delete('/users/:id', deleteUser);
 

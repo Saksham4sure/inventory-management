@@ -18,12 +18,15 @@ import {
   LogOut,
   ChevronRight,
   Sparkles,
+  Bell,
 } from 'lucide-react';
+import { useNotifications } from '../../hooks/useNotifications';
 import { ROUTES } from '../../constants/routes';
 
 export const Sidebar = ({ isMobileOpen, onClose }) => {
   const { user, logout } = useAuth();
   const { business } = useBusiness();
+  const { unreadCount } = useNotifications();
 
   const mainNavItems = [
     { label: 'Dashboard', path: ROUTES.DASHBOARD, icon: LayoutDashboard },
@@ -36,6 +39,7 @@ export const Sidebar = ({ isMobileOpen, onClose }) => {
   ];
 
   const profileNavItems = [
+    { label: 'Notifications', path: ROUTES.NOTIFICATIONS, icon: Bell, badge: unreadCount },
     { label: 'Business Profile', path: ROUTES.BUSINESS_PROFILE, icon: Building2 },
     { label: 'Team Members', path: ROUTES.TEAM, icon: Users },
     { label: 'Subscription & Plans', path: ROUTES.SUBSCRIPTION, icon: CreditCard },
@@ -76,6 +80,11 @@ export const Sidebar = ({ isMobileOpen, onClose }) => {
               </div>
               {isActive && (
                 <span className="h-1.5 w-1.5 rounded-full bg-white dark:bg-zinc-950 shrink-0" />
+              )}
+              {item.badge > 0 && !isActive && (
+                <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-indigo-600 text-white font-mono shadow-2xs">
+                  {item.badge > 9 ? '9+' : item.badge}
+                </span>
               )}
               {item.highlight && !isActive && (
                 <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-200 shadow-2xs group-hover:scale-105 transition-transform duration-200">
