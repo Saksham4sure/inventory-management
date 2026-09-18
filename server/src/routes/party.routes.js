@@ -8,11 +8,15 @@ import {
   recordCreditTransaction,
   getPartyCreditHistory,
   getPartiesCreditSummary,
+  respondToPartyInvitation,
 } from '../controllers/party.controller.js';
 import { authenticate } from '../middlewares/auth.middleware.js';
 import { requireBusiness } from '../middlewares/business.middleware.js';
 
 const router = Router();
+
+// User can respond to party invitation without having a business
+router.post('/:partyId/respond', authenticate, respondToPartyInvitation);
 
 router.use(authenticate, requireBusiness);
 

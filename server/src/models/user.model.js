@@ -10,6 +10,20 @@ const userSchema = new mongoose.Schema(
       required: [true, 'Name is required'],
       trim: true,
     },
+    accountId: {
+      type: String,
+      unique: true,
+      sparse: true,
+      uppercase: true,
+      trim: true,
+      index: true,
+    },
+    userType: {
+      type: String,
+      enum: ['CUSTOMER', 'BUSINESS'],
+      default: 'BUSINESS',
+      index: true,
+    },
     username: {
       type: String,
       unique: true,
@@ -117,6 +131,12 @@ const userSchema = new mongoose.Schema(
 );
 
 userSchema.pre('save', async function (next) {
+  if (!this.accountId) {
+    const prefix = this.userType === 'CUSTOMER' ? 'CUST' : 'BIZ';
+    const rand = Math.floor(100000 + Math.random() * 900000);
+    this.accountId = `${prefix}-${rand}`;
+  }
+
   if (!this.isModified('password')) return next();
   const salt = await bcrypt.genSalt(ENV.BCRYPT_SALT_ROUNDS);
   this.password = await bcrypt.hash(this.password, salt);

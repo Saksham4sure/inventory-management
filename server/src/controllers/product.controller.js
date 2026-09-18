@@ -16,6 +16,9 @@ export const createProduct = asyncHandler(async (req, res) => {
     minStockLevel,
     unit,
     barcode,
+    productType = 'NON_BIODEGRADABLE',
+    manufacturedDate,
+    expiryDate,
   } = req.body;
 
   if (!name || !sku) {
@@ -32,6 +35,28 @@ export const createProduct = asyncHandler(async (req, res) => {
 
   if (existingProduct) {
     throw new ApiError(409, `Product with SKU "${normalizedSku}" already exists in your inventory`);
+  }
+
+  // Validate dates if product is biodegradable
+  const isBio = productType === 'BIODEGRADABLE';
+  let mfgDateObj = null;
+  let expDateObj = null;
+
+  if (isBio) {
+    if (!manufacturedDate || !expiryDate) {
+      throw new ApiError(
+        400,
+        'Manufactured date and Expiry date are required for biodegradable products'
+      );
+    }
+    mfgDateObj = new Date(manufacturedDate);
+    expDateObj = new Date(expiryDate);
+    if (isNaN(mfgDateObj.getTime()) || isNaN(expDateObj.getTime())) {
+      throw new ApiError(400, 'Invalid manufactured or expiry date format');
+    }
+    if (expDateObj <= mfgDateObj) {
+      throw new ApiError(400, 'Expiry date must be after manufactured date');
+    }
   }
 
   // Generate QR Code payload and image
@@ -54,6 +79,9 @@ export const createProduct = asyncHandler(async (req, res) => {
     currentStock: Number(currentStock) || 0,
     minStockLevel: minStockLevel !== undefined ? Number(minStockLevel) : 5,
     unit: unit ? unit.trim() : 'pcs',
+    productType: isBio ? 'BIODEGRADABLE' : 'NON_BIODEGRADABLE',
+    manufacturedDate: mfgDateObj,
+    expiryDate: expDateObj,
     createdBy: req.user._id,
   });
 
@@ -155,6 +183,9 @@ export const updateProduct = asyncHandler(async (req, res) => {
     minStockLevel,
     unit,
     barcode,
+    productType,
+    manufacturedDate,
+    expiryDate,
   } = req.body;
 
   const product = await Product.findOne({
@@ -175,6 +206,15 @@ export const updateProduct = asyncHandler(async (req, res) => {
   if (minStockLevel !== undefined) product.minStockLevel = Number(minStockLevel);
   if (unit) product.unit = unit.trim();
   if (barcode !== undefined) product.barcode = barcode.trim();
+  if (productType) {
+    product.productType = productType === 'BIODEGRADABLE' ? 'BIODEGRADABLE' : 'NON_BIODEGRADABLE';
+  }
+  if (manufacturedDate !== undefined) {
+    product.manufacturedDate = manufacturedDate ? new Date(manufacturedDate) : null;
+  }
+  if (expiryDate !== undefined) {
+    product.expiryDate = expiryDate ? new Date(expiryDate) : null;
+  }
 
   // If SKU is changed, check uniqueness and regenerate QR code
   if (sku && sku.toUpperCase().trim() !== product.sku) {

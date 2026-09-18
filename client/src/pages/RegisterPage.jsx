@@ -6,7 +6,7 @@ import { Input } from '../components/ui/Input';
 import { DatePicker } from '../components/ui/DatePicker';
 import { Button } from '../components/ui/Button';
 import { ROUTES } from '../constants/routes';
-import { UserPlus, AlertCircle, Calendar, ArrowRight } from 'lucide-react';
+import { UserPlus, AlertCircle, Calendar, ArrowRight, Building2, User } from 'lucide-react';
 
 export const RegisterPage = () => {
   const navigate = useNavigate();
@@ -20,6 +20,7 @@ export const RegisterPage = () => {
     dob: '',
     password: '',
     confirmPassword: '',
+    userType: 'CUSTOMER', // 'CUSTOMER' (Normal user) | 'BUSINESS' (Store / Business user)
   });
 
   const [fieldErrors, setFieldErrors] = useState({});
@@ -145,6 +146,7 @@ export const RegisterPage = () => {
         phone: formData.phone.trim(),
         dob: formData.dob,
         password: formData.password,
+        userType: formData.userType,
       });
 
       showSuccess(
@@ -183,6 +185,44 @@ export const RegisterPage = () => {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-3.5" noValidate>
+        {/* Account Type Selector */}
+        <div>
+          <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5">
+            I am registering as
+          </label>
+          <div className="grid grid-cols-2 gap-2.5 p-1 rounded-2xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.06] dark:border-white/[0.08]">
+            <button
+              type="button"
+              onClick={() => setFormData({ ...formData, userType: 'CUSTOMER' })}
+              className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-semibold transition-all ${
+                formData.userType === 'CUSTOMER'
+                  ? 'bg-white text-zinc-950 shadow-sm dark:bg-zinc-900 dark:text-white border border-black/5 dark:border-white/10'
+                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'
+              }`}
+            >
+              <User className="h-4 w-4 shrink-0" />
+              <span>Normal Customer</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setFormData({ ...formData, userType: 'BUSINESS' })}
+              className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-semibold transition-all ${
+                formData.userType === 'BUSINESS'
+                  ? 'bg-white text-zinc-950 shadow-sm dark:bg-zinc-900 dark:text-white border border-black/5 dark:border-white/10'
+                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'
+              }`}
+            >
+              <Building2 className="h-4 w-4 shrink-0" />
+              <span>Business Owner</span>
+            </button>
+          </div>
+          <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1.5 px-1">
+            {formData.userType === 'CUSTOMER'
+              ? 'View what you bought, track left-to-pay credits, and manage your customer identity.'
+              : 'Set up store/warehouse, manage inventory catalog, POS scan checkout, and track ledger.'}
+          </p>
+        </div>
+
         {/* Full Name */}
         <div>
           <Input

@@ -72,6 +72,34 @@ const transactionSchema = new mongoose.Schema(
       enum: ['CASH', 'CARD', 'ONLINE', 'ONLINE_PAYMENT', 'BANK_TRANSFER', 'CREDIT', 'OTHER'],
       default: 'CASH',
     },
+    customer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+      index: true,
+    },
+    customerAccountId: {
+      type: String,
+      default: '',
+    },
+    customerEmail: {
+      type: String,
+      default: '',
+    },
+    creditDetails: {
+      isCredit: { type: Boolean, default: false },
+      creditType: { type: String, enum: ['FULL', 'PARTIAL', 'NONE'], default: 'NONE' },
+      paidAmount: { type: Number, default: 0 },
+      creditAmount: { type: Number, default: 0 },
+    },
+    manualBillDetails: {
+      sellerName: { type: String, default: '' },
+      vendorPanVat: { type: String, default: '' },
+      billNumber: { type: String, default: '' },
+      billCategory: { type: String, default: '' },
+      contactNumber: { type: String, default: '' },
+      billPhotos: { type: [String], default: [] },
+    },
     party: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Party',

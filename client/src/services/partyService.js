@@ -40,4 +40,11 @@ export const partyService = {
     const response = await api.get('/parties/summary');
     return response.data.data;
   },
+
+  respondToPartyInvitation: async (partyId, action) => {
+    const response = await api.post(`/parties/${partyId}/respond`, { action });
+    return response.data.data;
+  },
 };
+
+export default partyService;

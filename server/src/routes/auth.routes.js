@@ -6,6 +6,9 @@ import {
   updateProfile,
   updateOnboarding,
   uploadKyc,
+  searchUsers,
+  getCustomerPurchases,
+  getCustomerCredits,
 } from '../controllers/auth.controller.js';
 import { authenticate } from '../middlewares/auth.middleware.js';
 
@@ -17,5 +20,8 @@ router.get('/me', authenticate, getMe);
 router.put('/profile', authenticate, updateProfile);
 router.put('/onboarding', authenticate, updateOnboarding);
 router.post('/kyc', authenticate, uploadKyc);
+router.get('/users/search', authenticate, searchUsers);
+router.get('/customer/purchases', authenticate, getCustomerPurchases);
+router.get('/customer/credits', authenticate, getCustomerCredits);
 
 export default router;

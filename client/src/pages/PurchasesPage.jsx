@@ -12,6 +12,7 @@ import { Select } from '../components/ui/Select';
 import { DatePicker } from '../components/ui/DatePicker';
 import { Modal } from '../components/ui/Modal';
 import { formatCurrency, formatPaymentMethod } from '../utils/formatters';
+import { validateNepaliPhone } from '../utils/phoneValidator';
 import {
   DATE_FILTERS,
   getDateFilterBounds,
@@ -37,6 +38,12 @@ import {
   Clock,
   ArrowUpRight,
   ArrowDownLeft,
+  Camera,
+  Upload,
+  Plus,
+  PlusCircle,
+  Image as ImageIcon,
+  CheckCircle2,
 } from 'lucide-react';
 
 export const PurchasesPage = () => {
@@ -66,6 +73,125 @@ export const PurchasesPage = () => {
   const [creditAmount, setCreditAmount] = useState('');
   const [returnReason, setReturnReason] = useState('Damaged batch from supplier');
   const [submittingReturn, setSubmittingReturn] = useState(false);
+
+  // Manual Bill modal state
+  const [isManualModalOpen, setIsManualModalOpen] = useState(false);
+  const [submittingManual, setSubmittingManual] = useState(false);
+  const initialManualBillState = {
+    sellerName: '',
+    vendorPanVat: '',
+    billNumber: '',
+    billCategory: 'Inventory / Stock In',
+    contactNumber: '',
+    totalBillAmount: '',
+    paymentMethod: 'CASH',
+    notes: '',
+  };
+  const [manualBillData, setManualBillData] = useState(initialManualBillState);
+  const [billPhotos, setBillPhotos] = useState([]); // array of base64 strings
+
+  // Convert file to base64
+  const handleFileChange = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    files.forEach((file) => {
+      if (!file.type.startsWith('image/')) {
+        showError('Only image files are supported for bill attachments.');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        showError('Each photo must be under 5MB.');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setBillPhotos((prev) => [...prev, reader.result]);
+      };
+      reader.readAsDataURL(file);
+    });
+    // Reset file input
+    e.target.value = '';
+  };
+
+  const handleRemovePhoto = (index) => {
+    setBillPhotos((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Submit manual purchase bill
+  const handleCreateManualBill = async (e) => {
+    e.preventDefault();
+
+    if (!manualBillData.sellerName.trim()) {
+      showError('Seller / Vendor Name is required.');
+      return;
+    }
+
+    // PAN/VAT: exactly 9 digits
+    const panClean = manualBillData.vendorPanVat.trim().replace(/\D/g, '');
+    if (manualBillData.vendorPanVat.trim() && panClean.length !== 9) {
+      showError('Vendor PAN or VAT number must be exactly 9 digits.');
+      return;
+    }
+
+    if (!manualBillData.billNumber.trim()) {
+      showError('Bill / Invoice Number is required.');
+      return;
+    }
+
+    // Phone validation
+    const phoneCheck = validateNepaliPhone(manualBillData.contactNumber);
+    if (!phoneCheck.isValid) {
+      showError(phoneCheck.error || 'Please enter a valid Nepali contact number.');
+      return;
+    }
+
+    // Amount validation
+    const parsedAmount = parseFloat(manualBillData.totalBillAmount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      showError('Total bill amount must be greater than 0.');
+      return;
+    }
+
+    try {
+      setSubmittingManual(true);
+      const payload = {
+        type: 'PURCHASE',
+        items: [
+          {
+            productName: `Bill #${manualBillData.billNumber} (${manualBillData.sellerName})`,
+            sku: `BILL-${manualBillData.billNumber.toUpperCase()}`,
+            quantity: 1,
+            unitPrice: parsedAmount,
+          },
+        ],
+        paymentMethod: manualBillData.paymentMethod,
+        partyName: manualBillData.sellerName.trim(),
+        partyPhone: phoneCheck.normalized,
+        notes: manualBillData.notes.trim() || `Manual Bill Category: ${manualBillData.billCategory}`,
+        manualBillDetails: {
+          sellerName: manualBillData.sellerName.trim(),
+          vendorPanVat: panClean,
+          billNumber: manualBillData.billNumber.trim(),
+          billCategory: manualBillData.billCategory.trim(),
+          contactNumber: phoneCheck.normalized,
+          billPhotos: billPhotos,
+        },
+      };
+
+      await transactionService.createTransaction(payload);
+      showSuccess(`Manual bill #${manualBillData.billNumber} added successfully`);
+      setIsManualModalOpen(false);
+      setManualBillData(initialManualBillState);
+      setBillPhotos([]);
+      fetchPurchases();
+    } catch (err) {
+      showError(err.message || 'Failed to save manual purchase bill');
+    } finally {
+      setSubmittingManual(false);
+    }
+  };
 
   // Fetch purchases records with applied filters
   const fetchPurchases = useCallback(async () => {
@@ -232,6 +358,15 @@ export const PurchasesPage = () => {
             title="Refresh purchases"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setIsManualModalOpen(true)}
+            className="font-semibold"
+          >
+            <PlusCircle className="h-3.5 w-3.5 mr-1 text-emerald-600 dark:text-emerald-400" />
+            Add Manual Bill
           </Button>
           <Button variant="primary" size="sm" onClick={() => setIsReturnModalOpen(true)}>
             <RotateCcw className="h-3.5 w-3.5 mr-1" /> Return to Vendor
@@ -820,6 +955,70 @@ export const PurchasesPage = () => {
               </span>
             </div>
 
+            {/* Manual Bill Details if present */}
+            {selectedTxn.manualBillDetails && (
+              <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700/80 text-xs space-y-2">
+                <div className="flex items-center justify-between font-bold text-zinc-900 dark:text-zinc-100 border-b border-zinc-200/60 dark:border-zinc-700 pb-1.5">
+                  <span>Vendor Bill Details</span>
+                  <Badge variant="neutral" size="sm">
+                    {selectedTxn.manualBillDetails.billCategory || 'Bill'}
+                  </Badge>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+                  <div>
+                    <span className="text-zinc-400">Vendor:</span>{' '}
+                    <span className="font-semibold text-zinc-800 dark:text-zinc-200">
+                      {selectedTxn.manualBillDetails.sellerName}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-zinc-400">PAN / VAT:</span>{' '}
+                    <span className="font-mono font-semibold text-zinc-800 dark:text-zinc-200">
+                      {selectedTxn.manualBillDetails.vendorPanVat || 'N/A'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-zinc-400">Bill No:</span>{' '}
+                    <span className="font-mono font-semibold text-zinc-800 dark:text-zinc-200">
+                      {selectedTxn.manualBillDetails.billNumber}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-zinc-400">Contact:</span>{' '}
+                    <span className="font-mono text-zinc-800 dark:text-zinc-200">
+                      {selectedTxn.manualBillDetails.contactNumber || 'N/A'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Attached Bill Photos */}
+                {selectedTxn.manualBillDetails.billPhotos?.length > 0 && (
+                  <div className="pt-2 border-t border-zinc-200/60 dark:border-zinc-700">
+                    <span className="text-[10px] uppercase font-semibold text-zinc-400 block mb-1.5">
+                      Attached Bill Photos ({selectedTxn.manualBillDetails.billPhotos.length})
+                    </span>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedTxn.manualBillDetails.billPhotos.map((photo, pIdx) => (
+                        <a
+                          key={pIdx}
+                          href={photo}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-14 h-14 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700 shadow-2xs hover:opacity-80 transition-opacity"
+                        >
+                          <img
+                            src={photo}
+                            alt={`Bill photo ${pIdx + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {selectedTxn.notes && (
               <p className="text-xs text-zinc-500 bg-zinc-50 dark:bg-zinc-850 p-2.5 rounded-xl border border-zinc-200/50 dark:border-zinc-800">
                 {selectedTxn.notes}
@@ -841,6 +1040,181 @@ export const PurchasesPage = () => {
             </div>
           </div>
         )}
+      </Modal>
+      {/* MODAL: Manually Add Purchase Bill */}
+      <Modal
+        isOpen={isManualModalOpen}
+        onClose={() => setIsManualModalOpen(false)}
+        title="Manually Record Purchase Bill"
+        maxWidth="max-w-lg"
+      >
+        <form onSubmit={handleCreateManualBill} className="space-y-3.5">
+          <Input
+            label="Seller / Vendor Name"
+            placeholder="e.g. Acme Distributors Pvt. Ltd."
+            required
+            value={manualBillData.sellerName}
+            onChange={(e) =>
+              setManualBillData({ ...manualBillData, sellerName: e.target.value })
+            }
+          />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              label="Vendor PAN or VAT Number"
+              placeholder="e.g. 601234567 (9 digits)"
+              maxLength={9}
+              value={manualBillData.vendorPanVat}
+              onChange={(e) =>
+                setManualBillData({
+                  ...manualBillData,
+                  vendorPanVat: e.target.value.replace(/\D/g, '').slice(0, 9),
+                })
+              }
+              helperText={
+                manualBillData.vendorPanVat
+                  ? `${manualBillData.vendorPanVat.length}/9 digits entered`
+                  : 'Optional (9 digits)'
+              }
+            />
+
+            <Input
+              label="Bill / Invoice Number"
+              placeholder="e.g. INV-2081-042"
+              required
+              value={manualBillData.billNumber}
+              onChange={(e) =>
+                setManualBillData({ ...manualBillData, billNumber: e.target.value })
+              }
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              label="Bill Category"
+              placeholder="e.g. Inventory, Electronics, Stationery"
+              value={manualBillData.billCategory}
+              onChange={(e) =>
+                setManualBillData({ ...manualBillData, billCategory: e.target.value })
+              }
+            />
+
+            <Input
+              label="Vendor Contact Number"
+              type="tel"
+              placeholder="e.g. 98XXXXXXXX"
+              required
+              value={manualBillData.contactNumber}
+              onChange={(e) =>
+                setManualBillData({ ...manualBillData, contactNumber: e.target.value })
+              }
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Input
+              label={`Total Bill Amount (${currency})`}
+              type="number"
+              step="0.01"
+              min="0.01"
+              placeholder="0.00"
+              required
+              value={manualBillData.totalBillAmount}
+              onChange={(e) =>
+                setManualBillData({ ...manualBillData, totalBillAmount: e.target.value })
+              }
+            />
+
+            <Select
+              label="Payment Method"
+              value={manualBillData.paymentMethod}
+              onChange={(e) =>
+                setManualBillData({ ...manualBillData, paymentMethod: e.target.value })
+              }
+              options={[
+                { value: 'CASH', label: 'Cash' },
+                { value: 'BANK_TRANSFER', label: 'Bank Transfer' },
+                { value: 'ONLINE', label: 'Online Payment' },
+                { value: 'CREDIT', label: 'Credit' },
+              ]}
+            />
+          </div>
+
+          {/* Bill Photos Upload: Gallery and Camera */}
+          <div className="space-y-2 pt-1 border-t border-zinc-100 dark:border-zinc-800">
+            <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+              Upload Bill Photos (Multiple Supported)
+            </label>
+
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Option 1: Gallery Upload */}
+              <label className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-750 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 cursor-pointer text-xs font-medium text-zinc-700 dark:text-zinc-200 transition-colors shadow-2xs">
+                <Upload className="h-4 w-4 text-blue-500" />
+                <span>Upload from Gallery</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </label>
+
+              {/* Option 2: Camera Capture */}
+              <label className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-zinc-200 dark:border-zinc-750 bg-white dark:bg-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-700 cursor-pointer text-xs font-medium text-zinc-700 dark:text-zinc-200 transition-colors shadow-2xs">
+                <Camera className="h-4 w-4 text-emerald-500" />
+                <span>Take Photo with Camera</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </label>
+            </div>
+
+            {/* Photos Preview Thumbnails */}
+            {billPhotos.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-2">
+                {billPhotos.map((photoUrl, idx) => (
+                  <div
+                    key={idx}
+                    className="relative group w-16 h-16 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700 shadow-2xs"
+                  >
+                    <img
+                      src={photoUrl}
+                      alt={`Bill ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemovePhoto(idx)}
+                      className="absolute top-1 right-1 p-0.5 rounded-full bg-black/60 hover:bg-rose-600 text-white transition-colors"
+                      title="Remove Photo"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setIsManualModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" variant="primary" size="sm" loading={submittingManual}>
+              <CheckCircle2 className="h-4 w-4 mr-1.5" /> Save Purchase Bill
+            </Button>
+          </div>
+        </form>
       </Modal>
     </div>
   );

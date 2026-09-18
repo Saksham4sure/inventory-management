@@ -3,6 +3,7 @@ import { useBusiness } from '../hooks/useBusiness';
 import { useConfirm } from '../hooks/useConfirm';
 import { useSnackbar } from '../hooks/useSnackbar';
 import { partyService } from '../services/partyService';
+import { authService } from '../services/authService';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
@@ -30,6 +31,7 @@ import {
   ArrowDownLeft,
   CheckCircle2,
   Eye,
+  UserCheck,
 } from 'lucide-react';
 
 export const PartiesPage = () => {
@@ -68,6 +70,10 @@ export const PartiesPage = () => {
   // Modals
   const [isPartyModalOpen, setIsPartyModalOpen] = useState(false);
   const [editingParty, setEditingParty] = useState(null);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [searchingUser, setSearchingUser] = useState(false);
+  const [userSearchError, setUserSearchError] = useState('');
+  const [matchedUser, setMatchedUser] = useState(null);
   const [partyFormData, setPartyFormData] = useState({
     name: '',
     phone: '',
@@ -141,6 +147,9 @@ export const PartiesPage = () => {
   // Open Create Modal
   const handleOpenCreateModal = () => {
     setEditingParty(null);
+    setUserSearchQuery('');
+    setUserSearchError('');
+    setMatchedUser(null);
     setPartyFormData({
       name: '',
       phone: '',
@@ -154,10 +163,48 @@ export const PartiesPage = () => {
     setIsPartyModalOpen(true);
   };
 
+  // Search User by Account ID or Email for Party Registration
+  const handleSearchUserForParty = async (e) => {
+    if (e) e.preventDefault();
+    if (!userSearchQuery.trim()) {
+      setUserSearchError('Please enter user Account ID (e.g. CUST-123456) or Email');
+      return;
+    }
+
+    try {
+      setSearchingUser(true);
+      setUserSearchError('');
+      const res = await authService.searchUsers(userSearchQuery.trim());
+      if (res?.user) {
+        setMatchedUser(res.user);
+        setPartyFormData((prev) => ({
+          ...prev,
+          name: res.user.name || '',
+          email: res.user.email || '',
+          phone: res.user.phone || '',
+          type: res.user.userType === 'CUSTOMER' ? 'CUSTOMER' : prev.type,
+        }));
+        showSuccess(`Found registered user: ${res.user.name}`);
+      } else {
+        setUserSearchError('User not found. Parties can only be added for registered users.');
+      }
+    } catch (err) {
+      const msg = err?.response?.data?.message || err.message || 'User does not exist in the system';
+      setUserSearchError(msg);
+      showError(msg);
+      setMatchedUser(null);
+    } finally {
+      setSearchingUser(false);
+    }
+  };
+
   // Open Edit Modal
   const handleOpenEditModal = (party, e) => {
     if (e) e.stopPropagation();
     setEditingParty(party);
+    setUserSearchQuery('');
+    setUserSearchError('');
+    setMatchedUser(null);
     setPartyFormData({
       name: party.name || '',
       phone: party.phone || '',
@@ -174,30 +221,51 @@ export const PartiesPage = () => {
   // Submit Create or Edit Party
   const handleSubmitParty = async (e) => {
     e.preventDefault();
+
+    if (!editingParty && !matchedUser) {
+      const err = 'Please search and verify the registered user (using Account ID or Email) first.';
+      setUserSearchError(err);
+      showError(err);
+      return;
+    }
+
     if (!partyFormData.name.trim() || !partyFormData.phone.trim()) {
       showError('Name and Phone number are required.');
       return;
     }
 
-    const phoneCheck = validateNepaliPhone(partyFormData.phone);
-    if (!phoneCheck.isValid) {
-      showError(phoneCheck.error || 'Please enter a valid Nepali contact number.');
-      return;
-    }
+    const phoneToUse = partyFormData.phone?.trim() || matchedUser?.phone || '9800000000';
+    const phoneCheck = validateNepaliPhone(phoneToUse);
 
     try {
       setSubmittingParty(true);
       if (editingParty) {
+        if (!partyFormData.name.trim() || !partyFormData.phone.trim()) {
+          showError('Name and Phone number are required.');
+          return;
+        }
+        if (!phoneCheck.isValid) {
+          showError(phoneCheck.error || 'Please enter a valid Nepali contact number.');
+          return;
+        }
         await partyService.updateParty(editingParty._id, partyFormData);
         showSuccess('Party details updated successfully');
       } else {
-        await partyService.createParty(partyFormData);
-        showSuccess('Party registered successfully');
+        const payload = {
+          ...partyFormData,
+          name: matchedUser?.name || partyFormData.name,
+          phone: phoneCheck.isValid ? phoneCheck.normalized : matchedUser?.phone || '9800000000',
+          email: matchedUser?.email || partyFormData.email,
+          userQuery: matchedUser?.accountId || matchedUser?.email || userSearchQuery.trim(),
+          accountId: matchedUser?.accountId || '',
+        };
+        await partyService.createParty(payload);
+        showSuccess(`Party request sent to ${matchedUser.name}! Once they accept from notifications, transactions will begin.`);
       }
       setIsPartyModalOpen(false);
       fetchData();
     } catch (err) {
-      showError(err.message || 'Failed to save party record');
+      showError(err.message || 'Failed to send party request');
     } finally {
       setSubmittingParty(false);
     }
@@ -600,9 +668,20 @@ export const PartiesPage = () => {
                         </div>
                       </div>
 
-                      <Badge variant={isCustomer ? 'accent' : 'default'} size="sm">
-                        {isCustomer ? 'Customer' : 'Supplier'}
-                      </Badge>
+                      <div className="flex items-center gap-1.5">
+                        <Badge variant={isCustomer ? 'accent' : 'default'} size="sm">
+                          {isCustomer ? 'Customer' : 'Supplier'}
+                        </Badge>
+                        {party.status === 'PENDING' ? (
+                          <Badge variant="warning" size="sm">
+                            Pending Accept
+                          </Badge>
+                        ) : party.status === 'REJECTED' ? (
+                          <Badge variant="danger" size="sm">
+                            Declined
+                          </Badge>
+                        ) : null}
+                      </div>
                     </div>
 
                     {/* Balance Info */}
@@ -709,9 +788,20 @@ export const PartiesPage = () => {
                           </td>
 
                           <td className="px-4 py-3.5">
-                            <Badge variant={isCustomer ? 'accent' : 'default'} size="sm" dot>
-                              {isCustomer ? 'Customer' : 'Supplier'}
-                            </Badge>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <Badge variant={isCustomer ? 'accent' : 'default'} size="sm" dot>
+                                {isCustomer ? 'Customer' : 'Supplier'}
+                              </Badge>
+                              {party.status === 'PENDING' ? (
+                                <Badge variant="warning" size="sm">
+                                  Pending
+                                </Badge>
+                              ) : party.status === 'REJECTED' ? (
+                                <Badge variant="danger" size="sm">
+                                  Declined
+                                </Badge>
+                              ) : null}
+                            </div>
                           </td>
 
                           <td className="px-4 py-3.5 text-xs text-zinc-500 dark:text-zinc-400">
@@ -802,118 +892,155 @@ export const PartiesPage = () => {
         )}
       </div>
 
-      {/* MODAL 1: Create or Edit Party */}
+      {/* MODAL 1: Search User & Add as Party */}
       <Modal
         isOpen={isPartyModalOpen}
         onClose={() => setIsPartyModalOpen(false)}
-        title={editingParty ? 'Edit Party Identity' : 'Create New Party Profile'}
+        title={editingParty ? 'Edit Party Details' : 'Add Party (User Search)'}
         maxWidth="max-w-md"
       >
-        <form onSubmit={handleSubmitParty} className="space-y-3.5">
-          <Input
-            label="Party Name"
-            placeholder="e.g. John Doe / Apex Retailers"
-            required
-            value={partyFormData.name}
-            onChange={(e) => setPartyFormData({ ...partyFormData, name: e.target.value })}
-          />
+        <form onSubmit={handleSubmitParty} className="space-y-4">
+          {!editingParty ? (
+            <div className="space-y-3">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+                Search the user by their unique <strong className="text-zinc-700 dark:text-zinc-300">Account ID</strong> (e.g. CUST-104928) or registered <strong className="text-zinc-700 dark:text-zinc-300">Email</strong>. An invitation will be sent for them to accept before transactions begin.
+              </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <PhoneInput
-              label="Phone Number"
-              required
-              value={partyFormData.phone}
-              onChange={(e) => setPartyFormData({ ...partyFormData, phone: e.target.value })}
-            />
-
-            <div>
-              <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1.5">
-                Party Type *
-              </label>
-              <div className="flex items-center gap-1 p-0.5 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.06] dark:border-white/[0.08]">
-                <button
+              {/* User Search Bar */}
+              <div className="flex items-center gap-1.5">
+                <div className="relative flex-1">
+                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-400" />
+                  <input
+                    type="text"
+                    placeholder="Enter Account ID or Email..."
+                    value={userSearchQuery}
+                    onChange={(e) => {
+                      setUserSearchQuery(e.target.value);
+                      if (userSearchError) setUserSearchError('');
+                    }}
+                    className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 pl-8 pr-3 py-2 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/30"
+                  />
+                </div>
+                <Button
                   type="button"
-                  onClick={() => setPartyFormData({ ...partyFormData, type: 'CUSTOMER' })}
-                  className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
-                    partyFormData.type === 'CUSTOMER'
-                      ? 'bg-white text-zinc-950 shadow-xs dark:bg-zinc-800 dark:text-zinc-100'
-                      : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
-                  }`}
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleSearchUserForParty}
+                  loading={searchingUser}
+                  className="text-xs py-2 shrink-0 font-semibold"
                 >
-                  Customer
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPartyFormData({ ...partyFormData, type: 'SUPPLIER' })}
-                  className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
-                    partyFormData.type === 'SUPPLIER'
-                      ? 'bg-white text-zinc-950 shadow-xs dark:bg-zinc-800 dark:text-zinc-100'
-                      : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
-                  }`}
-                >
-                  Supplier
-                </button>
+                  Search
+                </Button>
               </div>
+
+              {userSearchError && (
+                <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{userSearchError}</span>
+                </div>
+              )}
+
+              {/* Matched User Display Card */}
+              {matchedUser && (
+                <div className="p-3.5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-300/80 dark:border-emerald-800 space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-600 text-white font-bold text-xs shadow-xs">
+                        <UserCheck className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-emerald-950 dark:text-emerald-100">
+                          {matchedUser.name}
+                        </p>
+                        <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-mono">
+                          {matchedUser.accountId || 'NO-ID'} • {matchedUser.email}
+                        </p>
+                        {matchedUser.phone && (
+                          <p className="text-[11px] text-emerald-600/80 dark:text-emerald-500 font-mono">
+                            {matchedUser.phone}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <Badge variant="success" size="sm">
+                      Verified
+                    </Badge>
+                  </div>
+
+                  {/* Party Type selector */}
+                  <div className="pt-2 border-t border-emerald-200/60 dark:border-emerald-900/40">
+                    <label className="block text-[10px] font-semibold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 mb-1.5">
+                      Add As Party Type *
+                    </label>
+                    <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-white dark:bg-zinc-900 border border-emerald-200 dark:border-emerald-800">
+                      <button
+                        type="button"
+                        onClick={() => setPartyFormData({ ...partyFormData, type: 'CUSTOMER' })}
+                        className={`py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                          partyFormData.type === 'CUSTOMER'
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400'
+                        }`}
+                      >
+                        Customer
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPartyFormData({ ...partyFormData, type: 'SUPPLIER' })}
+                        className={`py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                          partyFormData.type === 'SUPPLIER'
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400'
+                        }`}
+                      >
+                        Supplier
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Email Address (Optional)"
-              type="email"
-              placeholder="contact@party.com"
-              value={partyFormData.email}
-              onChange={(e) => setPartyFormData({ ...partyFormData, email: e.target.value })}
-            />
-
-            <Input
-              label={`Credit Limit (${currency})`}
-              type="number"
-              placeholder="e.g. 5000"
-              value={partyFormData.creditLimit}
-              onChange={(e) => setPartyFormData({ ...partyFormData, creditLimit: e.target.value })}
-            />
-          </div>
-
-          {!editingParty && (
-            <Input
-              label={`Opening Credit Balance (${currency})`}
-              type="number"
-              placeholder="0.00 (Positive if they owe you)"
-              helperText="Positive = Customer owes you · Negative = You owe supplier"
-              value={partyFormData.openingBalance}
-              onChange={(e) =>
-                setPartyFormData({ ...partyFormData, openingBalance: e.target.value })
-              }
-            />
+          ) : (
+            /* Edit Mode for Existing Party */
+            <div className="space-y-3">
+              <Input
+                label="Party Name"
+                value={partyFormData.name}
+                onChange={(e) => setPartyFormData({ ...partyFormData, name: e.target.value })}
+                required
+              />
+              <PhoneInput
+                label="Phone Number"
+                value={partyFormData.phone}
+                onChange={(e) => setPartyFormData({ ...partyFormData, phone: e.target.value })}
+                required
+              />
+              <Input
+                label="Address / Location"
+                value={partyFormData.address}
+                onChange={(e) => setPartyFormData({ ...partyFormData, address: e.target.value })}
+              />
+              <Input
+                label={`Credit Limit (${currency})`}
+                type="number"
+                value={partyFormData.creditLimit}
+                onChange={(e) => setPartyFormData({ ...partyFormData, creditLimit: e.target.value })}
+              />
+            </div>
           )}
 
-          <Input
-            label="Address / Location"
-            placeholder="Street, City, Building"
-            value={partyFormData.address}
-            onChange={(e) => setPartyFormData({ ...partyFormData, address: e.target.value })}
-          />
-
-          <div>
-            <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-400 mb-1.5">
-              Internal Notes (Optional)
-            </label>
-            <textarea
-              rows={2}
-              placeholder="Special credit terms, business remarks..."
-              value={partyFormData.notes}
-              onChange={(e) => setPartyFormData({ ...partyFormData, notes: e.target.value })}
-              className="w-full rounded-xl border border-zinc-200/90 dark:border-zinc-750 bg-white dark:bg-zinc-900 p-2.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/25 dark:focus:ring-zinc-600/30"
-            />
-          </div>
-
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex justify-end gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
             <Button variant="secondary" size="sm" onClick={() => setIsPartyModalOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" variant="primary" size="sm" loading={submittingParty}>
-              {editingParty ? 'Save Changes' : 'Create Party'}
+            <Button
+              type="submit"
+              variant="primary"
+              size="sm"
+              loading={submittingParty}
+              disabled={!editingParty && !matchedUser}
+            >
+              {editingParty ? 'Save Changes' : 'Send Party Request'}
             </Button>
           </div>
         </form>

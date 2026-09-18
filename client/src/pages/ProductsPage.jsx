@@ -55,6 +55,9 @@ export const ProductsPage = () => {
     minStockLevel: '5',
     barcode: '',
     description: '',
+    productType: 'NON_BIODEGRADABLE', // 'NON_BIODEGRADABLE' | 'BIODEGRADABLE'
+    manufacturedDate: '',
+    expiryDate: '',
   };
   const [formData, setFormData] = useState(initialFormState);
 
@@ -82,6 +85,23 @@ export const ProductsPage = () => {
 
   const handleCreateProduct = async (e) => {
     e.preventDefault();
+
+    // Biodegradable product validation
+    if (formData.productType === 'BIODEGRADABLE') {
+      if (!formData.manufacturedDate) {
+        showError('Manufactured date is required for biodegradable products.');
+        return;
+      }
+      if (!formData.expiryDate) {
+        showError('Expiry date is required for biodegradable products.');
+        return;
+      }
+      if (new Date(formData.expiryDate) <= new Date(formData.manufacturedDate)) {
+        showError('Expiry date must be after manufactured date.');
+        return;
+      }
+    }
+
     setSubmitting(true);
     setError('');
 
@@ -426,6 +446,41 @@ export const ProductsPage = () => {
               </div>
             </div>
 
+            {/* Nature / Perishability Info */}
+            <div className="p-2.5 rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/70 dark:bg-zinc-850/70 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-zinc-500">Nature:</span>
+                <Badge
+                  variant={activeDetailProduct.productType === 'BIODEGRADABLE' ? 'success' : 'neutral'}
+                  size="sm"
+                >
+                  {activeDetailProduct.productType === 'BIODEGRADABLE'
+                    ? '🌱 Biodegradable'
+                    : '📦 Non-Biodegradable'}
+                </Badge>
+              </div>
+              {activeDetailProduct.productType === 'BIODEGRADABLE' && (
+                <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-zinc-200/50 dark:border-zinc-800 text-[11px]">
+                  <div>
+                    <span className="text-zinc-400 block">Mfg Date:</span>
+                    <span className="font-mono font-medium text-zinc-800 dark:text-zinc-200">
+                      {activeDetailProduct.manufacturedDate
+                        ? new Date(activeDetailProduct.manufacturedDate).toISOString().split('T')[0]
+                        : 'N/A'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-zinc-400 block">Expiry Date:</span>
+                    <span className="font-mono font-medium text-rose-600 dark:text-rose-400">
+                      {activeDetailProduct.expiryDate
+                        ? new Date(activeDetailProduct.expiryDate).toISOString().split('T')[0]
+                        : 'N/A'}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {activeDetailProduct.description && (
               <div className="text-xs text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-850 p-2.5 rounded-lg">
                 <span className="font-medium text-zinc-700 dark:text-zinc-300">Description: </span>
@@ -474,6 +529,86 @@ export const ProductsPage = () => {
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           />
+
+          {/* Product Nature / Biodegradability Option */}
+          <div className="space-y-2 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-850/50 border border-zinc-200/80 dark:border-zinc-800">
+            <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+              Product Nature *
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() =>
+                  setFormData({
+                    ...formData,
+                    productType: 'NON_BIODEGRADABLE',
+                    manufacturedDate: '',
+                    expiryDate: '',
+                  })
+                }
+                className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
+                  formData.productType === 'NON_BIODEGRADABLE'
+                    ? 'border-zinc-900 bg-white text-zinc-900 shadow-xs dark:border-white dark:bg-zinc-800 dark:text-white'
+                    : 'border-zinc-200 dark:border-zinc-700 bg-transparent text-zinc-500 hover:text-zinc-800 dark:text-zinc-400'
+                }`}
+              >
+                <span>📦 Non-Biodegradable</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  setFormData({
+                    ...formData,
+                    productType: 'BIODEGRADABLE',
+                  })
+                }
+                className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 transition-all ${
+                  formData.productType === 'BIODEGRADABLE'
+                    ? 'border-emerald-600 bg-emerald-50 text-emerald-900 shadow-xs dark:border-emerald-500 dark:bg-emerald-950/40 dark:text-emerald-200'
+                    : 'border-zinc-200 dark:border-zinc-700 bg-transparent text-zinc-500 hover:text-zinc-800 dark:text-zinc-400'
+                }`}
+              >
+                <span>🌱 Biodegradable / Perishable</span>
+              </button>
+            </div>
+
+            {/* If Biodegradable, show Manufactured and Expiry Date */}
+            {formData.productType === 'BIODEGRADABLE' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-zinc-200/60 dark:border-zinc-700/60">
+                <div>
+                  <label className="block text-[11px] font-medium uppercase text-zinc-500 dark:text-zinc-400 mb-1">
+                    Manufactured Date *
+                  </label>
+                  <input
+                    type="date"
+                    required={formData.productType === 'BIODEGRADABLE'}
+                    value={formData.manufacturedDate}
+                    onChange={(e) =>
+                      setFormData({ ...formData, manufacturedDate: e.target.value })
+                    }
+                    className="w-full rounded-lg border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-400/25"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-medium uppercase text-zinc-500 dark:text-zinc-400 mb-1">
+                    Expiry Date *
+                  </label>
+                  <input
+                    type="date"
+                    required={formData.productType === 'BIODEGRADABLE'}
+                    min={formData.manufacturedDate || undefined}
+                    value={formData.expiryDate}
+                    onChange={(e) =>
+                      setFormData({ ...formData, expiryDate: e.target.value })
+                    }
+                    className="w-full rounded-lg border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-zinc-400/25"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>

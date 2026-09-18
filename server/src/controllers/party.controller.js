@@ -1,6 +1,9 @@
 import mongoose from 'mongoose';
 import { Party } from '../models/party.model.js';
 import { PartyCredit } from '../models/partyCredit.model.js';
+import { User } from '../models/user.model.js';
+import { Notification } from '../models/notification.model.js';
+import { Business } from '../models/business.model.js';
 import { ApiError } from '../utils/apiError.js';
 import { ApiResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
@@ -94,6 +97,8 @@ export const createParty = asyncHandler(async (req, res) => {
     name,
     phone,
     email = '',
+    accountId = '',
+    userQuery = '', // searched accountId or email
     type = 'CUSTOMER',
     address = '',
     creditLimit = 0,
@@ -103,40 +108,88 @@ export const createParty = asyncHandler(async (req, res) => {
 
   const businessId = req.user.businessId;
 
-  if (!name || !name.trim()) {
-    throw new ApiError(400, 'Party name is required');
+  // Search user by provided accountId or email query
+  const queryStr = (userQuery || accountId || email || '').trim();
+  if (!queryStr) {
+    throw new ApiError(400, 'User Account ID or registered Email is required to create a party record');
   }
 
-  const phoneValidation = validateNepaliPhone(phone);
-  if (!phoneValidation.isValid) {
-    throw new ApiError(400, phoneValidation.error);
-  }
-  const cleanPhone = phoneValidation.normalized;
-  const rawDigits = phoneValidation.localDigits;
+  const normalizedUpper = queryStr.toUpperCase();
+  const normalizedLower = queryStr.toLowerCase();
 
-  // Check if a party with this phone already exists in this business
-  const existing = await Party.findOne({
-    businessId,
-    phone: { $in: [cleanPhone, rawDigits, `+977${rawDigits}`, `+977 ${rawDigits}`] },
+  const matchedUser = await User.findOne({
+    $or: [
+      { accountId: normalizedUpper },
+      { email: normalizedLower },
+      { username: normalizedLower },
+    ],
   });
 
-  if (existing) {
-    throw new ApiError(409, `A party with phone number ${cleanPhone} already exists: "${existing.name}"`);
+  if (!matchedUser) {
+    throw new ApiError(
+      404,
+      `User with Account ID or Email "${queryStr}" does not exist. Parties can only be created for registered users.`
+    );
   }
+
+  // Check if this user is already registered as a party in this business
+  const existingPartyWithUser = await Party.findOne({
+    businessId,
+    $or: [
+      { user: matchedUser._id },
+      { email: matchedUser.email.toLowerCase() },
+      ...(matchedUser.accountId ? [{ accountId: matchedUser.accountId.toUpperCase() }] : []),
+    ],
+  });
+
+  if (existingPartyWithUser) {
+    throw new ApiError(
+      409,
+      `A party record already exists for user "${matchedUser.name}" (${matchedUser.email})`
+    );
+  }
+
+  const partyName = (name && name.trim()) || matchedUser.name;
+  const partyEmail = matchedUser.email.toLowerCase();
+  const partyPhone = (phone && phone.trim()) || matchedUser.phone || '9800000000';
+  const partyAccountId = matchedUser.accountId || '';
 
   const numericOpeningBalance = Number(openingBalance) || 0;
 
   const party = await Party.create({
     businessId,
-    name: name.trim(),
-    phone: cleanPhone,
-    email: email.trim(),
+    user: matchedUser._id,
+    accountId: partyAccountId,
+    name: partyName,
+    phone: partyPhone,
+    email: partyEmail,
     type: ['CUSTOMER', 'SUPPLIER'].includes(type) ? type : 'CUSTOMER',
-    address: address.trim(),
+    status: 'PENDING',
+    address: address ? address.trim() : '',
     creditLimit: Number(creditLimit) || 0,
     currentBalance: numericOpeningBalance,
-    notes: notes.trim(),
+    notes: notes ? notes.trim() : '',
     createdBy: req.user._id,
+  });
+
+  // Fetch business name for the notification
+  const business = await Business.findById(businessId).select('name').lean();
+  const bizName = business?.name || 'A business';
+
+  // Send interactive invitation notification to the target user
+  await Notification.create({
+    recipient: matchedUser._id,
+    sender: req.user._id,
+    businessId: businessId,
+    title: `Party Request from ${bizName}`,
+    message: `${bizName} wants to add you as their ${party.type === 'CUSTOMER' ? 'customer' : 'supplier'}. Accept to connect your account and enable credit & purchase transactions.`,
+    type: 'PARTY_INVITATION',
+    data: {
+      partyId: party._id,
+      businessName: bizName,
+      userName: matchedUser.name,
+      role: party.type,
+    },
   });
 
   // If there was an opening balance, log initial ledger entry
@@ -449,6 +502,60 @@ export const getPartiesCreditSummary = asyncHandler(async (req, res) => {
         breakdown,
       },
       'Credit summary calculated successfully'
+    )
+  );
+});
+
+// Respond to Party Invitation (User accepts or rejects being added as a party)
+export const respondToPartyInvitation = asyncHandler(async (req, res) => {
+  const { partyId } = req.params;
+  const { action } = req.body; // 'ACCEPT' | 'REJECT'
+
+  if (!['ACCEPT', 'REJECT'].includes(action)) {
+    throw new ApiError(400, 'Action must be ACCEPT or REJECT');
+  }
+
+  const party = await Party.findById(partyId);
+  if (!party) {
+    throw new ApiError(404, 'Party invitation record not found');
+  }
+
+  // Ensure only the user invited can accept/reject
+  if (party.user && party.user.toString() !== req.user._id.toString()) {
+    throw new ApiError(403, 'You are not authorized to respond to this party invitation');
+  }
+
+  party.status = action === 'ACCEPT' ? 'ACCEPTED' : 'REJECTED';
+  await party.save();
+
+  // Notify the business owner who sent the request
+  const business = await Business.findById(party.businessId).select('name owner').lean();
+  const userName = req.user.name || req.user.email;
+
+  if (party.createdBy) {
+    await Notification.create({
+      recipient: party.createdBy,
+      sender: req.user._id,
+      businessId: party.businessId,
+      title: `Party Request ${action === 'ACCEPT' ? 'Accepted' : 'Declined'}`,
+      message: `${userName} has ${action === 'ACCEPT' ? 'accepted' : 'declined'} your party request. ${
+        action === 'ACCEPT' ? 'You can now execute credit and purchase transactions with them.' : ''
+      }`,
+      type: action === 'ACCEPT' ? 'PARTY_ACCEPTED' : 'PARTY_REJECTED',
+      data: {
+        partyId: party._id,
+        businessName: business?.name || '',
+        userName,
+        action,
+      },
+    });
+  }
+
+  res.status(200).json(
+    new ApiResponse(
+      200,
+      { party },
+      `Party request ${action === 'ACCEPT' ? 'accepted' : 'declined'} successfully`
     )
   );
 });

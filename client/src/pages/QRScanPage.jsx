@@ -3,6 +3,7 @@ import { Html5Qrcode } from 'html5-qrcode';
 import { productService } from '../services/productService';
 import { transactionService } from '../services/transactionService';
 import { partyService } from '../services/partyService';
+import { authService } from '../services/authService';
 import { useBusiness } from '../hooks/useBusiness';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
@@ -42,8 +43,18 @@ export const QRScanPage = () => {
   const { showSuccess, showError } = useSnackbar();
   const currency = business?.currency || 'USD';
 
-  // Transaction Mode: SALE or PURCHASE
-  const [txnType, setTxnType] = useState('SALE');
+  // Transaction Mode is strictly SALE for QR Register
+  const txnType = 'SALE';
+
+  // Customer Selection state via unique Account ID or Email search
+  const [customerSearchInput, setCustomerSearchInput] = useState('');
+  const [selectedCustomer, setSelectedCustomer] = useState(null); // { _id, name, email, phone, accountId }
+  const [searchingCustomer, setSearchingCustomer] = useState(false);
+  const [customerSearchError, setCustomerSearchError] = useState('');
+
+  // Credit configuration state: FULL or PARTIAL
+  const [creditType, setCreditType] = useState('FULL'); // 'FULL' | 'PARTIAL'
+  const [creditPaidAmount, setCreditPaidAmount] = useState('');
 
   // Input Method: 'qr' or 'manual'
   const [inputMethod, setInputMethod] = useState('qr');
@@ -64,7 +75,7 @@ export const QRScanPage = () => {
   const [paymentMethod, setPaymentMethod] = useState('CASH');
   const [notes, setNotes] = useState('');
 
-  // Credit Party State
+  // Credit Party State (fallback / legacy party selection)
   const [creditParty, setCreditParty] = useState(null); // { _id, name, phone, type, currentBalance, isNew }
   const [isCreditPartyModalOpen, setIsCreditPartyModalOpen] = useState(false);
   const [existingParties, setExistingParties] = useState([]);
@@ -561,12 +572,45 @@ export const QRScanPage = () => {
     const s = partySearch.toLowerCase().trim();
     return existingParties.filter(
       (p) =>
-        p.name.toLowerCase().includes(s) ||
-        (p.phone && p.phone.toLowerCase().includes(s))
+        p.name?.toLowerCase().includes(s) ||
+        (p.phone && p.phone.toLowerCase().includes(s)) ||
+        (p.accountId && p.accountId.toLowerCase().includes(s))
     );
   }, [existingParties, partySearch]);
 
-  // Complete batch transaction
+  // Search customer user by Account ID or Email
+  const handleSearchCustomer = async (e) => {
+    if (e) e.preventDefault();
+    if (!customerSearchInput.trim()) {
+      setCustomerSearchError('Please enter an Account ID (e.g. CUST-123456) or Email');
+      return;
+    }
+
+    try {
+      setSearchingCustomer(true);
+      setCustomerSearchError('');
+      const res = await authService.searchUsers(customerSearchInput.trim());
+      if (res?.user) {
+        setSelectedCustomer(res.user);
+        setCustomerSearchInput('');
+        showSuccess(`Customer identified: ${res.user.name} (${res.user.accountId || res.user.email})`);
+      } else {
+        setCustomerSearchError('User not found. Please verify the Account ID or Email.');
+      }
+    } catch (err) {
+      const errMsg = err?.response?.data?.message || err.message || 'User does not exist in the system';
+      setCustomerSearchError(errMsg);
+      showError(errMsg);
+    } finally {
+      setSearchingCustomer(false);
+    }
+  };
+
+  const handleClearCustomer = () => {
+    setSelectedCustomer(null);
+    setCustomerSearchError('');
+  };
+
   // Complete batch transaction
   const handleCompleteTransaction = async () => {
     if (cart.length === 0) {
@@ -576,33 +620,49 @@ export const QRScanPage = () => {
     }
 
     // Check stock only for catalog inventory items on SALE
-    if (txnType === 'SALE') {
-      for (const item of cart) {
-        if (!item.isManual && item.product) {
-          if (item.product.currentStock < item.quantity) {
-            const stockMsg = `Cannot complete sale for "${item.product.name}". Available inventory is only ${item.product.currentStock} ${item.product.unit}, but you are trying to sell ${item.quantity} ${item.product.unit}.`;
-            setError(stockMsg);
-            showError(`Out of stock: Only ${item.product.currentStock} ${item.product.unit} available for "${item.product.name}"`);
-            await alert({
-              title: 'Stock Out of Bound Warning',
-              message: stockMsg,
-              buttonText: 'Understood',
-              variant: 'warning',
-            });
-            return;
-          }
+    for (const item of cart) {
+      if (!item.isManual && item.product) {
+        if (item.product.currentStock < item.quantity) {
+          const stockMsg = `Cannot complete sale for "${item.product.name}". Available inventory is only ${item.product.currentStock} ${item.product.unit}, but you are trying to sell ${item.quantity} ${item.product.unit}.`;
+          setError(stockMsg);
+          showError(`Out of stock: Only ${item.product.currentStock} ${item.product.unit} available for "${item.product.name}"`);
+          await alert({
+            title: 'Stock Out of Bound Warning',
+            message: stockMsg,
+            buttonText: 'Understood',
+            variant: 'warning',
+          });
+          return;
         }
       }
     }
 
-    // If payment method is CREDIT, party identity is required!
-    if (paymentMethod === 'CREDIT' && !creditParty) {
-      const partyMsg = `Please select or specify a ${txnType === 'SALE' ? 'Customer' : 'Supplier'} for this credit transaction.`;
+    // If payment method is CREDIT, customer/party identity is required!
+    if (paymentMethod === 'CREDIT' && !selectedCustomer && !creditParty) {
+      const partyMsg = 'Please search & select a customer (using Account ID or Email) for this credit transaction.';
       setError(partyMsg);
       showError(partyMsg);
-      setIsCreditPartyModalOpen(true);
-      fetchPartiesForCredit();
       return;
+    }
+
+    // Credit amount validations
+    let effectivePaid = 0;
+    let effectiveCredit = totals.totalAmount;
+
+    if (paymentMethod === 'CREDIT') {
+      if (creditType === 'PARTIAL') {
+        effectivePaid = parseFloat(creditPaidAmount) || 0;
+        if (effectivePaid < 0 || effectivePaid >= totals.totalAmount) {
+          const err = `Partial paid amount must be between 0 and ${totals.totalAmount - 1}`;
+          setError(err);
+          showError(err);
+          return;
+        }
+        effectiveCredit = totals.totalAmount - effectivePaid;
+      } else {
+        effectivePaid = 0;
+        effectiveCredit = totals.totalAmount;
+      }
     }
 
     try {
@@ -610,7 +670,7 @@ export const QRScanPage = () => {
       setError('');
 
       const payload = {
-        type: txnType,
+        type: 'SALE',
         items: cart.map((item) => ({
           productId: item.isManual ? null : item.product?._id,
           productName: item.productName,
@@ -619,9 +679,14 @@ export const QRScanPage = () => {
           unitPrice: item.unitPrice,
         })),
         paymentMethod,
+        customerId: selectedCustomer?._id || null,
+        customerUserQuery: selectedCustomer?.accountId || selectedCustomer?.email || '',
         partyId: creditParty?._id || null,
-        partyName: creditParty?.name || '',
-        partyPhone: creditParty?.phone || '',
+        partyName: selectedCustomer?.name || creditParty?.name || '',
+        partyPhone: selectedCustomer?.phone || creditParty?.phone || '',
+        creditType: paymentMethod === 'CREDIT' ? creditType : 'NONE',
+        paidAmount: effectivePaid,
+        creditAmount: effectiveCredit,
         notes: notes.trim(),
         scannedViaQR: cart.some((i) => !i.isManual),
       };
@@ -632,6 +697,9 @@ export const QRScanPage = () => {
       setCart([]);
       setNotes('');
       setCreditParty(null);
+      setSelectedCustomer(null);
+      setCreditPaidAmount('');
+      setCreditType('FULL');
     } catch (err) {
       const msg = err.message || 'Failed to complete transaction';
       setError(msg);
@@ -686,43 +754,88 @@ export const QRScanPage = () => {
         </div>
       )}
 
-      {/* Top Header & Sale/Purchase Segmented Pill */}
+      {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-zinc-200/60 dark:border-zinc-800/60">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-            QR Scanner & POS
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+              QR Scanner & POS
+            </h1>
+            <Badge variant="success" size="sm">
+              Sale Only
+            </Badge>
+          </div>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
-            Continuous multi-scan register and fast manual amount calculator
+            Continuous multi-scan register and fast manual sales checkout
           </p>
         </div>
 
-        {/* Segmented Pill: SALE vs PURCHASE */}
-        <div className="flex p-1 rounded-full bg-zinc-200/70 dark:bg-zinc-850 self-start sm:self-auto shadow-inner">
-          <button
-            type="button"
-            onClick={() => handleSwitchTxnType('SALE')}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 active:scale-95 ${
-              txnType === 'SALE'
-                ? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-700 dark:text-white'
-                : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
-            }`}
-          >
-            <TrendingDown className="h-3.5 w-3.5" /> Sale
-          </button>
-          <button
-            type="button"
-            onClick={() => handleSwitchTxnType('PURCHASE')}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 active:scale-95 ${
-              txnType === 'PURCHASE'
-                ? 'bg-white text-zinc-900 shadow-xs dark:bg-zinc-700 dark:text-white'
-                : 'text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
-            }`}
-          >
-            <TrendingUp className="h-3.5 w-3.5" /> Purchase
-          </button>
+        {/* Customer Quick Search / Selected Badge in Header */}
+        <div className="flex items-center gap-2">
+          {selectedCustomer ? (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800">
+              <UserCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              <div className="text-left">
+                <p className="text-xs font-bold text-emerald-900 dark:text-emerald-200">
+                  {selectedCustomer.name}
+                </p>
+                <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-mono">
+                  {selectedCustomer.accountId || selectedCustomer.email}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleClearCustomer}
+                className="p-1 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-full text-emerald-700 dark:text-emerald-300 ml-1"
+                title="Change Customer"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleSearchCustomer} className="flex items-center gap-1.5">
+              <div className="relative">
+                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-400" />
+                <input
+                  type="text"
+                  placeholder="Customer Account ID / Email..."
+                  value={customerSearchInput}
+                  onChange={(e) => {
+                    setCustomerSearchInput(e.target.value);
+                    if (customerSearchError) setCustomerSearchError('');
+                  }}
+                  className="w-48 sm:w-64 rounded-xl border border-zinc-200 dark:border-zinc-750 bg-white dark:bg-zinc-900 pl-8 pr-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/30"
+                />
+              </div>
+              <Button
+                type="submit"
+                variant="secondary"
+                size="sm"
+                loading={searchingCustomer}
+                className="text-xs py-1.5"
+              >
+                Find
+              </Button>
+            </form>
+          )}
         </div>
       </div>
+
+      {customerSearchError && (
+        <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-xs text-rose-700 dark:text-rose-300 flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            <span>{customerSearchError}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setCustomerSearchError('')}
+            className="text-rose-500 hover:text-rose-700"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Main Grid: Left = Scanner/Manual, Right = Live Item Register */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
@@ -1195,43 +1308,118 @@ export const QRScanPage = () => {
                 </div>
               </div>
 
-              {/* Selected Credit Party Badge (shown when paymentMethod is CREDIT) */}
+              {/* Selected Customer / Credit Details (shown when paymentMethod is CREDIT) */}
               {paymentMethod === 'CREDIT' && (
-                <div className="p-2.5 rounded-xl border border-amber-300 dark:border-amber-900/60 bg-amber-50/60 dark:bg-amber-950/20 text-xs flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/20 text-amber-700 dark:text-amber-300">
-                      <Users className="h-4 w-4" />
+                <div className="space-y-2.5 p-3 rounded-xl border border-amber-300 dark:border-amber-900/60 bg-amber-50/60 dark:bg-amber-950/20 text-xs">
+                  {/* Customer Badge */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-500/20 text-amber-700 dark:text-amber-300">
+                        <Users className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-bold text-zinc-900 dark:text-zinc-100 truncate">
+                          {selectedCustomer
+                            ? selectedCustomer.name
+                            : creditParty
+                            ? creditParty.name
+                            : 'No Customer Identified'}
+                        </p>
+                        <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono truncate">
+                          {selectedCustomer
+                            ? `ID: ${selectedCustomer.accountId || selectedCustomer.email}`
+                            : creditParty
+                            ? `${creditParty.phone} • Bal: ${formatCurrency(creditParty.currentBalance || 0, currency)}`
+                            : 'Search by Account ID or Email above'}
+                        </p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="font-bold text-zinc-900 dark:text-zinc-100 truncate">
-                        {creditParty
-                          ? creditParty.name
-                          : `No ${txnType === 'SALE' ? 'Customer' : 'Supplier'} Selected`}
-                      </p>
-                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono truncate">
-                        {creditParty
-                          ? `${creditParty.phone}${
-                              creditParty.isNew
-                                ? ' • (New Party Identity)'
-                                : ` • Bal: ${formatCurrency(creditParty.currentBalance || 0, currency)}`
-                            }`
-                          : `Click "Select Party" to choose or enter phone & name`}
-                      </p>
-                    </div>
+
+                    {!selectedCustomer && (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          setIsCreditPartyModalOpen(true);
+                          fetchPartiesForCredit();
+                        }}
+                        className="text-[11px] px-2.5 py-1 whitespace-nowrap"
+                      >
+                        {creditParty ? 'Change' : 'Pick Party'}
+                      </Button>
+                    )}
                   </div>
 
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => {
-                      setIsCreditPartyModalOpen(true);
-                      fetchPartiesForCredit();
-                    }}
-                    className="text-[11px] px-2.5 py-1 whitespace-nowrap"
-                  >
-                    {creditParty ? 'Change' : 'Select Party'}
-                  </Button>
+                  {/* Credit Type: FULL vs PARTIAL */}
+                  <div className="pt-2 border-t border-amber-200/60 dark:border-amber-900/40 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-semibold text-amber-900 dark:text-amber-200">
+                        Credit Payment Option:
+                      </span>
+                      <div className="flex rounded-lg bg-white dark:bg-zinc-900 p-0.5 border border-amber-300 dark:border-amber-800">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCreditType('FULL');
+                            setCreditPaidAmount('');
+                          }}
+                          className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold transition-all ${
+                            creditType === 'FULL'
+                              ? 'bg-amber-500 text-white shadow-xs'
+                              : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400'
+                          }`}
+                        >
+                          Full Credit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCreditType('PARTIAL')}
+                          className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold transition-all ${
+                            creditType === 'PARTIAL'
+                              ? 'bg-amber-500 text-white shadow-xs'
+                              : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400'
+                          }`}
+                        >
+                          Partial Credit
+                        </button>
+                      </div>
+                    </div>
+
+                    {creditType === 'PARTIAL' && (
+                      <div className="grid grid-cols-2 gap-2 pt-1">
+                        <div>
+                          <label className="block text-[10px] font-semibold text-zinc-500 mb-0.5">
+                            Amount Paid Now ({currency})
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            max={totals.totalAmount}
+                            step="0.01"
+                            placeholder="0.00"
+                            value={creditPaidAmount}
+                            onChange={(e) => setCreditPaidAmount(e.target.value)}
+                            className="w-full rounded-lg border border-amber-300 dark:border-amber-800 bg-white dark:bg-zinc-900 px-2 py-1 text-xs font-mono font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-semibold text-zinc-500 mb-0.5">
+                            Remaining Due ({currency})
+                          </label>
+                          <div className="w-full rounded-lg bg-amber-100/50 dark:bg-amber-900/30 px-2 py-1 text-xs font-mono font-bold text-amber-900 dark:text-amber-200 border border-amber-200/80 dark:border-amber-900/40">
+                            {formatCurrency(
+                              Math.max(
+                                0,
+                                totals.totalAmount - (parseFloat(creditPaidAmount) || 0)
+                              ),
+                              currency
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 

@@ -1,5 +1,7 @@
 import { User } from '../models/user.model.js';
 import { Business } from '../models/business.model.js';
+import { Transaction } from '../models/transaction.model.js';
+import { Party } from '../models/party.model.js';
 import { SubscriptionPlan } from '../models/subscriptionPlan.model.js';
 import { Notification } from '../models/notification.model.js';
 import { ROLES } from '../constants/roles.js';
@@ -11,7 +13,9 @@ import { generateAuthToken, sanitizeUser } from '../services/auth.service.js';
 import { parseMapCoordinates, isValidCoordinates } from '../utils/mapCoordinates.js';
 
 export const register = asyncHandler(async (req, res) => {
-  const { name, email, password, phone, dob } = req.body;
+  const { name, email, password, phone, dob, userType = 'BUSINESS' } = req.body;
+  const selectedType = userType === 'CUSTOMER' ? 'CUSTOMER' : 'BUSINESS';
+  const assignedRole = selectedType === 'CUSTOMER' ? ROLES.USER : ROLES.OWNER;
 
   // 1. Full Name validation (Must contain first and last name, letters/spaces/periods/hyphens)
   if (!name || typeof name !== 'string' || !name.trim()) {
@@ -85,6 +89,8 @@ export const register = asyncHandler(async (req, res) => {
     phone: trimmedPhone,
     dob: birthDate,
     password,
+    userType: selectedType,
+    role: assignedRole,
     onboardingStep: 1,
     onboardingCompleted: false,
   });
@@ -510,6 +516,122 @@ export const updateOnboarding = asyncHandler(async (req, res) => {
         onboardingCompleted: user.onboardingCompleted,
       },
       'Onboarding step updated successfully'
+    )
+  );
+});
+
+/**
+ * Search user by unique accountId or email
+ * Used by POS Sale and Party creation to validate user existence
+ */
+export const searchUsers = asyncHandler(async (req, res) => {
+  const { query } = req.query;
+  if (!query || !query.trim()) {
+    throw new ApiError(400, 'Search query (accountId or email) is required');
+  }
+
+  const cleanQuery = query.trim();
+  const normalizedUpper = cleanQuery.toUpperCase();
+  const normalizedLower = cleanQuery.toLowerCase();
+
+  const user = await User.findOne({
+    $or: [
+      { accountId: normalizedUpper },
+      { email: normalizedLower },
+      { username: normalizedLower },
+    ],
+  }).select('name email phone accountId userType role');
+
+  if (!user) {
+    throw new ApiError(404, `No registered user found with account ID or email "${cleanQuery}"`);
+  }
+
+  res.status(200).json(
+    new ApiResponse(200, { user }, 'User found successfully')
+  );
+});
+
+/**
+ * Customer Portal: Get purchases made by customer user
+ */
+export const getCustomerPurchases = asyncHandler(async (req, res) => {
+  const user = req.user;
+
+  // Find transactions where customer is this user or customerEmail/customerAccountId matches
+  const orConditions = [
+    { customer: user._id },
+    { customerEmail: user.email.toLowerCase() },
+  ];
+  if (user.accountId) {
+    orConditions.push({ customerAccountId: user.accountId.toUpperCase() });
+  }
+
+  const purchases = await Transaction.find({
+    type: 'SALE',
+    $or: orConditions,
+  })
+    .sort({ createdAt: -1 })
+    .populate('businessId', 'name email phone currency address')
+    .lean();
+
+  res.status(200).json(
+    new ApiResponse(200, { purchases }, 'Customer purchases retrieved')
+  );
+});
+
+/**
+ * Customer Portal: Get left-to-pay credits and ledger for customer user
+ */
+export const getCustomerCredits = asyncHandler(async (req, res) => {
+  const user = req.user;
+
+  // Find parties where this customer user is linked
+  const partyConditions = [
+    { user: user._id },
+    { email: user.email.toLowerCase() },
+  ];
+  if (user.accountId) {
+    partyConditions.push({ accountId: user.accountId.toUpperCase() });
+  }
+
+  const parties = await Party.find({
+    $or: partyConditions,
+  })
+    .populate('businessId', 'name email phone currency')
+    .lean();
+
+  // Find all credit sale transactions
+  const txnConditions = [
+    { customer: user._id },
+    { customerEmail: user.email.toLowerCase() },
+  ];
+  if (user.accountId) {
+    txnConditions.push({ customerAccountId: user.accountId.toUpperCase() });
+  }
+
+  const creditTransactions = await Transaction.find({
+    paymentMethod: 'CREDIT',
+    $or: txnConditions,
+  })
+    .sort({ createdAt: -1 })
+    .populate('businessId', 'name email phone currency')
+    .lean();
+
+  // Compute total left to pay across businesses
+  const totalLeftToPay = parties.reduce((sum, p) => {
+    // For customers, positive balance means they owe money to the business
+    return sum + (p.currentBalance > 0 ? p.currentBalance : 0);
+  }, 0);
+
+  res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        parties,
+        creditTransactions,
+        totalLeftToPay,
+      },
+      'Customer credits retrieved'
     )
   );
 });

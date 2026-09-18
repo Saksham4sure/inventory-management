@@ -3,12 +3,14 @@ import { Transaction } from '../models/transaction.model.js';
 import { Product } from '../models/product.model.js';
 import { Party } from '../models/party.model.js';
 import { PartyCredit } from '../models/partyCredit.model.js';
+import { User } from '../models/user.model.js';
 import { ApiError } from '../utils/apiError.js';
 import { ApiResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { TRANSACTION_TYPES } from '../constants/transactionTypes.js';
 import { ROLES } from '../constants/roles.js';
 import { validateNepaliPhone, extractNepaliLocalDigits } from '../utils/phoneValidator.js';
+import { uploadImageToCloudinary } from '../config/cloudinary.js';
 
 export const createTransaction = asyncHandler(async (req, res) => {
   const {
@@ -20,6 +22,15 @@ export const createTransaction = asyncHandler(async (req, res) => {
     partyId,
     partyName,
     partyPhone,
+    // Customer search / account ID / email
+    customerUserQuery,
+    customerId,
+    // Credit options: FULL or PARTIAL
+    creditType = 'NONE', // 'NONE' | 'FULL' | 'PARTIAL'
+    paidAmount = 0,
+    creditAmount = 0,
+    // Manual bill details (for Purchase)
+    manualBillDetails,
   } = req.body;
 
   const validTypes = [
@@ -159,10 +170,72 @@ export const createTransaction = asyncHandler(async (req, res) => {
   // Save stock updates
   await Promise.all(productsToUpdate.map((p) => p.save()));
 
-  // Resolve or create Party if party info provided
+  // Resolve User Account (Customer) if provided
+  let matchedCustomerUser = null;
+  if (customerId) {
+    matchedCustomerUser = await User.findById(customerId);
+  } else if (customerUserQuery && customerUserQuery.trim()) {
+    const q = customerUserQuery.trim();
+    matchedCustomerUser = await User.findOne({
+      $or: [
+        { accountId: q.toUpperCase() },
+        { email: q.toLowerCase() },
+        { username: q.toLowerCase() },
+      ],
+    });
+    if (!matchedCustomerUser) {
+      throw new ApiError(404, `Customer with account ID or email "${q}" does not exist`);
+    }
+  }
+
+  // Resolve or create Party
   let resolvedParty = null;
   if (partyId) {
     resolvedParty = await Party.findOne({ _id: partyId, businessId: req.user.businessId });
+  } else if (matchedCustomerUser) {
+    // Check if Party exists for this customer in this business
+    resolvedParty = await Party.findOne({
+      businessId: req.user.businessId,
+      $or: [
+        { user: matchedCustomerUser._id },
+        { email: matchedCustomerUser.email.toLowerCase() },
+        ...(matchedCustomerUser.accountId ? [{ accountId: matchedCustomerUser.accountId }] : []),
+      ],
+    });
+
+    if (!resolvedParty) {
+      throw new ApiError(
+        400,
+        `Customer "${matchedCustomerUser.name}" has not been added as an accepted party by your business. Send party request and await their acceptance before recording transactions.`
+      );
+    }
+
+    if (resolvedParty.status === 'PENDING') {
+      throw new ApiError(
+        400,
+        `Party invitation for "${matchedCustomerUser.name}" is pending. The customer must accept the invitation from their notifications before transactions can begin.`
+      );
+    }
+
+    if (resolvedParty.status === 'REJECTED') {
+      throw new ApiError(
+        400,
+        `Party request was declined by "${matchedCustomerUser.name}". Transactions cannot be recorded.`
+      );
+    }
+  } else if (partyId) {
+    if (resolvedParty?.status === 'PENDING') {
+      throw new ApiError(
+        400,
+        `Party invitation for "${resolvedParty.name}" is still pending. The user must accept the notification before transactions can begin.`
+      );
+    }
+    if (resolvedParty?.status === 'REJECTED') {
+      throw new ApiError(
+        400,
+        `Party invitation for "${resolvedParty.name}" was declined. Transactions cannot be recorded.`
+      );
+    }
   } else if (partyPhone && partyPhone.trim()) {
     const rawDigits = extractNepaliLocalDigits(partyPhone);
     const phoneValidation = validateNepaliPhone(partyPhone);
@@ -188,6 +261,34 @@ export const createTransaction = asyncHandler(async (req, res) => {
     }
   }
 
+  // Handle Credit configuration (FULL vs PARTIAL)
+  const isCreditTxn = paymentMethod === 'CREDIT';
+  let effectiveCreditAmount = 0;
+  let effectivePaidAmount = 0;
+
+  if (isCreditTxn) {
+    if (creditType === 'PARTIAL') {
+      const parsedPaid = Number(paidAmount) || 0;
+      effectivePaidAmount = Math.max(0, Math.min(totalAmount, parsedPaid));
+      effectiveCreditAmount = totalAmount - effectivePaidAmount;
+    } else {
+      // FULL credit
+      effectivePaidAmount = 0;
+      effectiveCreditAmount = totalAmount;
+    }
+  }
+
+  // Process manual bill photos if uploaded
+  let processedBillPhotos = [];
+  if (manualBillDetails?.billPhotos && Array.isArray(manualBillDetails.billPhotos)) {
+    for (const photo of manualBillDetails.billPhotos) {
+      if (photo) {
+        const uploaded = await uploadImageToCloudinary(photo, 'purchase_bills');
+        processedBillPhotos.push(uploaded);
+      }
+    }
+  }
+
   // Create transaction record
   const transaction = await Transaction.create({
     businessId: req.user.businessId,
@@ -196,29 +297,48 @@ export const createTransaction = asyncHandler(async (req, res) => {
     items: processedItems,
     totalAmount,
     paymentMethod,
+    customer: matchedCustomerUser?._id || null,
+    customerAccountId: matchedCustomerUser?.accountId || '',
+    customerEmail: matchedCustomerUser?.email || '',
+    creditDetails: {
+      isCredit: isCreditTxn,
+      creditType: isCreditTxn ? creditType : 'NONE',
+      paidAmount: effectivePaidAmount,
+      creditAmount: effectiveCreditAmount,
+    },
+    manualBillDetails: manualBillDetails
+      ? {
+          sellerName: manualBillDetails.sellerName?.trim() || '',
+          vendorPanVat: manualBillDetails.vendorPanVat?.trim() || '',
+          billNumber: manualBillDetails.billNumber?.trim() || '',
+          billCategory: manualBillDetails.billCategory?.trim() || '',
+          contactNumber: manualBillDetails.contactNumber?.trim() || '',
+          billPhotos: processedBillPhotos,
+        }
+      : undefined,
     party: resolvedParty?._id || null,
-    partyName: resolvedParty?.name || (partyName ? partyName.trim() : ''),
-    partyPhone: resolvedParty?.phone || (partyPhone ? partyPhone.trim() : ''),
+    partyName: resolvedParty?.name || (partyName ? partyName.trim() : matchedCustomerUser?.name || ''),
+    partyPhone: resolvedParty?.phone || (partyPhone ? partyPhone.trim() : matchedCustomerUser?.phone || ''),
     notes,
     scannedViaQR: Boolean(scannedViaQR),
     createdBy: req.user._id,
   });
 
   // If credit transaction with a party, update party balance and log ledger entry!
-  if (resolvedParty && paymentMethod === 'CREDIT') {
+  if (resolvedParty && isCreditTxn && effectiveCreditAmount > 0) {
     let entryType = 'CREDIT_GIVEN';
     if (type === TRANSACTION_TYPES.SALE) {
       entryType = 'CREDIT_GIVEN';
-      resolvedParty.currentBalance += totalAmount;
+      resolvedParty.currentBalance += effectiveCreditAmount;
     } else if (type === TRANSACTION_TYPES.PURCHASE) {
       entryType = 'CREDIT_TAKEN';
-      resolvedParty.currentBalance -= totalAmount;
+      resolvedParty.currentBalance -= effectiveCreditAmount;
     } else if (type === TRANSACTION_TYPES.SALE_RETURN) {
       entryType = 'PAYMENT_RECEIVED';
-      resolvedParty.currentBalance -= totalAmount;
+      resolvedParty.currentBalance -= effectiveCreditAmount;
     } else if (type === TRANSACTION_TYPES.PURCHASE_RETURN) {
       entryType = 'PAYMENT_MADE';
-      resolvedParty.currentBalance += totalAmount;
+      resolvedParty.currentBalance += effectiveCreditAmount;
     }
 
     await Promise.all([
@@ -227,11 +347,13 @@ export const createTransaction = asyncHandler(async (req, res) => {
         businessId: req.user.businessId,
         partyId: resolvedParty._id,
         entryType,
-        amount: totalAmount,
+        amount: effectiveCreditAmount,
         balanceAfter: resolvedParty.currentBalance,
         referenceNumber,
         paymentMethod: 'CREDIT',
-        notes: `Credit ${type === TRANSACTION_TYPES.SALE ? 'sale' : 'purchase'} #${referenceNumber}`,
+        notes: `Credit ${type === TRANSACTION_TYPES.SALE ? 'sale' : 'purchase'} #${referenceNumber}${
+          creditType === 'PARTIAL' ? ` (Partial: Paid ${effectivePaidAmount}, Credit ${effectiveCreditAmount})` : ''
+        }`,
         date: new Date(),
         createdBy: req.user._id,
       }),

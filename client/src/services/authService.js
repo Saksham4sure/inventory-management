@@ -30,4 +30,21 @@ export const authService = {
     const response = await api.post('/auth/kyc', data);
     return response.data.data;
   },
+
+  searchUsers: async (query) => {
+    const response = await api.get('/auth/users/search', { params: { query } });
+    return response.data.data;
+  },
+
+  getCustomerPurchases: async () => {
+    const response = await api.get('/auth/customer/purchases');
+    return response.data.data;
+  },
+
+  getCustomerCredits: async () => {
+    const response = await api.get('/auth/customer/credits');
+    return response.data.data;
+  },
 };
+
+export default authService;

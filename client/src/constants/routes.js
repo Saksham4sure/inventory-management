@@ -16,6 +16,8 @@ export const ROUTES = {
   PARTIES: '/parties',
   TRANSACTIONS: '/transactions',
   NOTIFICATIONS: '/notifications',
+  CUSTOMER_PURCHASES: '/my-purchases',
+  CUSTOMER_CREDITS: '/my-credits',
   // Platform Admin - Isolated routes
   ADMIN_LOGIN: '/platform-admin/login',
   ADMIN_DASHBOARD: '/platform-admin/dashboard',

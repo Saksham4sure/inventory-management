@@ -23,11 +23,30 @@ const partySchema = new mongoose.Schema(
       default: '',
       trim: true,
     },
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+      index: true,
+    },
+    accountId: {
+      type: String,
+      default: '',
+      uppercase: true,
+      trim: true,
+      index: true,
+    },
     type: {
       type: String,
       enum: ['CUSTOMER', 'SUPPLIER'],
       default: 'CUSTOMER',
       required: true,
+    },
+    status: {
+      type: String,
+      enum: ['PENDING', 'ACCEPTED', 'REJECTED'],
+      default: 'PENDING',
+      index: true,
     },
     address: {
       type: String,

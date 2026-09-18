@@ -65,6 +65,19 @@ const productSchema = new mongoose.Schema(
       default: 'pcs',
       trim: true,
     },
+    productType: {
+      type: String,
+      enum: ['NON_BIODEGRADABLE', 'BIODEGRADABLE'],
+      default: 'NON_BIODEGRADABLE',
+    },
+    manufacturedDate: {
+      type: Date,
+      default: null,
+    },
+    expiryDate: {
+      type: Date,
+      default: null,
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

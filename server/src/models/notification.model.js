@@ -44,11 +44,19 @@ const notificationSchema = new mongoose.Schema(
         'KYC_SUBMITTED',
         'KYC_APPROVED',
         'KYC_REJECTED',
+        'PARTY_INVITATION',
+        'PARTY_ACCEPTED',
+        'PARTY_REJECTED',
         'SYSTEM',
       ],
       default: 'SYSTEM',
     },
     data: {
+      partyId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Party',
+        default: null,
+      },
       invitationId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Invitation',

@@ -28,6 +28,14 @@ export const Sidebar = ({ isMobileOpen, onClose }) => {
   const { business } = useBusiness();
   const { unreadCount } = useNotifications();
 
+  const isCustomer = user?.userType === 'CUSTOMER' || (!user?.businessId && user?.role === 'USER');
+
+  // Customer portal nav items
+  const customerNavItems = [
+    { label: 'My Purchases', path: ROUTES.CUSTOMER_PURCHASES, icon: ShoppingCart },
+    { label: 'Credits & Due', path: ROUTES.CUSTOMER_CREDITS, icon: CreditCard },
+  ];
+
   const mainNavItems = [
     { label: 'Dashboard', path: ROUTES.DASHBOARD, icon: LayoutDashboard },
     { label: 'Products & Stock', path: ROUTES.PRODUCTS, icon: Boxes },
@@ -38,13 +46,18 @@ export const Sidebar = ({ isMobileOpen, onClose }) => {
     { label: 'Full Audit Trail', path: ROUTES.TRANSACTIONS, icon: ArrowLeftRight },
   ];
 
-  const profileNavItems = [
-    { label: 'Notifications', path: ROUTES.NOTIFICATIONS, icon: Bell, badge: unreadCount },
-    { label: 'Business Profile', path: ROUTES.BUSINESS_PROFILE, icon: Building2 },
-    { label: 'Team Members', path: ROUTES.TEAM, icon: Users },
-    { label: 'Subscription & Plans', path: ROUTES.SUBSCRIPTION, icon: CreditCard },
-    { label: 'User Profile', path: ROUTES.PROFILE, icon: User },
-  ];
+  const profileNavItems = isCustomer
+    ? [
+        { label: 'Notifications', path: ROUTES.NOTIFICATIONS, icon: Bell, badge: unreadCount },
+        { label: 'Account Management', path: ROUTES.PROFILE, icon: User },
+      ]
+    : [
+        { label: 'Notifications', path: ROUTES.NOTIFICATIONS, icon: Bell, badge: unreadCount },
+        { label: 'Business Profile', path: ROUTES.BUSINESS_PROFILE, icon: Building2 },
+        { label: 'Team Members', path: ROUTES.TEAM, icon: Users },
+        { label: 'Subscription & Plans', path: ROUTES.SUBSCRIPTION, icon: CreditCard },
+        { label: 'User Profile', path: ROUTES.PROFILE, icon: User },
+      ];
 
   const renderNavList = (items) =>
     items.map((item) => {
@@ -132,9 +145,9 @@ export const Sidebar = ({ isMobileOpen, onClose }) => {
         <div className="space-y-4">
           <nav className="space-y-1">
             <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-1.5">
-              Operations
+              {isCustomer ? 'Customer Portal' : 'Operations'}
             </p>
-            {renderNavList(mainNavItems)}
+            {renderNavList(isCustomer ? customerNavItems : mainNavItems)}
           </nav>
 
           <nav className="space-y-1 pt-3 border-t border-black/[0.05] dark:border-white/[0.06]">
@@ -148,30 +161,32 @@ export const Sidebar = ({ isMobileOpen, onClose }) => {
 
       {/* Footer controls: Subscription Status & User Logout */}
       <div className="space-y-2.5 pt-3 border-t border-black/[0.05] dark:border-white/[0.06]">
-        {/* Dynamic Subscription card linking to /subscription */}
-        <Link
-          to={ROUTES.SUBSCRIPTION}
-          onClick={onClose}
-          className="group/sub block rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-zinc-50 dark:bg-[#181b22]/70 p-3 shadow-2xs hover:border-indigo-500/40 dark:hover:border-indigo-500/40 transition-all duration-200 active:scale-[0.98]"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 group-hover/sub:scale-110 transition-transform">
-                <Sparkles className="h-3.5 w-3.5" />
+        {/* Dynamic Subscription card (Business users only) */}
+        {!isCustomer && (
+          <Link
+            to={ROUTES.SUBSCRIPTION}
+            onClick={onClose}
+            className="group/sub block rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-zinc-50 dark:bg-[#181b22]/70 p-3 shadow-2xs hover:border-indigo-500/40 dark:hover:border-indigo-500/40 transition-all duration-200 active:scale-[0.98]"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 group-hover/sub:scale-110 transition-transform">
+                  <Sparkles className="h-3.5 w-3.5" />
+                </div>
+                <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight">
+                  {business?.subscription?.plan?.replace('_', ' ') || 'Starter Plan'}
+                </span>
               </div>
-              <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight">
-                {business?.subscription?.plan?.replace('_', ' ') || 'Starter Plan'}
+              <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 font-mono">
+                {business?.subscription?.status || 'TRIAL'}
               </span>
             </div>
-            <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 font-mono">
-              {business?.subscription?.status || 'TRIAL'}
-            </span>
-          </div>
-          <div className="flex items-center justify-between mt-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">
-            <span>Manage & Extend Tier</span>
-            <ChevronRight className="h-3 w-3 text-zinc-400 group-hover/sub:translate-x-0.5 transition-transform" />
-          </div>
-        </Link>
+            <div className="flex items-center justify-between mt-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">
+              <span>Manage & Extend Tier</span>
+              <ChevronRight className="h-3 w-3 text-zinc-400 group-hover/sub:translate-x-0.5 transition-transform" />
+            </div>
+          </Link>
+        )}
 
         {/* User Account Capsule with Logout button */}
         <div className="flex items-center justify-between p-2 rounded-2xl bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.04] dark:border-white/[0.05]">

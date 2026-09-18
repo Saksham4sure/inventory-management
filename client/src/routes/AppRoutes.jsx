@@ -30,6 +30,8 @@ const PartiesPage = lazy(() => import('../pages/PartiesPage'));
 const TransactionsPage = lazy(() => import('../pages/TransactionsPage'));
 const SubscriptionPage = lazy(() => import('../pages/SubscriptionPage'));
 const NotificationsPage = lazy(() => import('../pages/NotificationsPage'));
+const CustomerPurchasesPage = lazy(() => import('../pages/CustomerPurchasesPage'));
+const CustomerCreditsPage = lazy(() => import('../pages/CustomerCreditsPage'));
 
 // Lazy-loaded Platform Admin pages (Isolated from regular users)
 const PlatformAdminLoginPage = lazy(() => import('../pages/admin/PlatformAdminLoginPage'));
@@ -145,9 +147,20 @@ export const AppRoutes = () => {
           {/* Dashboard Shell */}
           <Route element={<DashboardLayout />}>
             {/* General routes accessible regardless of business setup */}
-            <Route path={ROUTES.DASHBOARD} element={<DashboardPage />} />
+            <Route
+              path={ROUTES.DASHBOARD}
+              element={
+                user?.userType === 'CUSTOMER' ? (
+                  <Navigate to={ROUTES.CUSTOMER_PURCHASES} replace />
+                ) : (
+                  <DashboardPage />
+                )
+              }
+            />
             <Route path={ROUTES.NOTIFICATIONS} element={<NotificationsPage />} />
             <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
+            <Route path={ROUTES.CUSTOMER_PURCHASES} element={<CustomerPurchasesPage />} />
+            <Route path={ROUTES.CUSTOMER_CREDITS} element={<CustomerCreditsPage />} />
             <Route path={ROUTES.SUBSCRIPTION} element={<SubscriptionPage />} />
             <Route path={ROUTES.BUSINESS_PROFILE} element={<BusinessProfilePage />} />
             <Route path={ROUTES.TEAM} element={<TeamPage />} />

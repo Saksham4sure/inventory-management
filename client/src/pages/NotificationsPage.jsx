@@ -5,6 +5,7 @@ import { useSnackbar } from '../hooks/useSnackbar';
 import { useAuth } from '../hooks/useAuth';
 import { formatDate } from '../utils/formatters';
 import { ROUTES } from '../constants/routes';
+import { partyService } from '../services/partyService';
 import {
   Bell,
   Check,
@@ -27,6 +28,7 @@ import {
   Loader2,
   FileCheck2,
   ShieldCheck,
+  Users,
 } from 'lucide-react';
 
 export const NotificationsPage = () => {
@@ -190,6 +192,27 @@ export const NotificationsPage = () => {
     }
   };
 
+  const handleRespondParty = async (e, partyId, action, notifId) => {
+    e.stopPropagation();
+    try {
+      setRespondingId(partyId);
+      await partyService.respondToPartyInvitation(partyId, action);
+      if (action === 'ACCEPT') {
+        showSuccess('Party connection accepted! Transactions and credit history can now begin.');
+      } else {
+        showInfo('Party request declined.');
+      }
+      if (notifId) {
+        await markAsRead(notifId);
+      }
+      fetchNotifications();
+    } catch (err) {
+      showError(err.message || `Failed to ${action.toLowerCase()} party request`);
+    } finally {
+      setRespondingId(null);
+    }
+  };
+
   const getNotificationIcon = (type) => {
     switch (type) {
       case 'SUBSCRIPTION_REQUEST':
@@ -253,6 +276,24 @@ export const NotificationsPage = () => {
         return (
           <div className="h-10 w-10 rounded-2xl bg-rose-500/10 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-500/20">
             <AlertCircle className="h-5 w-5" />
+          </div>
+        );
+      case 'PARTY_INVITATION':
+        return (
+          <div className="h-10 w-10 rounded-2xl bg-blue-500/10 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-500/20">
+            <Users className="h-5 w-5" />
+          </div>
+        );
+      case 'PARTY_ACCEPTED':
+        return (
+          <div className="h-10 w-10 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/20">
+            <CheckCircle2 className="h-5 w-5" />
+          </div>
+        );
+      case 'PARTY_REJECTED':
+        return (
+          <div className="h-10 w-10 rounded-2xl bg-zinc-500/10 dark:bg-zinc-500/20 text-zinc-500 dark:text-zinc-400 flex items-center justify-center shrink-0 border border-zinc-500/20">
+            <XCircle className="h-5 w-5" />
           </div>
         );
       default:
@@ -523,6 +564,38 @@ export const NotificationsPage = () => {
                           type="button"
                           disabled={respondingId === notif.data.invitationId}
                           onClick={(e) => handleRespond(e, notif.data.invitationId, 'REJECT')}
+                          className="px-3.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-semibold active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                        >
+                          Decline
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Party Invitation Accept / Decline buttons */}
+                    {notif.type === 'PARTY_INVITATION' && notif.data?.partyId && (
+                      <div className="flex items-center gap-2.5 mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800">
+                        <button
+                          type="button"
+                          disabled={respondingId === notif.data.partyId}
+                          onClick={(e) =>
+                            handleRespondParty(e, notif.data.partyId, 'ACCEPT', notif._id)
+                          }
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                        >
+                          {respondingId === notif.data.partyId ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Check className="h-3.5 w-3.5" />
+                          )}
+                          <span>Accept Party Connection</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={respondingId === notif.data.partyId}
+                          onClick={(e) =>
+                            handleRespondParty(e, notif.data.partyId, 'REJECT', notif._id)
+                          }
                           className="px-3.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-semibold active:scale-95 transition-all cursor-pointer disabled:opacity-50"
                         >
                           Decline
