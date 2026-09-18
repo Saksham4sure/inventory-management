@@ -6,6 +6,7 @@ import { ROLES } from '../constants/roles.js';
 import { ApiError } from '../utils/apiError.js';
 import { ApiResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { uploadImageToCloudinary } from '../config/cloudinary.js';
 import { generateAuthToken, sanitizeUser } from '../services/auth.service.js';
 import { parseMapCoordinates, isValidCoordinates } from '../utils/mapCoordinates.js';
 
@@ -275,11 +276,17 @@ export const uploadKyc = asyncHandler(async (req, res) => {
 
   const isReupload = user.kyc?.status === 'REJECTED';
 
+  // Upload to Cloudinary if configured (otherwise retains base64 or url)
+  const [frontImageUrl, backImageUrl] = await Promise.all([
+    uploadImageToCloudinary(frontImage, 'stockpulse_kyc'),
+    uploadImageToCloudinary(backImage, 'stockpulse_kyc'),
+  ]);
+
   user.kyc = {
     documentType: documentType === 'DRIVING_LICENSE' ? 'DRIVING_LICENSE' : 'CITIZENSHIP',
     documentNumber: documentNumber.trim(),
-    frontImage,
-    backImage,
+    frontImage: frontImageUrl,
+    backImage: backImageUrl,
     status: 'PENDING',
     submittedAt: new Date(),
     reviewedAt: null,

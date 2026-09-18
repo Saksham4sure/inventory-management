@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { ROLES, ROLE_LIST } from '../constants/roles.js';
+import { ENV } from '../config/env.js';
 
 const userSchema = new mongoose.Schema(
   {
@@ -117,7 +118,7 @@ const userSchema = new mongoose.Schema(
 
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
-  const salt = await bcrypt.genSalt(10);
+  const salt = await bcrypt.genSalt(ENV.BCRYPT_SALT_ROUNDS);
   this.password = await bcrypt.hash(this.password, salt);
   next();
 });

@@ -16,11 +16,30 @@ app.use(compression());
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl) or any localhost during dev
-      if (!origin || origin.startsWith('http://localhost') || origin === ENV.CLIENT_URL) {
-        callback(null, true);
+      // Allow requests with no origin (like mobile apps, curl)
+      if (!origin) return callback(null, true);
+
+      const allowedOrigins = (ENV.CLIENT_URL || '')
+        .split(',')
+        .map((url) => url.trim().replace(/\/$/, ''))
+        .filter(Boolean);
+
+      const normalizedOrigin = origin.replace(/\/$/, '');
+
+      if (ENV.NODE_ENV === 'production') {
+        // In production, check against configured client URLs
+        if (allowedOrigins.length === 0 || allowedOrigins.includes(normalizedOrigin)) {
+          callback(null, true);
+        } else {
+          callback(new Error(`Not allowed by CORS: ${origin}`));
+        }
       } else {
-        callback(null, true); // Dev-friendly fallback
+        // In development, allow localhost and any configured client URLs
+        if (origin.startsWith('http://localhost') || allowedOrigins.includes(normalizedOrigin)) {
+          callback(null, true);
+        } else {
+          callback(null, true); // Dev-friendly fallback
+        }
       }
     },
     credentials: true,

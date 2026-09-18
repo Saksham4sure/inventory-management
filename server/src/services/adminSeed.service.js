@@ -2,24 +2,25 @@ import { User } from '../models/user.model.js';
 import { SubscriptionPlan } from '../models/subscriptionPlan.model.js';
 import { PlatformSettings } from '../models/platformSettings.model.js';
 import { ROLES } from '../constants/roles.js';
+import { ENV } from '../config/env.js';
 
 export const seedInitialAdminAndPlans = async () => {
   try {
     // 1. Seed or sync Platform Super Admin user
     let adminUser = await User.findOne({
-      $or: [{ username: 'admin' }, { email: 'admin@stockpulse.local' }],
+      $or: [{ username: ENV.ADMIN_USERNAME }, { email: ENV.ADMIN_EMAIL }],
     });
 
     if (!adminUser) {
       await User.create({
-        name: 'Platform Administrator',
-        username: 'admin',
-        email: 'admin@stockpulse.local',
-        password: 'password',
+        name: ENV.ADMIN_NAME,
+        username: ENV.ADMIN_USERNAME,
+        email: ENV.ADMIN_EMAIL,
+        password: ENV.ADMIN_PASSWORD,
         role: ROLES.SUPER_ADMIN,
         isActive: true,
       });
-      console.log('✅ [Seed] Platform Super Admin created (user: "admin", pass: "password")');
+      console.log(`✅ [Seed] Platform Super Admin created (user: "${ENV.ADMIN_USERNAME}")`);
     } else {
       let updated = false;
       if (adminUser.role !== ROLES.SUPER_ADMIN) {
@@ -27,7 +28,7 @@ export const seedInitialAdminAndPlans = async () => {
         updated = true;
       }
       if (!adminUser.username) {
-        adminUser.username = 'admin';
+        adminUser.username = ENV.ADMIN_USERNAME;
         updated = true;
       }
       if (updated) {

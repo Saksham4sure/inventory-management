@@ -11,6 +11,7 @@ import { ApiResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { sanitizeUser } from '../services/auth.service.js';
 import bcrypt from 'bcryptjs';
+import { ENV } from '../config/env.js';
 
 // =========================================================================
 // 1. OVERVIEW & METRICS
@@ -479,7 +480,7 @@ export const updateUser = asyncHandler(async (req, res) => {
     if (newPassword.length < 6) {
       throw new ApiError(400, 'New password must be at least 6 characters');
     }
-    const salt = await bcrypt.genSalt(10);
+    const salt = await bcrypt.genSalt(ENV.BCRYPT_SALT_ROUNDS);
     user.password = await bcrypt.hash(newPassword, salt);
   }
 
