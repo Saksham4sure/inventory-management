@@ -527,27 +527,55 @@ export const updateOnboarding = asyncHandler(async (req, res) => {
 export const searchUsers = asyncHandler(async (req, res) => {
   const { query } = req.query;
   if (!query || !query.trim()) {
-    throw new ApiError(400, 'Search query (accountId or email) is required');
+    throw new ApiError(400, 'Search query (User ID, Account ID, or Email) is required');
   }
 
   const cleanQuery = query.trim();
   const normalizedUpper = cleanQuery.toUpperCase();
   const normalizedLower = cleanQuery.toLowerCase();
 
-  const user = await User.findOne({
-    $or: [
-      { accountId: normalizedUpper },
-      { email: normalizedLower },
-      { username: normalizedLower },
-    ],
-  }).select('name email phone accountId userType role');
+  const orConditions = [
+    { userId: cleanQuery },
+    { accountId: cleanQuery },
+    { accountId: normalizedUpper },
+    { email: normalizedLower },
+    { username: normalizedLower },
+    { phone: cleanQuery },
+  ];
+
+  if (/^[0-9a-fA-F]{24}$/.test(cleanQuery)) {
+    orConditions.push({ _id: cleanQuery });
+  }
+
+  let user = await User.findOne({
+    $or: orConditions,
+  }).select('name email phone accountId userId userType role');
+
+  // Fallback: If cleanQuery matches the end of ObjectId (e.g. hex "75baa101")
+  if (!user && /^[0-9a-fA-F]{6,12}$/.test(cleanQuery)) {
+    const allUsers = await User.find({}).select('name email phone accountId userId userType role');
+    const matchedBySlice = allUsers.find(
+      (u) => u._id.toString().toLowerCase().endsWith(normalizedLower)
+    );
+    if (matchedBySlice) {
+      user = matchedBySlice;
+    }
+  }
 
   if (!user) {
-    throw new ApiError(404, `No registered user found with account ID or email "${cleanQuery}"`);
+    throw new ApiError(404, `No registered user found with User ID or email "${cleanQuery}"`);
+  }
+
+  const userObj = user.toObject ? user.toObject() : { ...user };
+  if (!userObj.userId && userObj.accountId) {
+    userObj.userId = userObj.accountId;
+  }
+  if (!userObj.accountId && userObj.userId) {
+    userObj.accountId = userObj.userId;
   }
 
   res.status(200).json(
-    new ApiResponse(200, { user }, 'User found successfully')
+    new ApiResponse(200, { user: userObj }, 'User found successfully')
   );
 });
 
@@ -563,7 +591,11 @@ export const getCustomerPurchases = asyncHandler(async (req, res) => {
     { customerEmail: user.email.toLowerCase() },
   ];
   if (user.accountId) {
+    orConditions.push({ customerAccountId: user.accountId });
     orConditions.push({ customerAccountId: user.accountId.toUpperCase() });
+  }
+  if (user.userId) {
+    orConditions.push({ customerAccountId: user.userId });
   }
 
   const purchases = await Transaction.find({
@@ -591,7 +623,11 @@ export const getCustomerCredits = asyncHandler(async (req, res) => {
     { email: user.email.toLowerCase() },
   ];
   if (user.accountId) {
+    partyConditions.push({ accountId: user.accountId });
     partyConditions.push({ accountId: user.accountId.toUpperCase() });
+  }
+  if (user.userId) {
+    partyConditions.push({ accountId: user.userId });
   }
 
   const parties = await Party.find({
@@ -606,7 +642,11 @@ export const getCustomerCredits = asyncHandler(async (req, res) => {
     { customerEmail: user.email.toLowerCase() },
   ];
   if (user.accountId) {
+    txnConditions.push({ customerAccountId: user.accountId });
     txnConditions.push({ customerAccountId: user.accountId.toUpperCase() });
+  }
+  if (user.userId) {
+    txnConditions.push({ customerAccountId: user.userId });
   }
 
   const creditTransactions = await Transaction.find({

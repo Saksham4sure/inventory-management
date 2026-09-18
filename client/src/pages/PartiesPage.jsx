@@ -163,11 +163,11 @@ export const PartiesPage = () => {
     setIsPartyModalOpen(true);
   };
 
-  // Search User by Account ID or Email for Party Registration
+  // Search User by User ID or Email for Party Registration
   const handleSearchUserForParty = async (e) => {
     if (e) e.preventDefault();
     if (!userSearchQuery.trim()) {
-      setUserSearchError('Please enter user Account ID (e.g. CUST-123456) or Email');
+      setUserSearchError('Please enter User ID (8-digit number) or Email');
       return;
     }
 
@@ -256,8 +256,8 @@ export const PartiesPage = () => {
           name: matchedUser?.name || partyFormData.name,
           phone: phoneCheck.isValid ? phoneCheck.normalized : matchedUser?.phone || '9800000000',
           email: matchedUser?.email || partyFormData.email,
-          userQuery: matchedUser?.accountId || matchedUser?.email || userSearchQuery.trim(),
-          accountId: matchedUser?.accountId || '',
+          userQuery: matchedUser?.userId || matchedUser?.accountId || matchedUser?.email || userSearchQuery.trim(),
+          accountId: matchedUser?.userId || matchedUser?.accountId || '',
         };
         await partyService.createParty(payload);
         showSuccess(`Party request sent to ${matchedUser.name}! Once they accept from notifications, transactions will begin.`);
@@ -903,7 +903,7 @@ export const PartiesPage = () => {
           {!editingParty ? (
             <div className="space-y-3">
               <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-                Search the user by their unique <strong className="text-zinc-700 dark:text-zinc-300">Account ID</strong> (e.g. CUST-104928) or registered <strong className="text-zinc-700 dark:text-zinc-300">Email</strong>. An invitation will be sent for them to accept before transactions begin.
+                Search the user by their 8-digit <strong className="text-zinc-700 dark:text-zinc-300">User ID</strong> or registered <strong className="text-zinc-700 dark:text-zinc-300">Email</strong>. An invitation will be sent for them to accept before transactions begin.
               </p>
 
               {/* User Search Bar */}
@@ -912,7 +912,7 @@ export const PartiesPage = () => {
                   <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-400" />
                   <input
                     type="text"
-                    placeholder="Enter Account ID or Email..."
+                    placeholder="Enter 8-digit User ID or Email..."
                     value={userSearchQuery}
                     onChange={(e) => {
                       setUserSearchQuery(e.target.value);
@@ -953,7 +953,7 @@ export const PartiesPage = () => {
                           {matchedUser.name}
                         </p>
                         <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-mono">
-                          {matchedUser.accountId || 'NO-ID'} • {matchedUser.email}
+                          ID: {matchedUser.userId || matchedUser.accountId || 'NO-ID'} • {matchedUser.email}
                         </p>
                         {matchedUser.phone && (
                           <p className="text-[11px] text-emerald-600/80 dark:text-emerald-500 font-mono">

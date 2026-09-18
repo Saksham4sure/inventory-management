@@ -14,7 +14,13 @@ const userSchema = new mongoose.Schema(
       type: String,
       unique: true,
       sparse: true,
-      uppercase: true,
+      trim: true,
+      index: true,
+    },
+    userId: {
+      type: String,
+      unique: true,
+      sparse: true,
       trim: true,
       index: true,
     },
@@ -131,10 +137,38 @@ const userSchema = new mongoose.Schema(
 );
 
 userSchema.pre('save', async function (next) {
-  if (!this.accountId) {
-    const prefix = this.userType === 'CUSTOMER' ? 'CUST' : 'BIZ';
-    const rand = Math.floor(100000 + Math.random() * 900000);
-    this.accountId = `${prefix}-${rand}`;
+  if (!this.userId && !this.accountId) {
+    let isUnique = false;
+    let rand8 = '';
+    while (!isUnique) {
+      rand8 = Math.floor(10000000 + Math.random() * 90000000).toString();
+      const existing = await mongoose.models.User?.findOne({
+        $or: [{ userId: rand8 }, { accountId: rand8 }],
+        _id: { $ne: this._id },
+      });
+      if (!existing) isUnique = true;
+    }
+    this.userId = rand8;
+    this.accountId = rand8;
+  } else if (!this.userId && this.accountId) {
+    if (/^\d{8}$/.test(this.accountId)) {
+      this.userId = this.accountId;
+    } else {
+      let isUnique = false;
+      let rand8 = '';
+      while (!isUnique) {
+        rand8 = Math.floor(10000000 + Math.random() * 90000000).toString();
+        const existing = await mongoose.models.User?.findOne({
+          $or: [{ userId: rand8 }, { accountId: rand8 }],
+          _id: { $ne: this._id },
+        });
+        if (!existing) isUnique = true;
+      }
+      this.userId = rand8;
+      this.accountId = rand8;
+    }
+  } else if (this.userId && !this.accountId) {
+    this.accountId = this.userId;
   }
 
   if (!this.isModified('password')) return next();

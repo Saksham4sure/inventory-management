@@ -108,27 +108,44 @@ export const createParty = asyncHandler(async (req, res) => {
 
   const businessId = req.user.businessId;
 
-  // Search user by provided accountId or email query
+  // Search user by provided accountId, userId, or email query
   const queryStr = (userQuery || accountId || email || '').trim();
   if (!queryStr) {
-    throw new ApiError(400, 'User Account ID or registered Email is required to create a party record');
+    throw new ApiError(400, 'User ID or registered Email is required to create a party record');
   }
 
   const normalizedUpper = queryStr.toUpperCase();
   const normalizedLower = queryStr.toLowerCase();
 
-  const matchedUser = await User.findOne({
-    $or: [
-      { accountId: normalizedUpper },
-      { email: normalizedLower },
-      { username: normalizedLower },
-    ],
+  const userConditions = [
+    { userId: queryStr },
+    { accountId: queryStr },
+    { accountId: normalizedUpper },
+    { email: normalizedLower },
+    { username: normalizedLower },
+    { phone: queryStr },
+  ];
+  if (/^[0-9a-fA-F]{24}$/.test(queryStr)) {
+    userConditions.push({ _id: queryStr });
+  }
+
+  let matchedUser = await User.findOne({
+    $or: userConditions,
   });
+
+  // Fallback: If query matches end of ObjectId (like "75baa101")
+  if (!matchedUser && /^[0-9a-fA-F]{6,12}$/.test(queryStr)) {
+    const allUsers = await User.find({});
+    const matched = allUsers.find(
+      (u) => u._id.toString().toLowerCase().endsWith(normalizedLower)
+    );
+    if (matched) matchedUser = matched;
+  }
 
   if (!matchedUser) {
     throw new ApiError(
       404,
-      `User with Account ID or Email "${queryStr}" does not exist. Parties can only be created for registered users.`
+      `User with ID or Email "${queryStr}" does not exist. Parties can only be created for registered users.`
     );
   }
 
@@ -138,7 +155,8 @@ export const createParty = asyncHandler(async (req, res) => {
     $or: [
       { user: matchedUser._id },
       { email: matchedUser.email.toLowerCase() },
-      ...(matchedUser.accountId ? [{ accountId: matchedUser.accountId.toUpperCase() }] : []),
+      ...(matchedUser.accountId ? [{ accountId: matchedUser.accountId }, { accountId: matchedUser.accountId.toUpperCase() }] : []),
+      ...(matchedUser.userId ? [{ accountId: matchedUser.userId }] : []),
     ],
   });
 

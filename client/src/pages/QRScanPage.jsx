@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ROUTES } from '../constants/routes';
 import { Html5Qrcode } from 'html5-qrcode';
 import { productService } from '../services/productService';
 import { transactionService } from '../services/transactionService';
@@ -33,12 +35,14 @@ import {
   Users,
   UserCheck,
   Search,
+  ExternalLink,
 } from 'lucide-react';
 import { useSnackbar } from '../hooks/useSnackbar';
 import { useConfirm } from '../hooks/useConfirm';
 
 export const QRScanPage = () => {
   const { business } = useBusiness();
+  const navigate = useNavigate();
   const { alert } = useConfirm();
   const { showSuccess, showError } = useSnackbar();
   const currency = business?.currency || 'USD';
@@ -93,6 +97,9 @@ export const QRScanPage = () => {
   const lastScannedCooldownTimer = useRef(null);
   const [isCameraActive, setIsCameraActive] = useState(false);
   const [isStartingCamera, setIsStartingCamera] = useState(false);
+
+  // Discount state
+  const [discountAmount, setDiscountAmount] = useState('');
 
   // Simplified Manual Calculator state
   const [manualItemName, setManualItemName] = useState('');
@@ -473,8 +480,10 @@ export const QRScanPage = () => {
       totalItems += item.quantity;
       totalAmount += item.quantity * item.unitPrice;
     }
-    return { totalItems, totalAmount, linesCount: cart.length };
-  }, [cart]);
+    const discountValue = Math.min(parseFloat(discountAmount) || 0, totalAmount);
+    const discountedTotal = Math.max(0, totalAmount - discountValue);
+    return { totalItems, totalAmount, discountedTotal, discountValue, linesCount: cart.length };
+  }, [cart, discountAmount]);
 
   // Fetch Parties for Credit Selection
   const fetchPartiesForCredit = useCallback(async () => {
@@ -578,11 +587,11 @@ export const QRScanPage = () => {
     );
   }, [existingParties, partySearch]);
 
-  // Search customer user by Account ID or Email
+  // Search customer user by User ID or Email
   const handleSearchCustomer = async (e) => {
     if (e) e.preventDefault();
     if (!customerSearchInput.trim()) {
-      setCustomerSearchError('Please enter an Account ID (e.g. CUST-123456) or Email');
+      setCustomerSearchError('Please enter an 8-digit User ID or Email');
       return;
     }
 
@@ -593,9 +602,9 @@ export const QRScanPage = () => {
       if (res?.user) {
         setSelectedCustomer(res.user);
         setCustomerSearchInput('');
-        showSuccess(`Customer identified: ${res.user.name} (${res.user.accountId || res.user.email})`);
+        showSuccess(`Customer identified: ${res.user.name} (ID: ${res.user.userId || res.user.accountId || res.user.email})`);
       } else {
-        setCustomerSearchError('User not found. Please verify the Account ID or Email.');
+        setCustomerSearchError('User not found. Please verify the 8-digit User ID or Email.');
       }
     } catch (err) {
       const errMsg = err?.response?.data?.message || err.message || 'User does not exist in the system';
@@ -647,21 +656,21 @@ export const QRScanPage = () => {
 
     // Credit amount validations
     let effectivePaid = 0;
-    let effectiveCredit = totals.totalAmount;
+    let effectiveCredit = totals.discountedTotal;
 
     if (paymentMethod === 'CREDIT') {
       if (creditType === 'PARTIAL') {
         effectivePaid = parseFloat(creditPaidAmount) || 0;
-        if (effectivePaid < 0 || effectivePaid >= totals.totalAmount) {
-          const err = `Partial paid amount must be between 0 and ${totals.totalAmount - 1}`;
+        if (effectivePaid < 0 || effectivePaid >= totals.discountedTotal) {
+          const err = `Partial paid amount must be between 0 and ${totals.discountedTotal - 1}`;
           setError(err);
           showError(err);
           return;
         }
-        effectiveCredit = totals.totalAmount - effectivePaid;
+        effectiveCredit = totals.discountedTotal - effectivePaid;
       } else {
         effectivePaid = 0;
-        effectiveCredit = totals.totalAmount;
+        effectiveCredit = totals.discountedTotal;
       }
     }
 
@@ -687,6 +696,8 @@ export const QRScanPage = () => {
         creditType: paymentMethod === 'CREDIT' ? creditType : 'NONE',
         paidAmount: effectivePaid,
         creditAmount: effectiveCredit,
+        discount: totals.discountValue,
+        totalAmount: totals.discountedTotal,
         notes: notes.trim(),
         scannedViaQR: cart.some((i) => !i.isManual),
       };
@@ -696,6 +707,7 @@ export const QRScanPage = () => {
       setCompletedTxn(result);
       setCart([]);
       setNotes('');
+      setDiscountAmount('');
       setCreditParty(null);
       setSelectedCustomer(null);
       setCreditPaidAmount('');
@@ -770,9 +782,9 @@ export const QRScanPage = () => {
           </p>
         </div>
 
-        {/* Customer Quick Search / Selected Badge in Header */}
+        {/* Header Right */}
         <div className="flex items-center gap-2">
-          {selectedCustomer ? (
+          {selectedCustomer && (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800">
               <UserCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
               <div className="text-left">
@@ -780,7 +792,7 @@ export const QRScanPage = () => {
                   {selectedCustomer.name}
                 </p>
                 <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-mono">
-                  {selectedCustomer.accountId || selectedCustomer.email}
+                  ID: {selectedCustomer.userId || selectedCustomer.accountId || selectedCustomer.email}
                 </p>
               </div>
               <button
@@ -792,50 +804,9 @@ export const QRScanPage = () => {
                 <X className="h-3 w-3" />
               </button>
             </div>
-          ) : (
-            <form onSubmit={handleSearchCustomer} className="flex items-center gap-1.5">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-400" />
-                <input
-                  type="text"
-                  placeholder="Customer Account ID / Email..."
-                  value={customerSearchInput}
-                  onChange={(e) => {
-                    setCustomerSearchInput(e.target.value);
-                    if (customerSearchError) setCustomerSearchError('');
-                  }}
-                  className="w-48 sm:w-64 rounded-xl border border-zinc-200 dark:border-zinc-750 bg-white dark:bg-zinc-900 pl-8 pr-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/30"
-                />
-              </div>
-              <Button
-                type="submit"
-                variant="secondary"
-                size="sm"
-                loading={searchingCustomer}
-                className="text-xs py-1.5"
-              >
-                Find
-              </Button>
-            </form>
           )}
         </div>
       </div>
-
-      {customerSearchError && (
-        <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-xs text-rose-700 dark:text-rose-300 flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <AlertTriangle className="h-4 w-4 shrink-0" />
-            <span>{customerSearchError}</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setCustomerSearchError('')}
-            className="text-rose-500 hover:text-rose-700"
-          >
-            <X className="h-3.5 w-3.5" />
-          </button>
-        </div>
-      )}
 
       {/* Main Grid: Left = Scanner/Manual, Right = Live Item Register */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
@@ -1327,10 +1298,10 @@ export const QRScanPage = () => {
                         </p>
                         <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono truncate">
                           {selectedCustomer
-                            ? `ID: ${selectedCustomer.accountId || selectedCustomer.email}`
+                            ? `ID: ${selectedCustomer.userId || selectedCustomer.accountId || selectedCustomer.email}`
                             : creditParty
                             ? `${creditParty.phone} • Bal: ${formatCurrency(creditParty.currentBalance || 0, currency)}`
-                            : 'Search by Account ID or Email above'}
+                            : 'Search by User ID or Email above'}
                         </p>
                       </div>
                     </div>
@@ -1434,18 +1405,117 @@ export const QRScanPage = () => {
                 />
               </div>
 
+              {/* Customer ID / Email Finder */}
+              <div className="space-y-2">
+                <label className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                  User ID / Email Lookup
+                </label>
+                {selectedCustomer ? (
+                  <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+                        <UserCheck className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold text-emerald-900 dark:text-emerald-200 truncate">
+                          {selectedCustomer.name}
+                        </p>
+                        <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-mono truncate">
+                          ID: {selectedCustomer.userId || selectedCustomer.accountId || selectedCustomer.email}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleClearCustomer}
+                      className="p-1.5 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-lg text-emerald-700 dark:text-emerald-300 transition-colors"
+                      title="Remove Customer"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSearchCustomer} className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
+                      <input
+                        type="text"
+                        placeholder="Enter 8-digit User ID or Email"
+                        value={customerSearchInput}
+                        onChange={(e) => {
+                          setCustomerSearchInput(e.target.value);
+                          if (customerSearchError) setCustomerSearchError('');
+                        }}
+                        className="w-full rounded-xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 pl-8 pr-3 py-2 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/20"
+                      />
+                    </div>
+                    <Button
+                      type="submit"
+                      variant="secondary"
+                      size="sm"
+                      loading={searchingCustomer}
+                      className="text-xs px-3 py-2 rounded-xl whitespace-nowrap"
+                    >
+                      <Search className="h-3.5 w-3.5 mr-1" />
+                      Find
+                    </Button>
+                  </form>
+                )}
+                {customerSearchError && (
+                  <p className="text-[11px] text-rose-600 dark:text-rose-400 flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3 shrink-0" />
+                    {customerSearchError}
+                  </p>
+                )}
+              </div>
+
+              {/* Discount Price Input */}
+              <div>
+                <label className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-400 mb-1.5">
+                  Discount ({currency})
+                </label>
+                <div className="relative">
+                  <TrendingDown className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
+                  <input
+                    type="number"
+                    min="0"
+                    max={totals.totalAmount}
+                    step="0.01"
+                    placeholder="0.00"
+                    value={discountAmount}
+                    onChange={(e) => setDiscountAmount(e.target.value)}
+                    className="w-full rounded-xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 pl-8 pr-3 py-2 text-xs font-mono text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/20"
+                  />
+                </div>
+              </div>
+
               {/* Total Due */}
-              <div className="flex items-baseline justify-between py-1">
-                <div>
+              <div className="space-y-1 py-1">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-xs text-zinc-500">
+                    Subtotal ({totals.totalItems} pcs)
+                  </span>
+                  <span className="text-sm font-mono font-semibold text-zinc-600 dark:text-zinc-400">
+                    {formatCurrency(totals.totalAmount, currency)}
+                  </span>
+                </div>
+                {totals.discountValue > 0 && (
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-xs text-rose-600 dark:text-rose-400">
+                      Discount
+                    </span>
+                    <span className="text-sm font-mono font-semibold text-rose-600 dark:text-rose-400">
+                      −{formatCurrency(totals.discountValue, currency)}
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-baseline justify-between pt-1 border-t border-zinc-100 dark:border-zinc-800/60">
                   <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
                     Total Due
                   </span>
-                  <span className="text-[11px] text-zinc-400 block">
-                    {totals.totalItems} pcs in stack
-                  </span>
-                </div>
-                <div className="text-2xl font-black font-mono text-zinc-900 dark:text-zinc-100">
-                  {formatCurrency(totals.totalAmount, currency)}
+                  <div className="text-2xl font-black font-mono text-zinc-900 dark:text-zinc-100">
+                    {formatCurrency(totals.discountedTotal, currency)}
+                  </div>
                 </div>
               </div>
 
@@ -1460,8 +1530,8 @@ export const QRScanPage = () => {
               >
                 <CheckCircle2 className="h-4 w-4 mr-2" />
                 {txnType === 'SALE'
-                  ? `Record Sale at Once (${formatCurrency(totals.totalAmount, currency)})`
-                  : `Record Purchase at Once (${formatCurrency(totals.totalAmount, currency)})`}
+                  ? `Record Sale at Once (${formatCurrency(totals.discountedTotal, currency)})`
+                  : `Record Purchase at Once (${formatCurrency(totals.discountedTotal, currency)})`}
               </Button>
             </div>
           </Card>
@@ -1480,130 +1550,84 @@ export const QRScanPage = () => {
         maxWidth="max-w-md"
       >
         <div className="space-y-4">
-          {/* Mode Switch: Pick Existing vs New Party */}
-          <div className="flex items-center gap-1 p-1 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.06] dark:border-white/[0.08] text-xs font-semibold">
-            <button
-              type="button"
-              onClick={() => setPartyTab('existing')}
-              className={`flex-1 py-1.5 rounded-lg transition-all ${
-                partyTab === 'existing'
-                  ? 'bg-white text-zinc-950 shadow-xs dark:bg-zinc-800 dark:text-zinc-100 font-bold'
-                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
-              }`}
-            >
-              Choose Existing ({existingParties.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setPartyTab('new')}
-              className={`flex-1 py-1.5 rounded-lg transition-all ${
-                partyTab === 'new'
-                  ? 'bg-white text-zinc-950 shadow-xs dark:bg-zinc-800 dark:text-zinc-100 font-bold'
-                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100'
-              }`}
-            >
-              + Quick Add (Name & Phone)
-            </button>
+          {/* Existing Parties List */}
+          <div className="space-y-2.5">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-400" />
+              <input
+                type="text"
+                placeholder={`Search ${txnType === 'SALE' ? 'customers' : 'suppliers'} by name or phone...`}
+                value={partySearch}
+                onChange={(e) => setPartySearch(e.target.value)}
+                className="w-full rounded-xl border border-zinc-200/90 dark:border-zinc-750 bg-white dark:bg-zinc-900 pl-8 pr-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
+              />
+            </div>
+
+            <div className="border border-zinc-200/80 dark:border-zinc-800 rounded-xl p-1.5 max-h-56 overflow-y-auto divide-y divide-zinc-100 dark:divide-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-900/50">
+              {loadingParties ? (
+                <div className="py-6 text-center text-xs text-zinc-400">
+                  <RefreshCw className="h-4 w-4 animate-spin mx-auto mb-1" />
+                  Loading contacts...
+                </div>
+              ) : filteredExistingParties.length === 0 ? (
+                <div className="py-6 text-center text-xs text-zinc-400 space-y-2">
+                  <p>No {txnType === 'SALE' ? 'customers' : 'suppliers'} found.</p>
+                  <p className="text-[11px] text-zinc-400">
+                    Create a new party from the Parties page first.
+                  </p>
+                </div>
+              ) : (
+                filteredExistingParties.map((party) => (
+                  <div
+                    key={party._id}
+                    onClick={() => handleSelectExistingParty(party)}
+                    className="p-2.5 rounded-lg flex items-center justify-between cursor-pointer hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
+                  >
+                    <div>
+                      <p className="font-semibold text-xs text-zinc-900 dark:text-zinc-100">
+                        {party.name}
+                      </p>
+                      <p className="text-[11px] text-zinc-400 font-mono">{party.phone}</p>
+                    </div>
+
+                    <div className="text-right flex items-center gap-2">
+                      <div className="text-right">
+                        <span className="text-[10px] text-zinc-400 block font-mono">
+                          Bal: {formatCurrency(party.currentBalance || 0, currency)}
+                        </span>
+                      </div>
+                      <Button variant="secondary" size="sm" className="text-[11px] px-2 py-0.5">
+                        Select
+                      </Button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
 
-          {/* TAB 1: Existing Parties List */}
-          {partyTab === 'existing' && (
-            <div className="space-y-2.5">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-400" />
-                <input
-                  type="text"
-                  placeholder={`Search ${txnType === 'SALE' ? 'customers' : 'suppliers'} by name or phone...`}
-                  value={partySearch}
-                  onChange={(e) => setPartySearch(e.target.value)}
-                  className="w-full rounded-xl border border-zinc-200/90 dark:border-zinc-750 bg-white dark:bg-zinc-900 pl-8 pr-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
-                />
-              </div>
-
-              <div className="border border-zinc-200/80 dark:border-zinc-800 rounded-xl p-1.5 max-h-56 overflow-y-auto divide-y divide-zinc-100 dark:divide-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-900/50">
-                {loadingParties ? (
-                  <div className="py-6 text-center text-xs text-zinc-400">
-                    <RefreshCw className="h-4 w-4 animate-spin mx-auto mb-1" />
-                    Loading contacts...
-                  </div>
-                ) : filteredExistingParties.length === 0 ? (
-                  <div className="py-6 text-center text-xs text-zinc-400 space-y-2">
-                    <p>No {txnType === 'SALE' ? 'customers' : 'suppliers'} found.</p>
-                    <button
-                      type="button"
-                      onClick={() => setPartyTab('new')}
-                      className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 underline hover:text-zinc-900 dark:hover:text-zinc-100"
-                    >
-                      + Quick enter Name & Phone
-                    </button>
-                  </div>
-                ) : (
-                  filteredExistingParties.map((party) => (
-                    <div
-                      key={party._id}
-                      onClick={() => handleSelectExistingParty(party)}
-                      className="p-2.5 rounded-lg flex items-center justify-between cursor-pointer hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
-                    >
-                      <div>
-                        <p className="font-semibold text-xs text-zinc-900 dark:text-zinc-100">
-                          {party.name}
-                        </p>
-                        <p className="text-[11px] text-zinc-400 font-mono">{party.phone}</p>
-                      </div>
-
-                      <div className="text-right flex items-center gap-2">
-                        <div className="text-right">
-                          <span className="text-[10px] text-zinc-400 block font-mono">
-                            Bal: {formatCurrency(party.currentBalance || 0, currency)}
-                          </span>
-                        </div>
-                        <Button variant="secondary" size="sm" className="text-[11px] px-2 py-0.5">
-                          Select
-                        </Button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+          {/* Create New Party — Navigate to Parties Page */}
+          <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200/80 dark:border-zinc-700/60 space-y-2.5">
+            <div className="text-xs text-zinc-600 dark:text-zinc-300">
+              <p className="font-semibold">Party not listed?</p>
+              <p className="text-[11px] text-zinc-500 dark:text-zinc-400 mt-0.5">
+                Create a new party from the Parties &amp; Credits page, then come back to select them.
+              </p>
             </div>
-          )}
-
-          {/* TAB 2: Quick Add New Party using just Name & Phone Number */}
-          {partyTab === 'new' && (
-            <div className="space-y-3">
-              <div className="p-3 rounded-xl bg-zinc-100 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-800 dark:text-zinc-200">
-                <p className="font-semibold">Party Not Created Yet?</p>
-                <p className="text-[11px] text-zinc-600 dark:text-zinc-400 mt-0.5">
-                  Enter their Name and Phone number below. Their identity will be created and this credit record will be logged directly to their ledger.
-                </p>
-              </div>
-
-              <Input
-                label={`${txnType === 'SALE' ? 'Customer' : 'Supplier'} Name *`}
-                placeholder="e.g. John Doe / Apex Supplies"
-                required
-                value={newPartyName}
-                onChange={(e) => setNewPartyName(e.target.value)}
-              />
-
-              <PhoneInput
-                label="Phone Number (Unique Identity)"
-                required
-                value={newPartyPhone}
-                onChange={(e) => setNewPartyPhone(e.target.value)}
-              />
-
-              <Button
-                variant="primary"
-                size="md"
-                onClick={handleSelectNewParty}
-                className="w-full font-bold mt-2"
-              >
-                <UserCheck className="h-4 w-4 mr-1.5" />
-                Use This {txnType === 'SALE' ? 'Customer' : 'Supplier'}
-              </Button>
-            </div>
-          )}
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                setIsCreditPartyModalOpen(false);
+                navigate(ROUTES.PARTIES);
+              }}
+              className="w-full text-xs font-semibold"
+            >
+              <ExternalLink className="h-3.5 w-3.5 mr-1.5" />
+              Go to Parties &amp; Credits Page
+            </Button>
+          </div>
 
           <div className="flex justify-end pt-1">
             <Button variant="secondary" size="sm" onClick={handleCloseCreditModal}>

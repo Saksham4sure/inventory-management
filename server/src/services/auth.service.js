@@ -20,6 +20,12 @@ export const sanitizeUser = (user) => {
   const obj = user.toObject ? user.toObject() : { ...user };
   delete obj.password;
   obj.isSuperAdmin = obj.role === 'SUPER_ADMIN';
+  if (!obj.userId && obj.accountId) {
+    obj.userId = obj.accountId;
+  }
+  if (!obj.accountId && obj.userId) {
+    obj.accountId = obj.userId;
+  }
   return obj;
 };
 

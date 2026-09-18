@@ -72,7 +72,7 @@ export const CustomerPurchasesPage = () => {
             No Purchases Found
           </h3>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-sm mx-auto">
-            Whenever a store completes a checkout with your Account ID or registered Email, your digital invoice and purchase record will appear here.
+            Whenever a store completes a checkout with your User ID or registered Email, your digital invoice and purchase record will appear here.
           </p>
         </Card>
       ) : (

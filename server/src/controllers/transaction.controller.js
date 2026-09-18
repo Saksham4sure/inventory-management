@@ -176,15 +176,32 @@ export const createTransaction = asyncHandler(async (req, res) => {
     matchedCustomerUser = await User.findById(customerId);
   } else if (customerUserQuery && customerUserQuery.trim()) {
     const q = customerUserQuery.trim();
+    const orConds = [
+      { userId: q },
+      { accountId: q },
+      { accountId: q.toUpperCase() },
+      { email: q.toLowerCase() },
+      { username: q.toLowerCase() },
+      { phone: q },
+    ];
+    if (/^[0-9a-fA-F]{24}$/.test(q)) {
+      orConds.push({ _id: q });
+    }
     matchedCustomerUser = await User.findOne({
-      $or: [
-        { accountId: q.toUpperCase() },
-        { email: q.toLowerCase() },
-        { username: q.toLowerCase() },
-      ],
+      $or: orConds,
     });
+
+    // Fallback: If query matches end of ObjectId (like "75baa101")
+    if (!matchedCustomerUser && /^[0-9a-fA-F]{6,12}$/.test(q)) {
+      const allUsers = await User.find({});
+      const matched = allUsers.find(
+        (u) => u._id.toString().toLowerCase().endsWith(q.toLowerCase())
+      );
+      if (matched) matchedCustomerUser = matched;
+    }
+
     if (!matchedCustomerUser) {
-      throw new ApiError(404, `Customer with account ID or email "${q}" does not exist`);
+      throw new ApiError(404, `Customer with ID or email "${q}" does not exist`);
     }
   }
 
@@ -199,7 +216,8 @@ export const createTransaction = asyncHandler(async (req, res) => {
       $or: [
         { user: matchedCustomerUser._id },
         { email: matchedCustomerUser.email.toLowerCase() },
-        ...(matchedCustomerUser.accountId ? [{ accountId: matchedCustomerUser.accountId }] : []),
+        ...(matchedCustomerUser.accountId ? [{ accountId: matchedCustomerUser.accountId }, { accountId: matchedCustomerUser.accountId.toUpperCase() }] : []),
+        ...(matchedCustomerUser.userId ? [{ accountId: matchedCustomerUser.userId }] : []),
       ],
     });
 
@@ -298,7 +316,7 @@ export const createTransaction = asyncHandler(async (req, res) => {
     totalAmount,
     paymentMethod,
     customer: matchedCustomerUser?._id || null,
-    customerAccountId: matchedCustomerUser?.accountId || '',
+    customerAccountId: matchedCustomerUser?.userId || matchedCustomerUser?.accountId || '',
     customerEmail: matchedCustomerUser?.email || '',
     creditDetails: {
       isCredit: isCreditTxn,
@@ -412,10 +430,16 @@ export const getTransactions = asyncHandler(async (req, res) => {
   }
 
   if (search) {
+    const s = search.trim();
     filter.$or = [
-      { referenceNumber: new RegExp(search.trim(), 'i') },
-      { 'items.productName': new RegExp(search.trim(), 'i') },
-      { 'items.sku': new RegExp(search.trim(), 'i') },
+      { referenceNumber: new RegExp(s, 'i') },
+      { 'items.productName': new RegExp(s, 'i') },
+      { 'items.sku': new RegExp(s, 'i') },
+      { 'manualBillDetails.billNumber': new RegExp(s, 'i') },
+      { 'manualBillDetails.sellerName': new RegExp(s, 'i') },
+      { 'manualBillDetails.contactNumber': new RegExp(s, 'i') },
+      { partyName: new RegExp(s, 'i') },
+      { notes: new RegExp(s, 'i') },
     ];
   }
 

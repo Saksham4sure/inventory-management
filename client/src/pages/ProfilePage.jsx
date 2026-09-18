@@ -327,9 +327,9 @@ export const ProfilePage = () => {
             {/* Detailed Account Spec Table */}
             <div className="w-full mt-6 pt-5 border-t border-black/[0.05] dark:border-white/[0.08] text-left space-y-2.5 text-xs text-zinc-500 dark:text-zinc-400">
               <div className="flex justify-between items-center">
-                <span>Account ID</span>
-                <span className="font-mono text-[11px] text-zinc-700 dark:text-zinc-300">
-                  {user?._id ? user._id.slice(-8) : 'N/A'}
+                <span>User ID</span>
+                <span className="font-mono text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                  {user?.userId || user?.accountId || (user?._id ? user._id.slice(-8) : 'N/A')}
                 </span>
               </div>
 
