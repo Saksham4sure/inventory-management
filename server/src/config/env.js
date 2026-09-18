@@ -11,7 +11,9 @@ export const ENV = {
   CLIENT_URL: process.env.CLIENT_URL || 'http://localhost:5173',
   BCRYPT_SALT_ROUNDS: parseInt(process.env.BCRYPT_SALT_ROUNDS, 10) || 10,
 
-
+  // Platform Super Admin credentials (read from environment variables)
+  SUPER_ADMIN_USERNAME: process.env.SUPER_ADMIN_USERNAME || 'pixelstock',
+  SUPER_ADMIN_PASSWORD: process.env.SUPER_ADMIN_PASSWORD || 'y9fK80dWJKUIJ9p',
   // Cloudinary credentials (optional in local dev, recommended for production)
   CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME || '',
   CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY || '',

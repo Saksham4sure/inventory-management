@@ -8,12 +8,75 @@ export const QRViewerModal = ({ isOpen, onClose, product, currency = 'USD' }) =>
 
   const handleDownload = () => {
     if (!product.qrCodeImage) return;
-    const link = document.createElement('a');
-    link.href = product.qrCodeImage;
-    link.download = `QR-${product.sku}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      // Create high-resolution canvas for crisp printable label
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      const width = 600;
+      const height = 750;
+      canvas.width = width;
+      canvas.height = height;
+
+      // Background - clean white card
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, width, height);
+
+      // Card border
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = '#e4e4e7';
+      ctx.beginPath();
+      ctx.roundRect(16, 16, width - 32, height - 32, 24);
+      ctx.stroke();
+
+      // Product Name (truncated if too long)
+      ctx.fillStyle = '#09090b';
+      ctx.font = 'bold 34px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.textAlign = 'center';
+      let title = product.name || 'Product';
+      if (ctx.measureText(title).width > 520) {
+        while (ctx.measureText(title + '...').width > 520 && title.length > 0) {
+          title = title.slice(0, -1);
+        }
+        title += '...';
+      }
+      ctx.fillText(title, width / 2, 75);
+
+      // QR Code Image
+      const qrSize = 400;
+      const qrX = (width - qrSize) / 2;
+      const qrY = 105;
+      ctx.drawImage(img, qrX, qrY, qrSize, qrSize);
+
+      // SKU / Code Below QR
+      ctx.fillStyle = '#71717a';
+      ctx.font = 'bold 24px monospace';
+      ctx.fillText(`CODE: ${product.sku || product.qrCodeData || ''}`, width / 2, 545);
+
+      // Price Below Code
+      ctx.fillStyle = '#059669';
+      ctx.font = 'bold 36px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      const formattedPrice = formatCurrency(product.sellingPrice, currency);
+      ctx.fillText(formattedPrice, width / 2, 605);
+
+      // Small Branding / Footer
+      ctx.fillStyle = '#a1a1aa';
+      ctx.font = '18px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      ctx.fillText('Scan with StockPulse QR Scanner', width / 2, 655);
+
+      // Download triggered
+      const link = document.createElement('a');
+      link.href = canvas.toDataURL('image/png');
+      link.download = `QR-${product.sku || 'label'}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
+
+    img.src = product.qrCodeImage;
   };
 
   const handlePrint = () => {

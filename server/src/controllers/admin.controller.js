@@ -470,6 +470,11 @@ export const updateUser = asyncHandler(async (req, res) => {
     throw new ApiError(404, 'User not found');
   }
 
+  // Prevent editing the protected platform Super Admin credentials via standard user edit API
+  if (user.role === ROLES.SUPER_ADMIN) {
+    throw new ApiError(403, 'Platform Super Admin credentials are fixed by environment variables and cannot be modified here.');
+  }
+
   if (name) user.name = name.trim();
   if (email) user.email = email.toLowerCase().trim();
   if (username !== undefined) user.username = username ? username.toLowerCase().trim() : undefined;
@@ -498,10 +503,16 @@ export const deleteUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Cannot delete your own platform administrator account');
   }
 
-  const user = await User.findByIdAndDelete(id);
+  const user = await User.findById(id);
   if (!user) {
     throw new ApiError(404, 'User not found');
   }
+
+  if (user.role === ROLES.SUPER_ADMIN) {
+    throw new ApiError(403, 'Cannot delete the protected platform Super Admin account.');
+  }
+
+  await User.findByIdAndDelete(id);
 
   res.status(200).json(new ApiResponse(200, null, 'User deleted successfully'));
 });

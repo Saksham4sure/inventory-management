@@ -6,10 +6,10 @@ import { ENV } from '../config/env.js';
 
 export const seedInitialAdminAndPlans = async () => {
   try {
-    // 1. Maintain dedicated Platform Super Admin user (pixelstock)
-    const SUPER_ADMIN_USERNAME = 'pixelstock';
-    const SUPER_ADMIN_PASSWORD = 'y9fK80dWJKUIJ9p';
-    const SUPER_ADMIN_EMAIL = 'admin@pixelstock.local';
+    // 1. Maintain dedicated Platform Super Admin user from ENV
+    const SUPER_ADMIN_USERNAME = (ENV.SUPER_ADMIN_USERNAME || 'pixelstock').toLowerCase().trim();
+    const SUPER_ADMIN_PASSWORD = ENV.SUPER_ADMIN_PASSWORD || 'y9fK80dWJKUIJ9p';
+    const SUPER_ADMIN_EMAIL = `admin@${SUPER_ADMIN_USERNAME}.local`;
     const SUPER_ADMIN_NAME = 'Platform Administrator';
 
     let adminUser = await User.findOne({
@@ -25,7 +25,7 @@ export const seedInitialAdminAndPlans = async () => {
         role: ROLES.SUPER_ADMIN,
         isActive: true,
       });
-      console.log(`✅ [Platform] Super Admin account created ("${SUPER_ADMIN_USERNAME}")`);
+      console.log(`✅ [Platform] Super Admin account created from env ("${SUPER_ADMIN_USERNAME}")`);
     } else {
       let updated = false;
       if (adminUser.role !== ROLES.SUPER_ADMIN) {
@@ -43,7 +43,7 @@ export const seedInitialAdminAndPlans = async () => {
       }
       if (updated) {
         await adminUser.save();
-        console.log(`✅ [Platform] Super Admin account updated to username: "${SUPER_ADMIN_USERNAME}"`);
+        console.log(`✅ [Platform] Super Admin account synchronized from env (username: "${SUPER_ADMIN_USERNAME}")`);
       }
     }
 

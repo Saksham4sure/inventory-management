@@ -899,14 +899,45 @@ export const QRScanPage = () => {
 
               {/* Simple Calculator Surface */}
               <div className="rounded-2xl border border-zinc-200/90 dark:border-zinc-800 bg-zinc-100/70 dark:bg-zinc-900 p-2.5 space-y-2">
-                {/* Clean LCD Amount Display */}
-                <div className="flex items-center justify-between px-3.5 py-3 rounded-xl bg-white dark:bg-[#181b22] border border-zinc-200 dark:border-zinc-800 shadow-inner">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+                {/* Clean LCD Amount Display with direct keyboard input */}
+                <div className="flex items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl bg-white dark:bg-[#181b22] border border-zinc-200 dark:border-zinc-800 shadow-inner">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 shrink-0">
                     Amount ({currency})
                   </span>
-                  <span className="text-xl font-black font-mono text-zinc-900 dark:text-zinc-100">
-                    {manualAmount || '0'}
-                  </span>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={manualAmount}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      // Allow digits, decimal points, and standard math operators: +, -, *, /, x, ÷
+                      if (/^[0-9+\-*/.×÷\s]*$/.test(val)) {
+                        setManualAmount(val);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (/[+\-*/×÷]/.test(manualAmount)) {
+                          handleCalcButton('=');
+                        } else {
+                          addManualItemToCart();
+                        }
+                      }
+                    }}
+                    onFocus={(e) => {
+                      if (manualAmount === '0') {
+                        setManualAmount('');
+                      }
+                    }}
+                    onBlur={() => {
+                      if (!manualAmount.trim()) {
+                        setManualAmount('0');
+                      }
+                    }}
+                    placeholder="0"
+                    className="w-full text-right text-xl font-black font-mono text-zinc-900 dark:text-zinc-100 bg-transparent border-none outline-none focus:ring-0 p-0"
+                  />
                 </div>
 
                 {/* Keypad */}
