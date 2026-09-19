@@ -291,37 +291,34 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 pt-14 pb-4 sm:p-5 bg-black/60 dark:bg-black/80 backdrop-blur-sm overflow-y-auto"
       role="dialog"
       aria-modal="true"
     >
-      <div className="relative w-full max-w-2xl bg-white dark:bg-[#14161f] border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col my-auto animate-in fade-in zoom-in-95 duration-200">
-        {/* Top Accent Gradient Bar */}
-        <div className="h-1.5 w-full bg-gradient-to-r from-amber-500 via-indigo-600 to-purple-600" />
-
+      <div className="relative w-full max-w-2xl bg-white dark:bg-[#14161f] border border-zinc-200 dark:border-zinc-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col my-auto animate-in fade-in zoom-in-95 duration-200">
         {/* Modal Header */}
-        <div className="p-5 sm:p-6 border-b border-zinc-100 dark:border-zinc-800/80 bg-zinc-50/70 dark:bg-zinc-900/50">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="h-11 w-11 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-600/25 shrink-0">
-                {currentStep === 1 && <MapPin className="h-5 w-5" />}
-                {currentStep === 2 && <FileCheck2 className="h-5 w-5" />}
-                {currentStep === 3 && <ShieldCheck className="h-5 w-5" />}
+        <div className="p-4 sm:p-6 border-b border-zinc-100 dark:border-zinc-800/80 bg-zinc-50/70 dark:bg-zinc-900/50">
+          <div className="flex items-center justify-between gap-2.5 sm:gap-4">
+            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+              <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 flex items-center justify-center shadow-xs shrink-0">
+                {currentStep === 1 && <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />}
+                {currentStep === 2 && <FileCheck2 className="h-4 w-4 sm:h-5 sm:w-5" />}
+                {currentStep === 3 && <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5" />}
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold uppercase tracking-wider font-mono text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/80 px-2 py-0.5 rounded-md border border-indigo-200 dark:border-indigo-800">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-0.5">
+                  <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wider font-mono text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md border border-zinc-200 dark:border-zinc-700 shrink-0 whitespace-nowrap">
                     {currentStep === 3 ? 'Completed' : `Step ${currentStep} of 2`}
                   </span>
-                  <span className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+                  <span className="text-[11px] sm:text-xs font-medium text-zinc-500 dark:text-zinc-400 truncate">
                     {currentStep === 1
-                      ? 'Address Verification (Required)'
+                      ? 'Address Verification'
                       : currentStep === 2
-                      ? 'Upload KYC Details (Required)'
+                      ? 'Upload KYC Details'
                       : 'Verification Submitted'}
                   </span>
                 </div>
-                <h2 className="text-lg sm:text-xl font-bold tracking-tight text-zinc-900 dark:text-white mt-0.5">
+                <h2 className="text-sm sm:text-lg font-bold tracking-tight text-zinc-900 dark:text-white truncate">
                   {currentStep === 1 && 'Verify Official Address'}
                   {currentStep === 2 && 'Upload Identity KYC Documents'}
                   {currentStep === 3 && 'Verification Under Review'}
@@ -330,12 +327,12 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
             </div>
 
             {/* Header Right: Sign Out Option */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center shrink-0">
               <button
                 type="button"
                 onClick={handleSignOut}
                 title="Sign out of account"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 text-[11px] font-medium text-zinc-500 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 transition-colors"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-800 text-[11px] font-medium text-zinc-600 dark:text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 transition-colors"
               >
                 <LogOut className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Sign Out</span>
@@ -345,15 +342,15 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
         </div>
 
         {/* Modal Body */}
-        <div className="p-5 sm:p-7 overflow-y-auto max-h-[68vh]">
+        <div className="p-4 sm:p-7 overflow-y-auto max-h-[calc(88dvh-120px)] sm:max-h-[68vh]">
           {/* STEP 1: VERIFY ADDRESS */}
           {currentStep === 1 && (
             <form id="step-1-address-form" onSubmit={handleStep1AddressSubmit} className="space-y-4">
               {/* Mandatory Info Banner */}
-              <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-900 dark:text-amber-200 flex items-start gap-2.5">
-                <ShieldAlert className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div className="p-3.5 rounded-2xl bg-zinc-100/80 dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-600 dark:text-zinc-300 flex items-start gap-2.5">
+                <ShieldAlert className="h-4 w-4 text-zinc-500 dark:text-zinc-400 shrink-0 mt-0.5" />
                 <div>
-                  <span className="font-semibold block mb-0.5">
+                  <span className="font-semibold block mb-0.5 text-zinc-900 dark:text-zinc-100">
                     Mandatory Business Account Setup
                   </span>
                   <span>
@@ -365,25 +362,25 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
               {/* Verified Address Scope Indicator */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
                 <div className="p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800/80 flex flex-col items-center text-center gap-1">
-                  <Building2 className="h-4 w-4 text-indigo-500" />
+                  <Building2 className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
                   <span className="text-[10px] font-semibold text-zinc-700 dark:text-zinc-300">
                     Business Profile
                   </span>
                 </div>
                 <div className="p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800/80 flex flex-col items-center text-center gap-1">
-                  <Receipt className="h-4 w-4 text-indigo-500" />
+                  <Receipt className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
                   <span className="text-[10px] font-semibold text-zinc-700 dark:text-zinc-300">
                     POS Receipts
                   </span>
                 </div>
                 <div className="p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800/80 flex flex-col items-center text-center gap-1">
-                  <Users className="h-4 w-4 text-indigo-500" />
+                  <Users className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
                   <span className="text-[10px] font-semibold text-zinc-700 dark:text-zinc-300">
                     Customer Records
                   </span>
                 </div>
                 <div className="p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800/80 flex flex-col items-center text-center gap-1">
-                  <ShieldCheck className="h-4 w-4 text-indigo-500" />
+                  <ShieldCheck className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
                   <span className="text-[10px] font-semibold text-zinc-700 dark:text-zinc-300">
                     KYC Compliance
                   </span>
@@ -434,7 +431,7 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
               {/* Cascading Nepal Location Selector */}
               <div className="pt-2">
                 <label className="block text-xs font-semibold text-zinc-900 dark:text-zinc-100 mb-2 flex items-center gap-1.5">
-                  <MapPin className="h-4 w-4 text-indigo-500" />
+                  <MapPin className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
                   <span>Official Address (Nepal Administration Hierarchy)</span>
                 </label>
                 <LocationSelect
@@ -466,9 +463,9 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
           {currentStep === 2 && (
             <form id="step-2-kyc-form" onSubmit={handleStep2KycSubmit} className="space-y-4">
               {/* Address & Contact Recap Badge */}
-              <div className="p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 flex items-center justify-between gap-3 text-xs">
+              <div className="p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 flex items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-2 min-w-0">
-                  <MapPin className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <MapPin className="h-4 w-4 text-zinc-600 dark:text-zinc-400 shrink-0" />
                   <div className="min-w-0">
                     <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase block">
                       Verified Address & Contact (Step 1)
@@ -488,15 +485,15 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
                 <button
                   type="button"
                   onClick={() => setCurrentStep(1)}
-                  className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline shrink-0"
+                  className="text-[11px] font-medium text-zinc-900 dark:text-zinc-100 underline underline-offset-2 hover:opacity-75 shrink-0"
                 >
-                  Edit Details
+                  Edit
                 </button>
               </div>
 
               {/* Rejection Alert if Applicable */}
               {user?.kyc?.status === 'REJECTED' && (
-                <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-700 dark:text-rose-300 space-y-1">
+                <div className="p-3 rounded-xl sm:rounded-2xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-700 dark:text-rose-300 space-y-1">
                   <div className="flex items-center gap-1.5 font-bold">
                     <ShieldAlert className="h-4 w-4 shrink-0" />
                     <span>Previous Submission Not Approved</span>
@@ -516,59 +513,65 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
                 <label className="block text-xs font-semibold text-zinc-900 dark:text-zinc-100 mb-2">
                   Select Government-Issued Document Type:
                 </label>
-                <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
                   <button
                     type="button"
                     onClick={() => setDocumentType('CITIZENSHIP')}
-                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                    className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
                       documentType === 'CITIZENSHIP'
-                        ? 'border-indigo-600 bg-indigo-50/70 dark:bg-indigo-950/60 text-indigo-950 dark:text-indigo-200 ring-2 ring-indigo-500/20 font-bold'
-                        : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/40 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                        ? 'border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-950 font-bold shadow-xs'
+                        : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/40 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
                     }`}
                   >
                     <div className="flex items-center justify-between w-full mb-1">
-                      <p className="text-xs font-bold">Citizenship</p>
+                      <p className="text-[11px] sm:text-xs font-bold truncate">Citizenship</p>
                       {documentType === 'CITIZENSHIP' && (
-                        <CheckCircle2 className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                        <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-white dark:text-zinc-950" />
                       )}
                     </div>
-                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400">नागरिकता</p>
+                    <p className={`text-[9px] sm:text-[10px] ${documentType === 'CITIZENSHIP' ? 'text-zinc-300 dark:text-zinc-600' : 'text-zinc-400 dark:text-zinc-500'}`}>
+                      नागरिकता
+                    </p>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setDocumentType('DRIVING_LICENSE')}
-                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                    className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
                       documentType === 'DRIVING_LICENSE'
-                        ? 'border-indigo-600 bg-indigo-50/70 dark:bg-indigo-950/60 text-indigo-950 dark:text-indigo-200 ring-2 ring-indigo-500/20 font-bold'
-                        : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/40 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                        ? 'border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-950 font-bold shadow-xs'
+                        : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/40 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
                     }`}
                   >
                     <div className="flex items-center justify-between w-full mb-1">
-                      <p className="text-xs font-bold">Driving License</p>
+                      <p className="text-[11px] sm:text-xs font-bold truncate">License</p>
                       {documentType === 'DRIVING_LICENSE' && (
-                        <CheckCircle2 className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                        <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-white dark:text-zinc-950" />
                       )}
                     </div>
-                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400">सवारी चालक अनुमति</p>
+                    <p className={`text-[9px] sm:text-[10px] ${documentType === 'DRIVING_LICENSE' ? 'text-zinc-300 dark:text-zinc-600' : 'text-zinc-400 dark:text-zinc-500'}`}>
+                      सवारी चालक
+                    </p>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setDocumentType('PASSPORT')}
-                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                    className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
                       documentType === 'PASSPORT'
-                        ? 'border-indigo-600 bg-indigo-50/70 dark:bg-indigo-950/60 text-indigo-950 dark:text-indigo-200 ring-2 ring-indigo-500/20 font-bold'
-                        : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/40 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                        ? 'border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-950 font-bold shadow-xs'
+                        : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/40 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'
                     }`}
                   >
                     <div className="flex items-center justify-between w-full mb-1">
-                      <p className="text-xs font-bold">Passport / ID</p>
+                      <p className="text-[11px] sm:text-xs font-bold truncate">Passport</p>
                       {documentType === 'PASSPORT' && (
-                        <CheckCircle2 className="h-3.5 w-3.5 text-indigo-600 dark:text-indigo-400" />
+                        <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-white dark:text-zinc-950" />
                       )}
                     </div>
-                    <p className="text-[10px] text-zinc-500 dark:text-zinc-400">राहदानी / परिचय</p>
+                    <p className={`text-[9px] sm:text-[10px] ${documentType === 'PASSPORT' ? 'text-zinc-300 dark:text-zinc-600' : 'text-zinc-400 dark:text-zinc-500'}`}>
+                      राहदानी
+                    </p>
                   </button>
                 </div>
               </div>
@@ -597,7 +600,7 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
               />
 
               {/* Front & Back Document Photo Uploads */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {/* Front Side */}
                 <div className="space-y-1.5">
                   <span className="block text-xs font-semibold text-zinc-700 dark:text-zinc-300">
@@ -609,7 +612,7 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
                       <img
                         src={frontImage}
                         alt="Front Side"
-                        className="w-full h-32 object-cover bg-zinc-100 dark:bg-zinc-900"
+                        className="w-full h-28 sm:h-32 object-cover bg-zinc-100 dark:bg-zinc-900"
                       />
                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                         <button
@@ -625,8 +628,8 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
                       </span>
                     </div>
                   ) : (
-                    <label className="flex flex-col items-center justify-center h-32 rounded-2xl border-2 border-dashed border-zinc-200 dark:border-zinc-800 hover:border-indigo-500 dark:hover:border-indigo-500 bg-zinc-50/60 dark:bg-zinc-950/40 hover:bg-indigo-50/20 dark:hover:bg-indigo-950/20 transition-all cursor-pointer p-3 text-center">
-                      <Upload className="h-5 w-5 text-indigo-500 mb-1" />
+                    <label className="flex flex-col items-center justify-center h-28 sm:h-32 rounded-2xl border-2 border-dashed border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 bg-zinc-50/60 dark:bg-zinc-900/40 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40 transition-all cursor-pointer p-3 text-center">
+                      <Upload className="h-5 w-5 text-zinc-400 dark:text-zinc-500 mb-1" />
                       <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
                         Upload Front Side
                       </span>
@@ -652,7 +655,7 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
                       <img
                         src={backImage}
                         alt="Back Side"
-                        className="w-full h-32 object-cover bg-zinc-100 dark:bg-zinc-900"
+                        className="w-full h-28 sm:h-32 object-cover bg-zinc-100 dark:bg-zinc-900"
                       />
                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                         <button
@@ -668,8 +671,8 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
                       </span>
                     </div>
                   ) : (
-                    <label className="flex flex-col items-center justify-center h-32 rounded-2xl border-2 border-dashed border-zinc-200 dark:border-zinc-800 hover:border-indigo-500 dark:hover:border-indigo-500 bg-zinc-50/60 dark:bg-zinc-950/40 hover:bg-indigo-50/20 dark:hover:bg-indigo-950/20 transition-all cursor-pointer p-3 text-center">
-                      <Upload className="h-5 w-5 text-indigo-500 mb-1" />
+                    <label className="flex flex-col items-center justify-center h-28 sm:h-32 rounded-2xl border-2 border-dashed border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 bg-zinc-50/60 dark:bg-zinc-900/40 hover:bg-zinc-100/50 dark:hover:bg-zinc-800/40 transition-all cursor-pointer p-3 text-center">
+                      <Upload className="h-5 w-5 text-zinc-400 dark:text-zinc-500 mb-1" />
                       <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
                         Upload Back Side
                       </span>
@@ -686,8 +689,8 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
               </div>
 
               {/* Encryption & Security Note */}
-              <div className="p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center gap-2.5">
-                <Lock className="h-4 w-4 text-indigo-500 shrink-0" />
+              <div className="p-3 rounded-xl sm:rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center gap-2.5">
+                <Lock className="h-4 w-4 text-zinc-400 dark:text-zinc-500 shrink-0" />
                 <span>
                   Documents are encrypted with AES-256 and reviewed strictly by Platform Compliance for identity validation.
                 </span>
@@ -698,19 +701,19 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
           {/* STEP 3: SUBMITTED / COMPLETION STATE */}
           {currentStep === 3 && (
             <div className="space-y-4 py-2">
-              <div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/10 p-6 text-center space-y-3">
-                <div className="inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-lg shadow-emerald-600/25">
-                  <ShieldCheck className="h-8 w-8" />
+              <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-5 sm:p-6 text-center space-y-3">
+                <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 shadow-xs">
+                  <ShieldCheck className="h-6 w-6" />
                 </div>
-                <h3 className="text-lg font-bold text-zinc-900 dark:text-white">
+                <h3 className="text-base sm:text-lg font-bold text-zinc-900 dark:text-white">
                   Verification Details Submitted Successfully!
                 </h3>
                 <p className="text-xs text-zinc-600 dark:text-zinc-300 max-w-md mx-auto leading-relaxed">
                   Your address has been verified and registered throughout the system. Your government-issued KYC documents are now undergoing verification with Platform Compliance.
                 </p>
 
-                <div className="pt-3 flex justify-center">
-                  <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-[11px] font-bold font-mono tracking-wider">
+                <div className="pt-2 flex justify-center">
+                  <span className="px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700 text-[10px] sm:text-[11px] font-bold font-mono tracking-wider">
                     STATUS: UNDER COMPLIANCE REVIEW (PENDING)
                   </span>
                 </div>
@@ -745,7 +748,7 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
                 </div>
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-zinc-500 dark:text-zinc-400">Turnaround Time:</span>
-                  <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                  <span className="font-medium text-zinc-700 dark:text-zinc-300">
                     Typically verified within 24 hours
                   </span>
                 </div>
@@ -755,31 +758,32 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
         </div>
 
         {/* Modal Footer / Navigation Controls */}
-        <div className="p-5 sm:p-6 border-t border-zinc-100 dark:border-zinc-800/80 bg-zinc-50/70 dark:bg-zinc-900/50 space-y-3">
-          <div className="flex items-center justify-between gap-3">
+        <div className="p-4 sm:p-6 border-t border-zinc-100 dark:border-zinc-800/80 bg-zinc-50/70 dark:bg-zinc-900/50 space-y-3">
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3">
             {/* Back Button (Only available on step 2) */}
             {currentStep === 2 ? (
               <button
                 type="button"
                 onClick={() => setCurrentStep(1)}
                 disabled={loading}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 cursor-pointer"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
                 <span>Back to Address</span>
               </button>
             ) : (
-              <div />
+              <div className="hidden sm:block" />
             )}
 
             {/* Action Buttons */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-end">
               {currentStep === 1 && (
                 <Button
                   type="submit"
                   form="step-1-address-form"
                   variant="primary"
                   loading={loading}
+                  className="w-full sm:w-auto"
                 >
                   <span>Verify Address & Continue</span>
                   <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
@@ -792,6 +796,7 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
                   form="step-2-kyc-form"
                   variant="primary"
                   loading={loading}
+                  className="w-full sm:w-auto"
                 >
                   <FileCheck2 className="h-3.5 w-3.5 mr-1.5" />
                   <span>Submit KYC Details</span>
@@ -803,6 +808,7 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
                   type="button"
                   onClick={handleFinish}
                   variant="primary"
+                  className="w-full sm:w-auto"
                 >
                   <span>Proceed to Dashboard</span>
                   <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
@@ -814,20 +820,20 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
           {/* Progress Bar */}
           <div className="space-y-1 pt-1 border-t border-zinc-200/60 dark:border-zinc-800">
             <div className="flex items-center justify-between text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
-              <span>
+              <span className="truncate">
                 {currentStep === 1
                   ? 'Step 1 of 2: Address Verification'
                   : currentStep === 2
-                  ? 'Step 2 of 2: Upload KYC Details'
+                  ? 'Step 2 of 2: KYC Details'
                   : 'Verification Complete'}
               </span>
-              <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+              <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100 shrink-0 ml-2">
                 {currentStep === 3 ? '100%' : `${progressPercent}%`}
               </span>
             </div>
             <div className="w-full h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-indigo-500 via-indigo-600 to-purple-600 rounded-full transition-all duration-500 ease-out"
+                className="h-full bg-zinc-900 dark:bg-white rounded-full transition-all duration-500 ease-out"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
