@@ -6,6 +6,7 @@ import { authService } from '../../services/authService';
 import { LocationSelect } from '../ui/LocationSelect';
 import { CoordinateInput } from '../ui/CoordinateInput';
 import { Input } from '../ui/Input';
+import { DatePicker } from '../ui/DatePicker';
 import { Button } from '../ui/Button';
 import { ROUTES } from '../../constants/routes';
 import { useSnackbar } from '../../hooks/useSnackbar';
@@ -56,9 +57,14 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
 
   const [loading, setLoading] = useState(false);
 
-  // STEP 1 STATE: Address & Contact Verification
+  // STEP 1 STATE: Address, Contact Phone & DOB Verification
   const [name, setName] = useState(user?.name || '');
   const [phone, setPhone] = useState(user?.phone || '');
+  const [dob, setDob] = useState(
+    user?.dob ? new Date(user.dob).toISOString().split('T')[0] : ''
+  );
+  const [phoneError, setPhoneError] = useState('');
+  const [dobError, setDobError] = useState('');
   const [locationValue, setLocationValue] = useState(
     user?.location?.formattedAddress || user?.location || ''
   );
@@ -81,6 +87,9 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
   useEffect(() => {
     if (user?.name && !name) setName(user.name);
     if (user?.phone && !phone) setPhone(user.phone);
+    if (user?.dob && !dob) {
+      setDob(new Date(user.dob).toISOString().split('T')[0]);
+    }
     if (user?.location?.formattedAddress && !locationValue) {
       setLocationValue(user.location.formattedAddress);
     }
@@ -97,6 +106,38 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
       setDocumentType(user.kyc.documentType);
     }
   }, [user]);
+
+  // Validation functions for Step 1
+  const validatePhone = (val) => {
+    if (!val || !val.trim()) return 'Contact phone number is required';
+    const clean = val.replace(/[\s()-]/g, '');
+    const regex = /^[0-9+]{7,15}$/;
+    if (!regex.test(clean)) {
+      return 'Please enter a valid contact phone number (e.g. 9801234567 or +977-98...)';
+    }
+    return '';
+  };
+
+  const validateDob = (val) => {
+    if (!val) return 'Date of birth is required';
+    const birthDate = new Date(val);
+    if (isNaN(birthDate.getTime())) {
+      return 'Please enter a valid date of birth';
+    }
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    if (birthDate > today) {
+      return 'Date of birth cannot be in the future';
+    }
+    if (age < 16) {
+      return 'You must be at least 16 years old to register a business account';
+    }
+    return '';
+  };
 
   // Image Upload Handler
   const handleImageUpload = (e, side) => {
@@ -124,7 +165,7 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
     reader.readAsDataURL(file);
   };
 
-  // STEP 1 PROCEED: Address Verification Submit
+  // STEP 1 PROCEED: Address & Contact Verification Submit
   const handleStep1AddressSubmit = async (e) => {
     e.preventDefault();
 
@@ -133,8 +174,14 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
       return;
     }
 
-    if (!phone.trim()) {
-      showError('Contact phone number is required.');
+    const pErr = validatePhone(phone);
+    const dErr = validateDob(dob);
+
+    setPhoneError(pErr);
+    setDobError(dErr);
+
+    if (pErr || dErr) {
+      showError('Please resolve phone and date of birth validation errors.');
       return;
     }
 
@@ -155,6 +202,7 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
         profile: {
           name: name.trim(),
           phone: phone.trim(),
+          dob,
           location: typeof locationValue === 'object' ? locationValue : { formattedAddress: locationValue },
         },
         coordinates,
@@ -162,7 +210,7 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
       });
 
       if (res?.user) updateUser(res.user);
-      showSuccess('Address verified successfully! This address will be used throughout the app.');
+      showSuccess('Address & contact verified successfully! This address will be used throughout the app.');
       setCurrentStep(2);
     } catch (err) {
       showError(err.message || 'Failed to verify address.');
@@ -235,6 +283,7 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
   if (!isOpen) return null;
 
   const progressPercent = currentStep === 1 ? 50 : currentStep === 2 ? 100 : 100;
+  const maxDobDate = new Date().toISOString().split('T')[0];
   const formattedAddressDisplay =
     user?.location?.formattedAddress ||
     (typeof locationValue === 'object' ? locationValue?.formattedAddress : locationValue) ||
@@ -341,8 +390,8 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
                 </div>
               </div>
 
-              {/* Name & Phone Confirmation */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
+              {/* Contact Information & Date of Birth */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
                 <Input
                   label="Registered Full Name"
                   id="step1-name"
@@ -354,13 +403,31 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
                 />
 
                 <Input
-                  label="Primary Contact Phone"
+                  label="Contact Phone Number"
                   id="step1-phone"
                   type="tel"
                   placeholder="e.g. 9801234567"
                   required
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => {
+                    setPhone(e.target.value);
+                    if (phoneError) setPhoneError('');
+                  }}
+                  error={phoneError}
+                />
+
+                <DatePicker
+                  label="Date of Birth (DOB)"
+                  id="step1-dob"
+                  maxDate={maxDobDate}
+                  required
+                  value={dob}
+                  onChange={(e) => {
+                    setDob(e.target.value);
+                    if (dobError) setDobError('');
+                  }}
+                  error={dobError}
+                  helperText="Must be 16+ years"
                 />
               </div>
 
@@ -398,17 +465,24 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
           {/* STEP 2: UPLOAD KYC DETAILS */}
           {currentStep === 2 && (
             <form id="step-2-kyc-form" onSubmit={handleStep2KycSubmit} className="space-y-4">
-              {/* Address Recap Badge */}
+              {/* Address & Contact Recap Badge */}
               <div className="p-3 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 flex items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-2 min-w-0">
                   <MapPin className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <div className="min-w-0">
                     <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase block">
-                      Verified Address (Step 1)
+                      Verified Address & Contact (Step 1)
                     </span>
                     <p className="font-semibold text-zinc-900 dark:text-zinc-100 truncate text-[11px]">
                       {formattedAddressDisplay}
                     </p>
+                    {(phone || dob) && (
+                      <p className="text-[10px] text-zinc-500 dark:text-zinc-400 mt-0.5 truncate">
+                        {phone && <span>Phone: {phone}</span>}
+                        {phone && dob && <span> • </span>}
+                        {dob && <span>DOB: {dob}</span>}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <button
@@ -416,7 +490,7 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
                   onClick={() => setCurrentStep(1)}
                   className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline shrink-0"
                 >
-                  Edit Address
+                  Edit Details
                 </button>
               </div>
 
@@ -650,6 +724,14 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
                     {formattedAddressDisplay}
                   </span>
                 </div>
+                {(phone || dob) && (
+                  <div className="flex items-center justify-between gap-2 border-b border-zinc-200/60 dark:border-zinc-800/80 pb-2">
+                    <span className="text-zinc-500 dark:text-zinc-400">Contact & DOB:</span>
+                    <span className="font-semibold text-zinc-900 dark:text-zinc-100 text-right">
+                      {phone || ''} {dob ? `(${dob})` : ''}
+                    </span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between gap-2 border-b border-zinc-200/60 dark:border-zinc-800/80 pb-2">
                   <span className="text-zinc-500 dark:text-zinc-400">Document Submitted:</span>
                   <span className="font-semibold text-zinc-900 dark:text-zinc-100">

@@ -3,10 +3,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useSnackbar } from '../hooks/useSnackbar';
 import { Input } from '../components/ui/Input';
-import { DatePicker } from '../components/ui/DatePicker';
 import { Button } from '../components/ui/Button';
 import { ROUTES } from '../constants/routes';
-import { UserPlus, AlertCircle, Calendar, ArrowRight, Building2, User, ShieldAlert } from 'lucide-react';
+import { UserPlus, AlertCircle, ArrowRight, Building2, User, ShieldAlert } from 'lucide-react';
 
 export const RegisterPage = () => {
   const navigate = useNavigate();
@@ -16,8 +15,6 @@ export const RegisterPage = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    phone: '',
-    dob: '',
     password: '',
     confirmPassword: '',
     userType: 'CUSTOMER', // 'CUSTOMER' (Normal user) | 'BUSINESS' (Store / Business user)
@@ -54,37 +51,6 @@ export const RegisterPage = () => {
     return '';
   };
 
-  const validatePhone = (phone) => {
-    if (!phone || !phone.trim()) return 'Contact phone number is required';
-    const clean = phone.replace(/[\s()-]/g, '');
-    const regex = /^[0-9+]{7,15}$/;
-    if (!regex.test(clean)) {
-      return 'Please enter a valid contact phone number (e.g. 9801234567 or +977-98...)';
-    }
-    return '';
-  };
-
-  const validateDob = (dob) => {
-    if (!dob) return 'Date of birth is required';
-    const birthDate = new Date(dob);
-    if (isNaN(birthDate.getTime())) {
-      return 'Please enter a valid date of birth';
-    }
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const m = today.getMonth() - birthDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-      age--;
-    }
-    if (birthDate > today) {
-      return 'Date of birth cannot be in the future';
-    }
-    if (age < 16) {
-      return 'You must be at least 16 years old to create an account';
-    }
-    return '';
-  };
-
   const validatePassword = (pass) => {
     if (!pass) return 'Password is required';
     if (pass.length < 6) return 'Password must be at least 6 characters long';
@@ -101,8 +67,6 @@ export const RegisterPage = () => {
     let err = '';
     if (field === 'name') err = validateFullName(formData.name);
     if (field === 'email') err = validateEmail(formData.email);
-    if (field === 'phone') err = validatePhone(formData.phone);
-    if (field === 'dob') err = validateDob(formData.dob);
     if (field === 'password') err = validatePassword(formData.password);
     if (field === 'confirmPassword')
       err = validateConfirmPassword(formData.password, formData.confirmPassword);
@@ -116,23 +80,19 @@ export const RegisterPage = () => {
 
     const nameErr = validateFullName(formData.name);
     const emailErr = validateEmail(formData.email);
-    const phoneErr = validatePhone(formData.phone);
-    const dobErr = validateDob(formData.dob);
     const passErr = validatePassword(formData.password);
     const confirmErr = validateConfirmPassword(formData.password, formData.confirmPassword);
 
     const errors = {
       name: nameErr,
       email: emailErr,
-      phone: phoneErr,
-      dob: dobErr,
       password: passErr,
       confirmPassword: confirmErr,
     };
 
     setFieldErrors(errors);
 
-    if (nameErr || emailErr || phoneErr || dobErr || passErr || confirmErr) {
+    if (nameErr || emailErr || passErr || confirmErr) {
       setError('Please resolve all validation errors before proceeding.');
       return;
     }
@@ -143,8 +103,6 @@ export const RegisterPage = () => {
       await register({
         name: formData.name.trim(),
         email: formData.email.toLowerCase().trim(),
-        phone: formData.phone.trim(),
-        dob: formData.dob,
         password: formData.password,
         userType: formData.userType,
       });
@@ -168,9 +126,6 @@ export const RegisterPage = () => {
       setLoading(false);
     }
   };
-
-  // Compute maximum allowed DOB date string (today's date)
-  const maxDobDate = new Date().toISOString().split('T')[0];
 
   return (
     <div>
@@ -290,44 +245,6 @@ export const RegisterPage = () => {
             onBlur={() => handleBlur('email')}
             error={fieldErrors.email}
           />
-        </div>
-
-        {/* Phone Number & Date of Birth (Grid) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-          {/* Contact Phone */}
-          <div>
-            <Input
-              label="Contact Phone Number"
-              id="phone"
-              type="tel"
-              placeholder="e.g. 9801234567"
-              required
-              value={formData.phone}
-              onChange={(e) => {
-                setFormData({ ...formData, phone: e.target.value });
-                if (fieldErrors.phone) setFieldErrors({ ...fieldErrors, phone: '' });
-              }}
-              onBlur={() => handleBlur('phone')}
-              error={fieldErrors.phone}
-            />
-          </div>
-
-          {/* Date of Birth */}
-          <div>
-            <DatePicker
-              label="Date of Birth (DOB)"
-              id="dob"
-              maxDate={maxDobDate}
-              required
-              value={formData.dob}
-              onChange={(e) => {
-                setFormData({ ...formData, dob: e.target.value });
-                if (fieldErrors.dob) setFieldErrors({ ...fieldErrors, dob: '' });
-              }}
-              error={fieldErrors.dob}
-              helperText="Must be at least 16 years old"
-            />
-          </div>
         </div>
 
         {/* Password */}

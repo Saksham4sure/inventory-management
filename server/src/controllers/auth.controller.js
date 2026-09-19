@@ -42,14 +42,14 @@ export const register = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Please enter a valid email address.');
   }
 
-  // 3. Contact Phone validation
-  if (!phone || typeof phone !== 'string' || !phone.trim()) {
-    throw new ApiError(400, 'Contact phone number is required');
-  }
-  const trimmedPhone = phone.trim();
-  const phoneRegex = /^[0-9+\s()-]{7,20}$/;
-  if (!phoneRegex.test(trimmedPhone)) {
-    throw new ApiError(400, 'Please enter a valid contact phone number.');
+  // 3. Contact Phone validation (Optional at initial registration, collected during mandatory verification)
+  let trimmedPhone = '';
+  if (phone && typeof phone === 'string' && phone.trim()) {
+    trimmedPhone = phone.trim();
+    const phoneRegex = /^[0-9+\s()-]{7,20}$/;
+    if (!phoneRegex.test(trimmedPhone)) {
+      throw new ApiError(400, 'Please enter a valid contact phone number.');
+    }
   }
 
   // 4. Password validation
@@ -57,25 +57,26 @@ export const register = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Password must be at least 6 characters long.');
   }
 
-  // 5. Date of Birth (DOB) validation
-  if (!dob) {
-    throw new ApiError(400, 'Date of birth is required.');
-  }
-  const birthDate = new Date(dob);
-  if (isNaN(birthDate.getTime())) {
-    throw new ApiError(400, 'Please provide a valid date of birth.');
-  }
-  const today = new Date();
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const m = today.getMonth() - birthDate.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-    age--;
-  }
-  if (birthDate > today) {
-    throw new ApiError(400, 'Date of birth cannot be in the future.');
-  }
-  if (age < 16) {
-    throw new ApiError(400, 'You must be at least 16 years old to create an account.');
+  // 5. Date of Birth (DOB) validation (Optional at initial registration, collected during mandatory verification)
+  let birthDate = null;
+  if (dob) {
+    const parsedDate = new Date(dob);
+    if (isNaN(parsedDate.getTime())) {
+      throw new ApiError(400, 'Please provide a valid date of birth.');
+    }
+    const today = new Date();
+    let age = today.getFullYear() - parsedDate.getFullYear();
+    const m = today.getMonth() - parsedDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < parsedDate.getDate())) {
+      age--;
+    }
+    if (parsedDate > today) {
+      throw new ApiError(400, 'Date of birth cannot be in the future.');
+    }
+    if (age < 16) {
+      throw new ApiError(400, 'You must be at least 16 years old to create an account.');
+    }
+    birthDate = parsedDate;
   }
 
   const existingUser = await User.findOne({ email: trimmedEmail });
@@ -345,10 +346,22 @@ export const updateOnboarding = asyncHandler(async (req, res) => {
     throw new ApiError(404, 'User not found');
   }
 
-  // STEP 1: Address Verification (Applied across the app where user address is needed)
+  // STEP 1: Address & Contact Verification (Applied across the app where user address is needed)
   if (step === 1 || profile || location || address) {
     if (profile?.name && profile.name.trim()) user.name = profile.name.trim();
-    if (profile?.phone && profile.phone.trim()) user.phone = profile.phone.trim();
+
+    const incomingPhone = profile?.phone || req.body.phone;
+    if (incomingPhone && typeof incomingPhone === 'string' && incomingPhone.trim()) {
+      user.phone = incomingPhone.trim();
+    }
+
+    const incomingDob = profile?.dob || req.body.dob;
+    if (incomingDob) {
+      const parsedDate = new Date(incomingDob);
+      if (!isNaN(parsedDate.getTime())) {
+        user.dob = parsedDate;
+      }
+    }
 
     const incomingLoc = profile?.location || location || address;
     if (incomingLoc) {
