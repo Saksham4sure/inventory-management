@@ -27,11 +27,29 @@ export const LoginPage = () => {
       const data = await login(formData);
       if (data.user?.role === 'SUPER_ADMIN') {
         navigate(ROUTES.ADMIN_DASHBOARD, { replace: true });
-      } else if (data.hasBusiness) {
-        const from = location.state?.from?.pathname || ROUTES.DASHBOARD;
-        navigate(from, { replace: true });
+      } else if (data.user?.userType === 'CUSTOMER') {
+        navigate(ROUTES.CUSTOMER_PURCHASES, { replace: true });
       } else {
-        navigate(ROUTES.BUSINESS_SETUP, { replace: true });
+        // Business user
+        const hasAddress = Boolean(
+          data.user?.location?.formattedAddress && data.user.location.formattedAddress.trim()
+        );
+        const hasKyc = Boolean(
+          data.user?.kyc?.documentNumber &&
+          data.user?.kyc?.frontImage &&
+          data.user?.kyc?.backImage &&
+          data.user?.kyc?.status &&
+          data.user?.kyc?.status !== 'NOT_SUBMITTED' &&
+          data.user?.kyc?.status !== 'REJECTED'
+        );
+        if (!hasAddress || !hasKyc) {
+          navigate(ROUTES.ONBOARDING, { replace: true });
+        } else if (data.hasBusiness) {
+          const from = location.state?.from?.pathname || ROUTES.DASHBOARD;
+          navigate(from, { replace: true });
+        } else {
+          navigate(ROUTES.DASHBOARD, { replace: true });
+        }
       }
     } catch (err) {
       showError(err.message || 'Login failed. Please check your credentials.');

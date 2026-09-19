@@ -62,6 +62,28 @@ export const AppRoutes = () => {
     );
   }
 
+  const getAuthenticatedRedirect = () => {
+    if (isSuperAdmin) return ROUTES.ADMIN_DASHBOARD;
+    if (user?.userType === 'CUSTOMER') return ROUTES.CUSTOMER_PURCHASES;
+
+    const isBusiness = user?.userType === 'BUSINESS' || (!user?.userType && user?.role === 'OWNER');
+    if (isBusiness) {
+      const hasAddress = Boolean(user?.location?.formattedAddress && user?.location?.formattedAddress.trim());
+      const hasKyc = Boolean(
+        user?.kyc?.documentNumber &&
+        user?.kyc?.frontImage &&
+        user?.kyc?.backImage &&
+        user?.kyc?.status &&
+        user?.kyc?.status !== 'NOT_SUBMITTED' &&
+        user?.kyc?.status !== 'REJECTED'
+      );
+      if (!hasAddress || !hasKyc) {
+        return ROUTES.ONBOARDING;
+      }
+    }
+    return ROUTES.DASHBOARD;
+  };
+
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>
@@ -70,11 +92,7 @@ export const AppRoutes = () => {
           path={ROUTES.HOME}
           element={
             isAuthenticated ? (
-              isSuperAdmin ? (
-                <Navigate to={ROUTES.ADMIN_DASHBOARD} replace />
-              ) : (
-                <Navigate to={ROUTES.DASHBOARD} replace />
-              )
+              <Navigate to={getAuthenticatedRedirect()} replace />
             ) : (
               <Navigate to={ROUTES.LOGIN} replace />
             )
@@ -87,11 +105,7 @@ export const AppRoutes = () => {
             path={ROUTES.LOGIN}
             element={
               isAuthenticated ? (
-                isSuperAdmin ? (
-                  <Navigate to={ROUTES.ADMIN_DASHBOARD} replace />
-                ) : (
-                  <Navigate to={ROUTES.DASHBOARD} replace />
-                )
+                <Navigate to={getAuthenticatedRedirect()} replace />
               ) : (
                 <LoginPage />
               )
@@ -101,11 +115,7 @@ export const AppRoutes = () => {
             path={ROUTES.REGISTER}
             element={
               isAuthenticated ? (
-                isSuperAdmin ? (
-                  <Navigate to={ROUTES.ADMIN_DASHBOARD} replace />
-                ) : (
-                  <Navigate to={ROUTES.DASHBOARD} replace />
-                )
+                <Navigate to={getAuthenticatedRedirect()} replace />
               ) : (
                 <RegisterPage />
               )

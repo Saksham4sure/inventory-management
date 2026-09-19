@@ -92,7 +92,7 @@ export const register = asyncHandler(async (req, res) => {
     userType: selectedType,
     role: assignedRole,
     onboardingStep: 1,
-    onboardingCompleted: false,
+    onboardingCompleted: selectedType === 'CUSTOMER',
   });
 
   const token = generateAuthToken(user);
@@ -339,20 +339,63 @@ export const uploadKyc = asyncHandler(async (req, res) => {
 });
 
 export const updateOnboarding = asyncHandler(async (req, res) => {
-  const { step, profile, kyc, business, skipBusiness } = req.body;
+  const { step, profile, kyc, business, skipBusiness, location, address } = req.body;
   const user = await User.findById(req.user._id);
   if (!user) {
     throw new ApiError(404, 'User not found');
   }
 
-  // Step 1: KYC documents (Citizenship or Driving License)
-  if (step === 1 || kyc) {
+  // STEP 1: Address Verification (Applied across the app where user address is needed)
+  if (step === 1 || profile || location || address) {
+    if (profile?.name && profile.name.trim()) user.name = profile.name.trim();
+    if (profile?.phone && profile.phone.trim()) user.phone = profile.phone.trim();
+
+    const incomingLoc = profile?.location || location || address;
+    if (incomingLoc) {
+      if (typeof incomingLoc === 'string') {
+        user.location = {
+          province: user.location?.province || '',
+          district: user.location?.district || '',
+          municipality: user.location?.municipality || '',
+          ward: user.location?.ward || '',
+          street: user.location?.street || '',
+          formattedAddress: incomingLoc.trim(),
+        };
+      } else {
+        user.location = {
+          province: incomingLoc.province !== undefined ? incomingLoc.province : user.location?.province || '',
+          district: incomingLoc.district !== undefined ? incomingLoc.district : user.location?.district || '',
+          municipality: incomingLoc.municipality !== undefined ? incomingLoc.municipality : user.location?.municipality || '',
+          ward: incomingLoc.ward !== undefined ? incomingLoc.ward : user.location?.ward || '',
+          street: incomingLoc.street !== undefined ? incomingLoc.street : user.location?.street || '',
+          formattedAddress: incomingLoc.formattedAddress || user.location?.formattedAddress || '',
+        };
+      }
+
+      // If user already has a business linked, propagate verified address to business
+      if (user.businessId && user.location?.formattedAddress) {
+        await Business.findByIdAndUpdate(user.businessId, {
+          address: user.location.formattedAddress,
+        });
+      }
+    }
+    user.onboardingStep = Math.max(user.onboardingStep || 1, 2);
+  }
+
+  // STEP 2: KYC Details Upload
+  if (step === 2 || kyc) {
     if (kyc && kyc.frontImage && kyc.backImage) {
+      // Upload images to Cloudinary if configured
+      const [frontImageUrl, backImageUrl] = await Promise.all([
+        uploadImageToCloudinary(kyc.frontImage, 'stockpulse_kyc'),
+        uploadImageToCloudinary(kyc.backImage, 'stockpulse_kyc'),
+      ]);
+
       user.kyc = {
         documentType: kyc.documentType || 'CITIZENSHIP',
         documentNumber: (kyc.documentNumber || '').trim(),
-        frontImage: kyc.frontImage || '',
-        backImage: kyc.backImage || '',
+        frontImage: frontImageUrl,
+        backImage: backImageUrl,
         status: 'PENDING',
         submittedAt: new Date(),
         reviewedAt: null,
@@ -360,13 +403,60 @@ export const updateOnboarding = asyncHandler(async (req, res) => {
         rejectionReason: '',
       };
 
+      user.onboardingCompleted = true;
+      user.onboardingStep = 2;
+
+      // Ensure business entity exists for business user with this verified address
+      if (user.userType === 'BUSINESS' && !user.businessId) {
+        const defaultTrialPlan =
+          (await SubscriptionPlan.findOne({
+            isDefaultTrial: true,
+            isActive: true,
+          })) ||
+          (await SubscriptionPlan.findOne({ isActive: true }).sort({ tierOrder: 1 }));
+
+        const now = new Date();
+        const trialDays = 14;
+        const trialEndDate = new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1000);
+
+        const newBiz = await Business.create({
+          name: `${user.name}'s Business`,
+          owner: user._id,
+          category: 'General Retail',
+          currency: 'NPR',
+          phone: user.phone || '',
+          email: user.email,
+          address: user.location?.formattedAddress || '',
+          subscription: {
+            plan: defaultTrialPlan ? defaultTrialPlan.planId : 'STARTER',
+            status: 'TRIAL',
+            startDate: now,
+            endDate: trialEndDate,
+            isTrial: true,
+          },
+          members: [
+            {
+              user: user._id,
+              role: ROLES.OWNER,
+              joinedAt: now,
+            },
+          ],
+        });
+        user.businessId = newBiz._id;
+      }
+
       // Notify Platform Administrators
       const platformAdmins = await User.find({
         role: ROLES.SUPER_ADMIN,
         isActive: true,
       }).select('_id');
 
-      const docLabel = user.kyc.documentType === 'DRIVING_LICENSE' ? 'Driving License' : 'Citizenship';
+      const docLabel =
+        user.kyc.documentType === 'DRIVING_LICENSE'
+          ? 'Driving License'
+          : user.kyc.documentType === 'PASSPORT'
+          ? 'Passport'
+          : 'Citizenship';
 
       if (platformAdmins.length > 0) {
         const notifications = platformAdmins.map((admin) => ({
@@ -386,24 +476,6 @@ export const updateOnboarding = asyncHandler(async (req, res) => {
         await Notification.insertMany(notifications);
       }
     }
-    user.onboardingStep = Math.max(user.onboardingStep || 1, 2);
-  }
-
-  // Step 2: Personal profile & location
-  if (step === 2 || profile) {
-    if (profile?.name && profile.name.trim()) user.name = profile.name.trim();
-    if (profile?.phone && profile.phone.trim()) user.phone = profile.phone.trim();
-    if (profile?.location) {
-      user.location = {
-        province: profile.location.province || '',
-        district: profile.location.district || '',
-        municipality: profile.location.municipality || '',
-        ward: profile.location.ward || '',
-        street: profile.location.street || '',
-        formattedAddress: profile.location.formattedAddress || '',
-      };
-    }
-    user.onboardingStep = Math.max(user.onboardingStep || 1, 3);
   }
 
   // Step 3: Business creation OR Skip business
@@ -549,11 +621,11 @@ export const searchUsers = asyncHandler(async (req, res) => {
 
   let user = await User.findOne({
     $or: orConditions,
-  }).select('name email phone accountId userId userType role');
+  }).select('name email phone accountId userId userType role location');
 
   // Fallback: If cleanQuery matches the end of ObjectId (e.g. hex "75baa101")
   if (!user && /^[0-9a-fA-F]{6,12}$/.test(cleanQuery)) {
-    const allUsers = await User.find({}).select('name email phone accountId userId userType role');
+    const allUsers = await User.find({}).select('name email phone accountId userId userType role location');
     const matchedBySlice = allUsers.find(
       (u) => u._id.toString().toLowerCase().endsWith(normalizedLower)
     );

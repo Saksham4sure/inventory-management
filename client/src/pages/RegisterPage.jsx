@@ -6,7 +6,7 @@ import { Input } from '../components/ui/Input';
 import { DatePicker } from '../components/ui/DatePicker';
 import { Button } from '../components/ui/Button';
 import { ROUTES } from '../constants/routes';
-import { UserPlus, AlertCircle, Calendar, ArrowRight, Building2, User } from 'lucide-react';
+import { UserPlus, AlertCircle, Calendar, ArrowRight, Building2, User, ShieldAlert } from 'lucide-react';
 
 export const RegisterPage = () => {
   const navigate = useNavigate();
@@ -149,13 +149,19 @@ export const RegisterPage = () => {
         userType: formData.userType,
       });
 
-      showSuccess(
-        'Account created successfully! Please upload your identity document for KYC verification.',
-        'Welcome to StockPulse'
-      );
-
-      // Redirect user directly to the KYC document upload onboarding wizard
-      navigate(ROUTES.ONBOARDING, { replace: true });
+      if (formData.userType === 'CUSTOMER') {
+        showSuccess(
+          'Account created successfully! Welcome to StockPulse.',
+          'Account Created'
+        );
+        navigate(ROUTES.CUSTOMER_PURCHASES, { replace: true });
+      } else {
+        showSuccess(
+          'Business account created! Please complete mandatory address verification and KYC upload to proceed.',
+          'Mandatory Verification Required'
+        );
+        navigate(ROUTES.ONBOARDING, { replace: true });
+      }
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {
@@ -185,42 +191,69 @@ export const RegisterPage = () => {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-3.5" noValidate>
-        {/* Account Type Selector */}
+        {/* Account Type Selector: Normal User vs Business */}
         <div>
           <label className="block text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5">
-            I am registering as
+            Choose Account Type
           </label>
           <div className="grid grid-cols-2 gap-2.5 p-1 rounded-2xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.06] dark:border-white/[0.08]">
             <button
               type="button"
               onClick={() => setFormData({ ...formData, userType: 'CUSTOMER' })}
-              className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-semibold transition-all ${
+              className={`flex flex-col items-center justify-center text-center py-3 px-2.5 rounded-xl transition-all ${
                 formData.userType === 'CUSTOMER'
                   ? 'bg-white text-zinc-950 shadow-sm dark:bg-zinc-900 dark:text-white border border-black/5 dark:border-white/10'
                   : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'
               }`}
             >
-              <User className="h-4 w-4 shrink-0" />
-              <span>Normal Customer</span>
+              <div className="flex items-center gap-1.5 font-semibold text-xs">
+                <User className="h-4 w-4 shrink-0" />
+                <span>Normal User</span>
+              </div>
+              <span className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5 font-normal">
+                Customer & Purchases
+              </span>
             </button>
             <button
               type="button"
               onClick={() => setFormData({ ...formData, userType: 'BUSINESS' })}
-              className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs font-semibold transition-all ${
+              className={`flex flex-col items-center justify-center text-center py-3 px-2.5 rounded-xl transition-all ${
                 formData.userType === 'BUSINESS'
                   ? 'bg-white text-zinc-950 shadow-sm dark:bg-zinc-900 dark:text-white border border-black/5 dark:border-white/10'
                   : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white'
               }`}
             >
-              <Building2 className="h-4 w-4 shrink-0" />
-              <span>Business Owner</span>
+              <div className="flex items-center gap-1.5 font-semibold text-xs">
+                <Building2 className="h-4 w-4 shrink-0" />
+                <span>Business</span>
+              </div>
+              <span className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5 font-normal">
+                Store, POS & Inventory
+              </span>
             </button>
           </div>
-          <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1.5 px-1">
-            {formData.userType === 'CUSTOMER'
-              ? 'View what you bought, track left-to-pay credits, and manage your customer identity.'
-              : 'Set up store/warehouse, manage inventory catalog, POS scan checkout, and track ledger.'}
-          </p>
+
+          {formData.userType === 'BUSINESS' ? (
+            <div className="mt-2.5 p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-900 dark:text-amber-200 flex items-start gap-2.5">
+              <ShieldAlert className="h-4 w-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+              <div className="space-y-0.5">
+                <p className="font-semibold text-amber-950 dark:text-amber-100">
+                  Mandatory Verification Required
+                </p>
+                <p className="text-[10.5px] leading-relaxed text-amber-800/90 dark:text-amber-300/90">
+                  Business accounts require immediate completion of 2 mandatory steps right after account creation:
+                  <br />
+                  <span className="font-semibold">Step 1:</span> Verify official address (applied across the app)
+                  <br />
+                  <span className="font-semibold">Step 2:</span> Upload government-issued KYC details
+                </p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-[11px] text-zinc-400 dark:text-zinc-500 mt-1.5 px-1">
+              Personal customer account: view your purchase invoices, track store credits, and manage your account.
+            </p>
+          )}
         </div>
 
         {/* Full Name */}
@@ -336,7 +369,11 @@ export const RegisterPage = () => {
 
         <Button type="submit" variant="primary" loading={loading} className="w-full mt-2">
           <UserPlus className="h-3.5 w-3.5 mr-1" />
-          <span>Create Account & Continue to Profile</span>
+          <span>
+            {formData.userType === 'BUSINESS'
+              ? 'Create Business Account & Verify Address'
+              : 'Create Account & Continue'}
+          </span>
           <ArrowRight className="h-3.5 w-3.5 ml-1" />
         </Button>
       </form>

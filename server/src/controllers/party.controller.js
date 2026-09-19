@@ -183,7 +183,7 @@ export const createParty = asyncHandler(async (req, res) => {
     email: partyEmail,
     type: ['CUSTOMER', 'SUPPLIER'].includes(type) ? type : 'CUSTOMER',
     status: 'PENDING',
-    address: address ? address.trim() : '',
+    address: address ? address.trim() : (matchedUser.location?.formattedAddress || ''),
     creditLimit: Number(creditLimit) || 0,
     currentBalance: numericOpeningBalance,
     notes: notes ? notes.trim() : '',

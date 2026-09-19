@@ -182,6 +182,7 @@ export const PartiesPage = () => {
           name: res.user.name || '',
           email: res.user.email || '',
           phone: res.user.phone || '',
+          address: res.user.location?.formattedAddress || prev.address || '',
           type: res.user.userType === 'CUSTOMER' ? 'CUSTOMER' : prev.type,
         }));
         showSuccess(`Found registered user: ${res.user.name}`);
