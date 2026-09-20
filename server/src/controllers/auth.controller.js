@@ -102,11 +102,18 @@ export const register = asyncHandler(async (req, res) => {
     existingUser.onboardingCompleted = false;
     await existingUser.save();
 
-    await sendVerificationEmail({
-      email: existingUser.email,
-      name: existingUser.name,
-      token: verificationToken,
-    });
+    try {
+      await sendVerificationEmail({
+        email: existingUser.email,
+        name: existingUser.name,
+        token: verificationToken,
+      });
+    } catch (emailError) {
+      throw new ApiError(
+        400,
+        `Failed to send verification email via Brevo: ${emailError.message}`
+      );
+    }
 
     return res.status(200).json(
       new ApiResponse(
@@ -136,11 +143,20 @@ export const register = asyncHandler(async (req, res) => {
     onboardingCompleted: false,
   });
 
-  await sendVerificationEmail({
-    email: user.email,
-    name: user.name,
-    token: verificationToken,
-  });
+  try {
+    await sendVerificationEmail({
+      email: user.email,
+      name: user.name,
+      token: verificationToken,
+    });
+  } catch (emailError) {
+    // Clean up created record if verification email fails so user can retry
+    await User.findByIdAndDelete(user._id);
+    throw new ApiError(
+      400,
+      `Failed to send verification email via Brevo: ${emailError.message}`
+    );
+  }
 
   res.status(201).json(
     new ApiResponse(
@@ -903,11 +919,18 @@ export const resendVerification = asyncHandler(async (req, res) => {
   user.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
   await user.save();
 
-  await sendVerificationEmail({
-    email: user.email,
-    name: user.name,
-    token: verificationToken,
-  });
+  try {
+    await sendVerificationEmail({
+      email: user.email,
+      name: user.name,
+      token: verificationToken,
+    });
+  } catch (emailError) {
+    throw new ApiError(
+      400,
+      `Failed to resend verification email via Brevo: ${emailError.message}`
+    );
+  }
 
   res.status(200).json(
     new ApiResponse(

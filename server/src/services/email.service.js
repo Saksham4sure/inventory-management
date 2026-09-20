@@ -92,19 +92,9 @@ export const sendVerificationEmail = async ({ email, name, token }) => {
 </html>
 `;
 
-  // If no Brevo API key is supplied (e.g. initial setup or local development)
+  // Validate Brevo API key
   if (!ENV.BREVO_API_KEY || ENV.BREVO_API_KEY.includes('your_brevo_api_key')) {
-    console.warn('\n================================================================');
-    console.warn('⚠️  [BREVO EMAIL NOTICE] BREVO_API_KEY is not configured in server/.env');
-    console.warn(`✉️  Recipient: ${email}`);
-    console.warn(`🔗  Direct Email Verification URL:`);
-    console.warn(`    ${verificationUrl}`);
-    console.warn('================================================================\n');
-    return {
-      success: true,
-      simulated: true,
-      verificationUrl,
-    };
+    throw new Error('Brevo API key is not configured in server/.env (BREVO_API_KEY)');
   }
 
   // Call Brevo transactional email API
@@ -141,22 +131,11 @@ export const sendVerificationEmail = async ({ email, name, token }) => {
     }
     console.error('❌ [Brevo] Failed to send email via Brevo API:', parsedErr);
 
-    if (ENV.NODE_ENV === 'development') {
-      console.warn('\n================================================================');
-      console.warn(`⚠️  [Brevo Dev Notice] ${parsedErr.message}`);
-      console.warn(`✉️  Recipient: ${email}`);
-      console.warn(`🔗  Direct Email Verification URL:`);
-      console.warn(`    ${verificationUrl}`);
-      console.warn('================================================================\n');
-      return {
-        success: false,
-        devFallback: true,
-        error: parsedErr.message,
-        verificationUrl,
-      };
-    }
+    const errorMsg =
+      parsedErr.message ||
+      `Brevo API responded with status ${response.status} (${response.statusText})`;
 
-    throw new Error(parsedErr.message || 'Failed to send verification email via Brevo');
+    throw new Error(errorMsg);
   }
 
   const data = await response.json();
