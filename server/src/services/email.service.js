@@ -1,8 +1,59 @@
 import { ENV } from '../config/env.js';
 
-/**
- * Service to send transactional emails using Brevo (formerly Sendinblue) REST API.
- */
+let cachedSender = null;
+
+async function getValidSender() {
+  if (cachedSender) return cachedSender;
+
+  const configuredEmail = ENV.BREVO_SENDER_EMAIL;
+  const configuredName = ENV.BREVO_SENDER_NAME || 'StockPulse';
+
+  try {
+    const res = await fetch('https://api.brevo.com/v3/senders', {
+      headers: {
+        accept: 'application/json',
+        'api-key': ENV.BREVO_API_KEY,
+      },
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      const senders = data.senders || [];
+      const activeSenders = senders.filter((s) => s.active);
+
+      const match = activeSenders.find(
+        (s) => s.email?.toLowerCase() === configuredEmail?.toLowerCase()
+      );
+
+      if (match) {
+        cachedSender = {
+          name: configuredName || match.name,
+          email: match.email,
+        };
+        return cachedSender;
+      }
+
+      if (activeSenders.length > 0) {
+        console.warn(
+          `⚠️ [Brevo] Configured sender "${configuredEmail}" is not verified in Brevo. Using verified sender: ${activeSenders[0].email}`
+        );
+        cachedSender = {
+          name: configuredName || activeSenders[0].name || 'StockPulse',
+          email: activeSenders[0].email,
+        };
+        return cachedSender;
+      }
+    }
+  } catch (err) {
+    console.error('⚠️ [Brevo] Could not fetch senders list:', err.message);
+  }
+
+  return {
+    name: configuredName,
+    email: configuredEmail || 'pixelstockapp@gmail.com',
+  };
+}
+
 export const sendVerificationEmail = async ({ email, name, token }) => {
   const verificationUrl = `${ENV.CLIENT_URL}/verify-email?token=${token}`;
 
@@ -97,6 +148,8 @@ export const sendVerificationEmail = async ({ email, name, token }) => {
     throw new Error('Brevo API key is not configured in server/.env (BREVO_API_KEY)');
   }
 
+  const sender = await getValidSender();
+
   // Call Brevo transactional email API
   const response = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
@@ -106,10 +159,7 @@ export const sendVerificationEmail = async ({ email, name, token }) => {
       'content-type': 'application/json',
     },
     body: JSON.stringify({
-      sender: {
-        name: ENV.BREVO_SENDER_NAME || 'StockPulse',
-        email: ENV.BREVO_SENDER_EMAIL || 'noreply@stockpulse.app',
-      },
+      sender,
       to: [
         {
           email,
