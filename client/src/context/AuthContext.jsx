@@ -48,12 +48,22 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     const data = await authService.register(userData);
-    storage.setToken(data.token);
-    storage.setUser(data.user);
-    setToken(data.token);
-    setUser(data.user);
-    setHasBusiness(false);
+    if (data?.token && data?.user) {
+      storage.setToken(data.token);
+      storage.setUser(data.user);
+      setToken(data.token);
+      setUser(data.user);
+      setHasBusiness(false);
+    }
     return data;
+  };
+
+  const setAuthSession = (sessionUser, sessionToken, businessStatus = false) => {
+    if (sessionToken) storage.setToken(sessionToken);
+    if (sessionUser) storage.setUser(sessionUser);
+    setToken(sessionToken);
+    setUser(sessionUser);
+    setHasBusiness(Boolean(businessStatus || sessionUser?.businessId));
   };
 
   const logout = () => {
@@ -85,6 +95,7 @@ export const AuthProvider = ({ children }) => {
     isLoading,
     login,
     register,
+    setAuthSession,
     logout,
     checkAuth,
     setBusinessConfigured,

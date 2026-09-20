@@ -16,6 +16,7 @@ import { SuperAdminRoute } from '../components/common/SuperAdminRoute';
 // Lazy-loaded pages for standard tenant workspace
 const LoginPage = lazy(() => import('../pages/LoginPage'));
 const RegisterPage = lazy(() => import('../pages/RegisterPage'));
+const VerifyEmailPage = lazy(() => import('../pages/VerifyEmailPage'));
 const OnboardingPage = lazy(() => import('../pages/OnboardingPage'));
 const BusinessSetupPage = lazy(() => import('../pages/BusinessSetupPage'));
 const DashboardPage = lazy(() => import('../pages/DashboardPage'));
@@ -64,23 +65,22 @@ export const AppRoutes = () => {
 
   const getAuthenticatedRedirect = () => {
     if (isSuperAdmin) return ROUTES.ADMIN_DASHBOARD;
-    if (user?.userType === 'CUSTOMER') return ROUTES.CUSTOMER_PURCHASES;
 
-    const isBusiness = user?.userType === 'BUSINESS' || (!user?.userType && user?.role === 'OWNER');
-    if (isBusiness) {
-      const hasAddress = Boolean(user?.location?.formattedAddress && user?.location?.formattedAddress.trim());
-      const hasKyc = Boolean(
-        user?.kyc?.documentNumber &&
-        user?.kyc?.frontImage &&
-        user?.kyc?.backImage &&
-        user?.kyc?.status &&
-        user?.kyc?.status !== 'NOT_SUBMITTED' &&
-        user?.kyc?.status !== 'REJECTED'
-      );
-      if (!hasAddress || !hasKyc) {
-        return ROUTES.ONBOARDING;
-      }
+    const hasAddress = Boolean(user?.location?.formattedAddress && user?.location?.formattedAddress.trim());
+    const hasKyc = Boolean(
+      user?.kyc?.documentNumber &&
+      user?.kyc?.frontImage &&
+      user?.kyc?.backImage &&
+      user?.kyc?.status &&
+      user?.kyc?.status !== 'NOT_SUBMITTED' &&
+      user?.kyc?.status !== 'REJECTED'
+    );
+
+    if (!hasAddress || !hasKyc) {
+      return ROUTES.ONBOARDING;
     }
+
+    if (user?.userType === 'CUSTOMER') return ROUTES.CUSTOMER_PURCHASES;
     return ROUTES.DASHBOARD;
   };
 
@@ -121,6 +121,7 @@ export const AppRoutes = () => {
               )
             }
           />
+          <Route path={ROUTES.VERIFY_EMAIL} element={<VerifyEmailPage />} />
         </Route>
 
         {/* Platform Admin Dedicated Login Route */}

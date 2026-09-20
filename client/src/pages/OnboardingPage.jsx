@@ -7,8 +7,21 @@ import { ThemeToggle } from '../components/ui/ThemeToggle';
 export const OnboardingPage = () => {
   const { user } = useAuth();
 
-  if (user?.userType === 'CUSTOMER') {
-    return <Navigate to={ROUTES.CUSTOMER_PURCHASES} replace />;
+  const hasAddress = Boolean(user?.location?.formattedAddress && user?.location?.formattedAddress.trim());
+  const hasKyc = Boolean(
+    user?.kyc?.documentNumber &&
+    user?.kyc?.frontImage &&
+    user?.kyc?.backImage &&
+    user?.kyc?.status &&
+    user?.kyc?.status !== 'NOT_SUBMITTED' &&
+    user?.kyc?.status !== 'REJECTED'
+  );
+
+  if (hasAddress && hasKyc && user?.onboardingCompleted) {
+    if (user?.userType === 'CUSTOMER') {
+      return <Navigate to={ROUTES.CUSTOMER_PURCHASES} replace />;
+    }
+    return <Navigate to={ROUTES.DASHBOARD} replace />;
   }
 
   return (

@@ -21,13 +21,11 @@ export const ProtectedRoute = () => {
     return <Navigate to={ROUTES.LOGIN} state={{ from: location }} replace />;
   }
 
-  // Mandatory Business Verification Gate:
-  // If registered as a BUSINESS account, user is completely prevented from accessing
-  // any workspace features until they complete the 2 required steps:
-  // 1. Verify address
-  // 2. Upload KYC details
-  const isBusinessUser = user?.userType === 'BUSINESS' || (!user?.userType && user?.role === 'OWNER');
-  if (isBusinessUser) {
+  // Mandatory Verification Gate:
+  // Both Business and Customer users must complete their verified details and KYC
+  // on the onboarding screen before they get to operate the app.
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  if (!isSuperAdmin) {
     const hasVerifiedAddress = Boolean(
       user?.location?.formattedAddress && user?.location?.formattedAddress.trim()
     );
@@ -46,13 +44,10 @@ export const ProtectedRoute = () => {
       if (location.pathname !== ROUTES.ONBOARDING && location.pathname !== ROUTES.BUSINESS_SETUP) {
         return <Navigate to={ROUTES.ONBOARDING} replace />;
       }
-    }
-  }
-
-  // Normal customer user should not be trapped on onboarding
-  if (user?.userType === 'CUSTOMER') {
-    if (location.pathname === ROUTES.ONBOARDING || location.pathname === ROUTES.BUSINESS_SETUP) {
-      return <Navigate to={ROUTES.CUSTOMER_PURCHASES} replace />;
+    } else {
+      if (location.pathname === ROUTES.ONBOARDING || location.pathname === ROUTES.BUSINESS_SETUP) {
+        return <Navigate to={user?.userType === 'CUSTOMER' ? ROUTES.CUSTOMER_PURCHASES : ROUTES.DASHBOARD} replace />;
+      }
     }
   }
 

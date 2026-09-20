@@ -14,7 +14,7 @@ export const seedInitialAdminAndPlans = async () => {
 
     let adminUser = await User.findOne({
       $or: [{ username: SUPER_ADMIN_USERNAME }, { role: ROLES.SUPER_ADMIN }],
-    });
+    }).select('+password');
 
     if (!adminUser) {
       await User.create({
@@ -23,11 +23,16 @@ export const seedInitialAdminAndPlans = async () => {
         email: SUPER_ADMIN_EMAIL,
         password: SUPER_ADMIN_PASSWORD,
         role: ROLES.SUPER_ADMIN,
+        isEmailVerified: true,
         isActive: true,
       });
       console.log(`✅ [Platform] Super Admin account created from env ("${SUPER_ADMIN_USERNAME}")`);
     } else {
       let updated = false;
+      if (!adminUser.isEmailVerified) {
+        adminUser.isEmailVerified = true;
+        updated = true;
+      }
       if (adminUser.role !== ROLES.SUPER_ADMIN) {
         adminUser.role = ROLES.SUPER_ADMIN;
         updated = true;

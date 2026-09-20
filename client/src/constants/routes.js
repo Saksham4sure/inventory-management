@@ -2,6 +2,7 @@ export const ROUTES = {
   HOME: '/',
   LOGIN: '/login',
   REGISTER: '/register',
+  VERIFY_EMAIL: '/verify-email',
   ONBOARDING: '/onboarding',
   BUSINESS_SETUP: '/business/setup',
   BUSINESS_PROFILE: '/business/profile',

@@ -19,6 +19,8 @@ export const generateAuthToken = (user) => {
 export const sanitizeUser = (user) => {
   const obj = user.toObject ? user.toObject() : { ...user };
   delete obj.password;
+  delete obj.emailVerificationToken;
+  delete obj.emailVerificationExpires;
   obj.isSuperAdmin = obj.role === 'SUPER_ADMIN';
   if (!obj.userId && obj.accountId) {
     obj.userId = obj.accountId;

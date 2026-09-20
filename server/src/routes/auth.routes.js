@@ -2,6 +2,8 @@ import { Router } from 'express';
 import {
   register,
   login,
+  verifyEmail,
+  resendVerification,
   getMe,
   updateProfile,
   updateOnboarding,
@@ -16,6 +18,9 @@ const router = Router();
 
 router.post('/register', register);
 router.post('/login', login);
+router.get('/verify-email', verifyEmail);
+router.post('/verify-email', verifyEmail);
+router.post('/resend-verification', resendVerification);
 router.get('/me', authenticate, getMe);
 router.put('/profile', authenticate, updateProfile);
 router.put('/onboarding', authenticate, updateOnboarding);

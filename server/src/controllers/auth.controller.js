@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { User } from '../models/user.model.js';
 import { Business } from '../models/business.model.js';
 import { Transaction } from '../models/transaction.model.js';
@@ -10,6 +11,7 @@ import { ApiResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { uploadImageToCloudinary } from '../config/cloudinary.js';
 import { generateAuthToken, sanitizeUser } from '../services/auth.service.js';
+import { sendVerificationEmail } from '../services/email.service.js';
 import { parseMapCoordinates, isValidCoordinates } from '../utils/mapCoordinates.js';
 
 export const register = asyncHandler(async (req, res) => {
@@ -81,9 +83,44 @@ export const register = asyncHandler(async (req, res) => {
 
   const existingUser = await User.findOne({ email: trimmedEmail });
   if (existingUser) {
-    throw new ApiError(409, 'A user with this email already exists');
+    if (existingUser.isEmailVerified) {
+      throw new ApiError(409, 'A user with this email already exists');
+    }
+
+    // Account was created previously but email was never verified.
+    // Refresh verification token, update credentials and resend verification email.
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    existingUser.name = trimmedName;
+    existingUser.password = password; // Will be hashed by pre('save') hook
+    existingUser.phone = trimmedPhone;
+    existingUser.dob = birthDate;
+    existingUser.userType = selectedType;
+    existingUser.role = assignedRole;
+    existingUser.emailVerificationToken = verificationToken;
+    existingUser.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    existingUser.onboardingStep = 1;
+    existingUser.onboardingCompleted = false;
+    await existingUser.save();
+
+    await sendVerificationEmail({
+      email: existingUser.email,
+      name: existingUser.name,
+      token: verificationToken,
+    });
+
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        {
+          email: existingUser.email,
+          requiresEmailVerification: true,
+        },
+        'A verification email has been resent to your email address. Please verify your email to proceed.'
+      )
+    );
   }
 
+  const verificationToken = crypto.randomBytes(32).toString('hex');
   const user = await User.create({
     name: trimmedName,
     email: trimmedEmail,
@@ -92,18 +129,27 @@ export const register = asyncHandler(async (req, res) => {
     password,
     userType: selectedType,
     role: assignedRole,
+    isEmailVerified: false,
+    emailVerificationToken: verificationToken,
+    emailVerificationExpires: new Date(Date.now() + 24 * 60 * 60 * 1000),
     onboardingStep: 1,
-    onboardingCompleted: selectedType === 'CUSTOMER',
+    onboardingCompleted: false,
   });
 
-  const token = generateAuthToken(user);
-  const safeUser = sanitizeUser(user);
+  await sendVerificationEmail({
+    email: user.email,
+    name: user.name,
+    token: verificationToken,
+  });
 
   res.status(201).json(
     new ApiResponse(
       201,
-      { user: safeUser, token, hasBusiness: false },
-      'User registered successfully. Please proceed to complete your profile.'
+      {
+        email: user.email,
+        requiresEmailVerification: true,
+      },
+      'Registration successful! We have sent a verification email to your address. Please verify your email to continue.'
     )
   );
 });
@@ -126,6 +172,18 @@ export const login = asyncHandler(async (req, res) => {
   const isPasswordValid = await user.comparePassword(password);
   if (!isPasswordValid) {
     throw new ApiError(401, 'Invalid email or password');
+  }
+
+  // Check email verification (Platform Super Admin is exempted)
+  if (user.role !== ROLES.SUPER_ADMIN && user.isEmailVerified === false) {
+    throw new ApiError(
+      403,
+      'Your email address has not been verified yet. Please check your inbox for the verification link.',
+      {
+        requiresEmailVerification: true,
+        email: user.email,
+      }
+    );
   }
 
   const token = generateAuthToken(user);
@@ -760,3 +818,103 @@ export const getCustomerCredits = asyncHandler(async (req, res) => {
     )
   );
 });
+
+/**
+ * Verify user email address with the one-time token from Brevo email
+ */
+export const verifyEmail = asyncHandler(async (req, res) => {
+  const token = req.query.token || req.body.token;
+
+  if (!token || typeof token !== 'string' || !token.trim()) {
+    throw new ApiError(400, 'Verification token is required.');
+  }
+
+  const cleanToken = token.trim();
+
+  const user = await User.findOne({
+    emailVerificationToken: cleanToken,
+    emailVerificationExpires: { $gt: new Date() },
+  });
+
+  if (!user) {
+    throw new ApiError(
+      400,
+      'The verification link is invalid or has expired. Please request a new verification email.'
+    );
+  }
+
+  user.isEmailVerified = true;
+  user.emailVerificationToken = null;
+  user.emailVerificationExpires = null;
+  await user.save();
+
+  const authToken = generateAuthToken(user);
+  const safeUser = sanitizeUser(user);
+
+  let business = null;
+  if (user.businessId) {
+    business = await Business.findById(user.businessId);
+  }
+
+  res.status(200).json(
+    new ApiResponse(
+      200,
+      {
+        user: safeUser,
+        token: authToken,
+        hasBusiness: Boolean(user.businessId),
+        business,
+      },
+      'Email verified successfully. Welcome to StockPulse!'
+    )
+  );
+});
+
+/**
+ * Resend verification email to user
+ */
+export const resendVerification = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email || typeof email !== 'string' || !email.trim()) {
+    throw new ApiError(400, 'Email address is required.');
+  }
+
+  const trimmedEmail = email.toLowerCase().trim();
+  const user = await User.findOne({ email: trimmedEmail });
+
+  if (!user) {
+    // Return friendly generic message to avoid email enumeration
+    return res.status(200).json(
+      new ApiResponse(
+        200,
+        null,
+        'If an unverified account with this email exists, a new verification link has been sent.'
+      )
+    );
+  }
+
+  if (user.isEmailVerified) {
+    throw new ApiError(400, 'This account has already been verified. Please sign in directly.');
+  }
+
+  const verificationToken = crypto.randomBytes(32).toString('hex');
+  user.emailVerificationToken = verificationToken;
+  user.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  await user.save();
+
+  await sendVerificationEmail({
+    email: user.email,
+    name: user.name,
+    token: verificationToken,
+  });
+
+  res.status(200).json(
+    new ApiResponse(
+      200,
+      { email: user.email },
+      'A new verification link has been sent to your email. Please check your inbox.'
+    )
+  );
+});
+

@@ -11,7 +11,9 @@ import { Button } from '../ui/Button';
 import { ROUTES } from '../../constants/routes';
 import { useSnackbar } from '../../hooks/useSnackbar';
 import {
+  User,
   MapPin,
+  FileText,
   FileCheck2,
   Upload,
   Trash2,
@@ -21,12 +23,10 @@ import {
   Building2,
   ShieldCheck,
   ShieldAlert,
-  Sparkles,
   Lock,
   LogOut,
   Receipt,
   Users,
-  Check,
 } from 'lucide-react';
 
 export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) => {
@@ -36,7 +36,6 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
   const { showSuccess, showError } = useSnackbar();
 
   // Determine initial step:
-  // If address is already verified but KYC is pending or not submitted, start at Step 2
   const hasExistingAddress = Boolean(
     user?.location?.formattedAddress && user?.location?.formattedAddress.trim()
   );
@@ -49,15 +48,19 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
   );
 
   const [currentStep, setCurrentStep] = useState(() => {
-    if (hasExistingAddress && !isKycSubmitted) return 2;
-    if (hasExistingAddress && isKycSubmitted && user?.kyc?.status === 'REJECTED') return 2;
-    if (hasExistingAddress && isKycSubmitted) return 3; // completion state
-    return 1;
+    if (hasExistingAddress && isKycSubmitted) {
+      if (user?.kyc?.status === 'REJECTED') return 3;
+      return 5; // Completed state
+    }
+    if (hasExistingAddress && !isKycSubmitted) {
+      return 3; // Document selection
+    }
+    return 1; // Start at step 1
   });
 
   const [loading, setLoading] = useState(false);
 
-  // STEP 1 STATE: Address, Contact Phone & DOB Verification
+  // STEP 1 STATE: Personal Details & Contact
   const [name, setName] = useState(user?.name || '');
   const [phone, setPhone] = useState(user?.phone || '');
   const [dob, setDob] = useState(
@@ -65,6 +68,8 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
   );
   const [phoneError, setPhoneError] = useState('');
   const [dobError, setDobError] = useState('');
+
+  // STEP 2 STATE: Official Address Hierarchy & Coordinates
   const [locationValue, setLocationValue] = useState(
     user?.location?.formattedAddress || user?.location || ''
   );
@@ -74,13 +79,15 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
   });
   const [googleMapsUrl, setGoogleMapsUrl] = useState('');
 
-  // STEP 2 STATE: KYC Document Upload
+  // STEP 3 STATE: Identity Document Information
   const [documentType, setDocumentType] = useState(
     user?.kyc?.documentType && user?.kyc?.documentType !== 'NONE'
       ? user.kyc.documentType
       : 'CITIZENSHIP'
   );
   const [documentNumber, setDocumentNumber] = useState(user?.kyc?.documentNumber || '');
+
+  // STEP 4 STATE: Document Photo Uploads
   const [frontImage, setFrontImage] = useState(user?.kyc?.frontImage || '');
   const [backImage, setBackImage] = useState(user?.kyc?.backImage || '');
 
@@ -107,7 +114,7 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
     }
   }, [user]);
 
-  // Validation functions for Step 1
+  // Validation functions
   const validatePhone = (val) => {
     if (!val || !val.trim()) return 'Contact phone number is required';
     const clean = val.replace(/[\s()-]/g, '');
@@ -134,7 +141,7 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
       return 'Date of birth cannot be in the future';
     }
     if (age < 16) {
-      return 'You must be at least 16 years old to register a business account';
+      return 'You must be at least 16 years old to complete account registration';
     }
     return '';
   };
@@ -165,8 +172,8 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
     reader.readAsDataURL(file);
   };
 
-  // STEP 1 PROCEED: Address & Contact Verification Submit
-  const handleStep1AddressSubmit = async (e) => {
+  // STEP 1 SUBMIT: Personal Info & Contact
+  const handleStep1PersonalSubmit = (e) => {
     e.preventDefault();
 
     if (!name.trim()) {
@@ -185,9 +192,21 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
       return;
     }
 
+    setCurrentStep(2);
+  };
+
+  // STEP 2 SUBMIT: Address Hierarchy & Location
+  const handleStep2AddressSubmit = async (e) => {
+    e.preventDefault();
+
     const hasLoc =
       typeof locationValue === 'object'
-        ? Boolean(locationValue.province && locationValue.district && locationValue.municipality && locationValue.ward)
+        ? Boolean(
+            locationValue.province &&
+              locationValue.district &&
+              locationValue.municipality &&
+              locationValue.ward
+          )
         : Boolean(locationValue && locationValue.trim());
 
     if (!hasLoc) {
@@ -203,15 +222,20 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
           name: name.trim(),
           phone: phone.trim(),
           dob,
-          location: typeof locationValue === 'object' ? locationValue : { formattedAddress: locationValue },
+          location:
+            typeof locationValue === 'object'
+              ? locationValue
+              : { formattedAddress: locationValue },
         },
         coordinates,
         googleMapsUrl,
       });
 
       if (res?.user) updateUser(res.user);
-      showSuccess('Address & contact verified successfully! This address will be used throughout the app.');
-      setCurrentStep(2);
+      showSuccess(
+        'Official address and personal details saved successfully!'
+      );
+      setCurrentStep(3);
     } catch (err) {
       showError(err.message || 'Failed to verify address.');
     } finally {
@@ -219,8 +243,8 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
     }
   };
 
-  // STEP 2 PROCEED: KYC Document Submit
-  const handleStep2KycSubmit = async (e) => {
+  // STEP 3 SUBMIT: Document Details
+  const handleStep3DocSubmit = (e) => {
     e.preventDefault();
 
     if (!documentNumber.trim()) {
@@ -235,6 +259,13 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
       );
       return;
     }
+
+    setCurrentStep(4);
+  };
+
+  // STEP 4 SUBMIT: Upload Document Photos
+  const handleStep4PhotosSubmit = async (e) => {
+    e.preventDefault();
 
     if (!frontImage) {
       showError('Please upload the front photo of your identity document.');
@@ -262,7 +293,7 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
       if (refreshBusiness) refreshBusiness();
 
       showSuccess('KYC documents submitted successfully to Platform Compliance!');
-      setCurrentStep(3); // Go to Completion screen
+      setCurrentStep(5); // Go to Completion screen
     } catch (err) {
       showError(err.message || 'Failed to submit KYC details.');
     } finally {
@@ -272,7 +303,11 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
 
   const handleFinish = () => {
     if (onClose) onClose();
-    navigate(ROUTES.DASHBOARD, { replace: true });
+    if (user?.userType === 'CUSTOMER') {
+      navigate(ROUTES.CUSTOMER_PURCHASES, { replace: true });
+    } else {
+      navigate(ROUTES.DASHBOARD, { replace: true });
+    }
   };
 
   const handleSignOut = () => {
@@ -282,7 +317,16 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
 
   if (!isOpen) return null;
 
-  const progressPercent = currentStep === 1 ? 50 : currentStep === 2 ? 100 : 100;
+  // Multiple steps progression: Step 1 (25%), Step 2 (50%), Step 3 (75%), Step 4 (100%), Step 5 (100%)
+  const progressPercent =
+    currentStep === 1
+      ? 25
+      : currentStep === 2
+      ? 50
+      : currentStep === 3
+      ? 75
+      : 100;
+
   const maxDobDate = new Date().toISOString().split('T')[0];
   const formattedAddressDisplay =
     user?.location?.formattedAddress ||
@@ -301,27 +345,31 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
           <div className="flex items-center justify-between gap-2.5 sm:gap-4">
             <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
               <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 flex items-center justify-center shadow-xs shrink-0">
-                {currentStep === 1 && <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />}
-                {currentStep === 2 && <FileCheck2 className="h-4 w-4 sm:h-5 sm:w-5" />}
-                {currentStep === 3 && <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5" />}
+                {currentStep === 1 && <User className="h-4 w-4 sm:h-5 sm:w-5" />}
+                {currentStep === 2 && <MapPin className="h-4 w-4 sm:h-5 sm:w-5" />}
+                {currentStep === 3 && <FileText className="h-4 w-4 sm:h-5 sm:w-5" />}
+                {currentStep === 4 && <Upload className="h-4 w-4 sm:h-5 sm:w-5" />}
+                {currentStep === 5 && <ShieldCheck className="h-4 w-4 sm:h-5 sm:w-5" />}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-0.5">
                   <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wider font-mono text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md border border-zinc-200 dark:border-zinc-700 shrink-0 whitespace-nowrap">
-                    {currentStep === 3 ? 'Completed' : `Step ${currentStep} of 2`}
+                    {currentStep === 5 ? 'Completed' : `Step ${currentStep} of 4`}
                   </span>
                   <span className="text-[11px] sm:text-xs font-medium text-zinc-500 dark:text-zinc-400 truncate">
-                    {currentStep === 1
-                      ? 'Address Verification'
-                      : currentStep === 2
-                      ? 'Upload KYC Details'
-                      : 'Verification Submitted'}
+                    {currentStep === 1 && 'Personal Information'}
+                    {currentStep === 2 && 'Official Address'}
+                    {currentStep === 3 && 'Document Information'}
+                    {currentStep === 4 && 'Upload KYC Photos'}
+                    {currentStep === 5 && 'Verification Submitted'}
                   </span>
                 </div>
                 <h2 className="text-sm sm:text-lg font-bold tracking-tight text-zinc-900 dark:text-white truncate">
-                  {currentStep === 1 && 'Verify Official Address'}
-                  {currentStep === 2 && 'Upload Identity KYC Documents'}
-                  {currentStep === 3 && 'Verification Under Review'}
+                  {currentStep === 1 && 'Personal & Contact Details'}
+                  {currentStep === 2 && 'Verify Official Address'}
+                  {currentStep === 3 && 'Identity Document Selection'}
+                  {currentStep === 4 && 'Upload Government ID Photos'}
+                  {currentStep === 5 && 'Verification Under Review'}
                 </h2>
               </div>
             </div>
@@ -343,24 +391,84 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
 
         {/* Modal Body */}
         <div className="p-4 sm:p-7 overflow-y-auto max-h-[calc(88dvh-120px)] sm:max-h-[68vh]">
-          {/* STEP 1: VERIFY ADDRESS */}
+          {/* STEP 1: PERSONAL & CONTACT INFORMATION */}
           {currentStep === 1 && (
-            <form id="step-1-address-form" onSubmit={handleStep1AddressSubmit} className="space-y-4">
+            <form
+              id="step-1-personal-form"
+              onSubmit={handleStep1PersonalSubmit}
+              className="space-y-4"
+            >
               {/* Mandatory Info Banner */}
               <div className="p-3.5 rounded-2xl bg-zinc-100/80 dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-600 dark:text-zinc-300 flex items-start gap-2.5">
                 <ShieldAlert className="h-4 w-4 text-zinc-500 dark:text-zinc-400 shrink-0 mt-0.5" />
                 <div>
                   <span className="font-semibold block mb-0.5 text-zinc-900 dark:text-zinc-100">
-                    Mandatory Business Account Setup
+                    Mandatory Account Verification
                   </span>
                   <span>
-                    To protect business transactions and satisfy commercial regulations, verify your official address. This address will automatically be used everywhere across the app where your address is required.
+                    To prevent spam and ensure verified account ownership, please complete the onboarding steps below. Your verified information will be used across your workspace and documents.
                   </span>
                 </div>
               </div>
 
+              {/* Contact Information & Date of Birth */}
+              <div className="space-y-3.5 pt-1">
+                <Input
+                  label="Registered Full Name (First & Last Name)"
+                  id="step1-name"
+                  type="text"
+                  placeholder="e.g. Ram Bahadur Thapa"
+                  required
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <Input
+                    label="Contact Phone Number"
+                    id="step1-phone"
+                    type="tel"
+                    placeholder="e.g. 9801234567"
+                    required
+                    value={phone}
+                    onChange={(e) => {
+                      setPhone(e.target.value);
+                      if (phoneError) setPhoneError('');
+                    }}
+                    error={phoneError}
+                  />
+
+                  <DatePicker
+                    label="Date of Birth (DOB)"
+                    id="step1-dob"
+                    maxDate={maxDobDate}
+                    required
+                    value={dob}
+                    onChange={(e) => {
+                      setDob(e.target.value);
+                      if (dobError) setDobError('');
+                    }}
+                    error={dobError}
+                    helperText="Must be 16+ years"
+                  />
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900/40 border border-zinc-200/80 dark:border-zinc-800/80 text-[11px] text-zinc-500 dark:text-zinc-400">
+                Your email address (<span className="font-semibold text-zinc-800 dark:text-zinc-200">{user?.email}</span>) was verified. Next, configure your official address and identification documents.
+              </div>
+            </form>
+          )}
+
+          {/* STEP 2: OFFICIAL ADDRESS */}
+          {currentStep === 2 && (
+            <form
+              id="step-2-address-form"
+              onSubmit={handleStep2AddressSubmit}
+              className="space-y-4"
+            >
               {/* Verified Address Scope Indicator */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <div className="p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800/80 flex flex-col items-center text-center gap-1">
                   <Building2 className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
                   <span className="text-[10px] font-semibold text-zinc-700 dark:text-zinc-300">
@@ -387,56 +495,15 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
                 </div>
               </div>
 
-              {/* Contact Information & Date of Birth */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-                <Input
-                  label="Registered Full Name"
-                  id="step1-name"
-                  type="text"
-                  placeholder="e.g. Ram Bahadur Thapa"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-
-                <Input
-                  label="Contact Phone Number"
-                  id="step1-phone"
-                  type="tel"
-                  placeholder="e.g. 9801234567"
-                  required
-                  value={phone}
-                  onChange={(e) => {
-                    setPhone(e.target.value);
-                    if (phoneError) setPhoneError('');
-                  }}
-                  error={phoneError}
-                />
-
-                <DatePicker
-                  label="Date of Birth (DOB)"
-                  id="step1-dob"
-                  maxDate={maxDobDate}
-                  required
-                  value={dob}
-                  onChange={(e) => {
-                    setDob(e.target.value);
-                    if (dobError) setDobError('');
-                  }}
-                  error={dobError}
-                  helperText="Must be 16+ years"
-                />
-              </div>
-
               {/* Cascading Nepal Location Selector */}
-              <div className="pt-2">
+              <div className="pt-1">
                 <label className="block text-xs font-semibold text-zinc-900 dark:text-zinc-100 mb-2 flex items-center gap-1.5">
                   <MapPin className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
-                  <span>Official Address (Nepal Administration Hierarchy)</span>
+                  <span>Official Address (Nepal Administrative Hierarchy)</span>
                 </label>
                 <LocationSelect
-                  id="step1-location"
-                  name="step1-location"
+                  id="step2-location"
+                  name="step2-location"
                   value={locationValue}
                   onChange={(val) => setLocationValue(val)}
                   required
@@ -459,16 +526,20 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
             </form>
           )}
 
-          {/* STEP 2: UPLOAD KYC DETAILS */}
-          {currentStep === 2 && (
-            <form id="step-2-kyc-form" onSubmit={handleStep2KycSubmit} className="space-y-4">
+          {/* STEP 3: IDENTITY DOCUMENT SELECTION & NUMBER */}
+          {currentStep === 3 && (
+            <form
+              id="step-3-doc-form"
+              onSubmit={handleStep3DocSubmit}
+              className="space-y-4"
+            >
               {/* Address & Contact Recap Badge */}
               <div className="p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 flex items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-2 min-w-0">
                   <MapPin className="h-4 w-4 text-zinc-600 dark:text-zinc-400 shrink-0" />
                   <div className="min-w-0">
                     <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase block">
-                      Verified Address & Contact (Step 1)
+                      Verified Address & Contact
                     </span>
                     <p className="font-semibold text-zinc-900 dark:text-zinc-100 truncate text-[11px]">
                       {formattedAddressDisplay}
@@ -484,10 +555,10 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
                 </div>
                 <button
                   type="button"
-                  onClick={() => setCurrentStep(1)}
+                  onClick={() => setCurrentStep(2)}
                   className="text-[11px] font-medium text-zinc-900 dark:text-zinc-100 underline underline-offset-2 hover:opacity-75 shrink-0"
                 >
-                  Edit
+                  Edit Address
                 </button>
               </div>
 
@@ -503,7 +574,7 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
                     <strong>
                       "{user?.kyc?.rejectionReason || 'Document could not be verified'}"
                     </strong>
-                    . Please upload clearer photos and verify your ID number.
+                    . Please review your ID number and upload clear document photos.
                   </p>
                 </div>
               )}
@@ -529,7 +600,13 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
                         <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-white dark:text-zinc-950" />
                       )}
                     </div>
-                    <p className={`text-[9px] sm:text-[10px] ${documentType === 'CITIZENSHIP' ? 'text-zinc-300 dark:text-zinc-600' : 'text-zinc-400 dark:text-zinc-500'}`}>
+                    <p
+                      className={`text-[9px] sm:text-[10px] ${
+                        documentType === 'CITIZENSHIP'
+                          ? 'text-zinc-300 dark:text-zinc-600'
+                          : 'text-zinc-400 dark:text-zinc-500'
+                      }`}
+                    >
                       नागरिकता
                     </p>
                   </button>
@@ -549,7 +626,13 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
                         <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-white dark:text-zinc-950" />
                       )}
                     </div>
-                    <p className={`text-[9px] sm:text-[10px] ${documentType === 'DRIVING_LICENSE' ? 'text-zinc-300 dark:text-zinc-600' : 'text-zinc-400 dark:text-zinc-500'}`}>
+                    <p
+                      className={`text-[9px] sm:text-[10px] ${
+                        documentType === 'DRIVING_LICENSE'
+                          ? 'text-zinc-300 dark:text-zinc-600'
+                          : 'text-zinc-400 dark:text-zinc-500'
+                      }`}
+                    >
                       सवारी चालक
                     </p>
                   </button>
@@ -569,7 +652,13 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
                         <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-white dark:text-zinc-950" />
                       )}
                     </div>
-                    <p className={`text-[9px] sm:text-[10px] ${documentType === 'PASSPORT' ? 'text-zinc-300 dark:text-zinc-600' : 'text-zinc-400 dark:text-zinc-500'}`}>
+                    <p
+                      className={`text-[9px] sm:text-[10px] ${
+                        documentType === 'PASSPORT'
+                          ? 'text-zinc-300 dark:text-zinc-600'
+                          : 'text-zinc-400 dark:text-zinc-500'
+                      }`}
+                    >
                       राहदानी
                     </p>
                   </button>
@@ -598,6 +687,42 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
                 value={documentNumber}
                 onChange={(e) => setDocumentNumber(e.target.value)}
               />
+            </form>
+          )}
+
+          {/* STEP 4: UPLOAD DOCUMENT PHOTOS */}
+          {currentStep === 4 && (
+            <form
+              id="step-4-photos-form"
+              onSubmit={handleStep4PhotosSubmit}
+              className="space-y-4"
+            >
+              {/* Document Summary Badge */}
+              <div className="p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 flex items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2 min-w-0">
+                  <FileText className="h-4 w-4 text-zinc-600 dark:text-zinc-400 shrink-0" />
+                  <div className="min-w-0">
+                    <span className="text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase block">
+                      Selected Document
+                    </span>
+                    <p className="font-semibold text-zinc-900 dark:text-zinc-100 truncate text-[11px]">
+                      {documentType === 'CITIZENSHIP'
+                        ? 'Nepali Citizenship'
+                        : documentType === 'DRIVING_LICENSE'
+                        ? 'Driving License'
+                        : 'Passport'}{' '}
+                      ({documentNumber})
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(3)}
+                  className="text-[11px] font-medium text-zinc-900 dark:text-zinc-100 underline underline-offset-2 hover:opacity-75 shrink-0"
+                >
+                  Change
+                </button>
+              </div>
 
               {/* Front & Back Document Photo Uploads */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -698,8 +823,8 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
             </form>
           )}
 
-          {/* STEP 3: SUBMITTED / COMPLETION STATE */}
-          {currentStep === 3 && (
+          {/* STEP 5: SUBMITTED / COMPLETION STATE */}
+          {currentStep === 5 && (
             <div className="space-y-4 py-2">
               <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 p-5 sm:p-6 text-center space-y-3">
                 <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 shadow-xs">
@@ -760,7 +885,7 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
         {/* Modal Footer / Navigation Controls */}
         <div className="p-4 sm:p-6 border-t border-zinc-100 dark:border-zinc-800/80 bg-zinc-50/70 dark:bg-zinc-900/50 space-y-3">
           <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3">
-            {/* Back Button (Only available on step 2) */}
+            {/* Back Navigation Button */}
             {currentStep === 2 ? (
               <button
                 type="button"
@@ -769,23 +894,42 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
                 className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 cursor-pointer"
               >
                 <ArrowLeft className="h-3.5 w-3.5" />
+                <span>Back to Personal</span>
+              </button>
+            ) : currentStep === 3 ? (
+              <button
+                type="button"
+                onClick={() => setCurrentStep(2)}
+                disabled={loading}
+                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
                 <span>Back to Address</span>
+              </button>
+            ) : currentStep === 4 ? (
+              <button
+                type="button"
+                onClick={() => setCurrentStep(3)}
+                disabled={loading}
+                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                <span>Back to Document Info</span>
               </button>
             ) : (
               <div className="hidden sm:block" />
             )}
 
-            {/* Action Buttons */}
+            {/* Forward Action Buttons */}
             <div className="flex items-center justify-end">
               {currentStep === 1 && (
                 <Button
                   type="submit"
-                  form="step-1-address-form"
+                  form="step-1-personal-form"
                   variant="primary"
-                  loading={loading}
                   className="w-full sm:w-auto"
                 >
-                  <span>Verify Address & Continue</span>
+                  <span>Continue to Address</span>
                   <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
                 </Button>
               )}
@@ -793,7 +937,32 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
               {currentStep === 2 && (
                 <Button
                   type="submit"
-                  form="step-2-kyc-form"
+                  form="step-2-address-form"
+                  variant="primary"
+                  loading={loading}
+                  className="w-full sm:w-auto"
+                >
+                  <span>Save Address & Continue</span>
+                  <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                </Button>
+              )}
+
+              {currentStep === 3 && (
+                <Button
+                  type="submit"
+                  form="step-3-doc-form"
+                  variant="primary"
+                  className="w-full sm:w-auto"
+                >
+                  <span>Continue to Photo Upload</span>
+                  <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                </Button>
+              )}
+
+              {currentStep === 4 && (
+                <Button
+                  type="submit"
+                  form="step-4-photos-form"
                   variant="primary"
                   loading={loading}
                   className="w-full sm:w-auto"
@@ -803,32 +972,40 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
                 </Button>
               )}
 
-              {currentStep === 3 && (
+              {currentStep === 5 && (
                 <Button
                   type="button"
                   onClick={handleFinish}
                   variant="primary"
                   className="w-full sm:w-auto"
                 >
-                  <span>Proceed to Dashboard</span>
+                  <span>
+                    {user?.userType === 'CUSTOMER'
+                      ? 'Proceed to My Purchases'
+                      : 'Proceed to Dashboard'}
+                  </span>
                   <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
                 </Button>
               )}
             </div>
           </div>
 
-          {/* Progress Bar */}
+          {/* Step Progression & Progress Bar */}
           <div className="space-y-1 pt-1 border-t border-zinc-200/60 dark:border-zinc-800">
             <div className="flex items-center justify-between text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
               <span className="truncate">
                 {currentStep === 1
-                  ? 'Step 1 of 2: Address Verification'
+                  ? 'Step 1 of 4: Personal Information'
                   : currentStep === 2
-                  ? 'Step 2 of 2: KYC Details'
+                  ? 'Step 2 of 4: Official Address'
+                  : currentStep === 3
+                  ? 'Step 3 of 4: Document Details'
+                  : currentStep === 4
+                  ? 'Step 4 of 4: Upload KYC Photos'
                   : 'Verification Complete'}
               </span>
               <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100 shrink-0 ml-2">
-                {currentStep === 3 ? '100%' : `${progressPercent}%`}
+                {progressPercent}%
               </span>
             </div>
             <div className="w-full h-1.5 rounded-full bg-zinc-200 dark:bg-zinc-800 overflow-hidden">

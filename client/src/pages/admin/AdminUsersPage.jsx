@@ -26,6 +26,7 @@ import {
   Copy,
   Check,
   ZoomIn,
+  EyeOff,
 } from 'lucide-react';
 
 export const AdminUsersPage = () => {
@@ -45,6 +46,7 @@ export const AdminUsersPage = () => {
   // Modals
   const [editModal, setEditModal] = useState(null);
   const [passwordModal, setPasswordModal] = useState(null);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [deleteModal, setDeleteModal] = useState(null);
 
   // KYC Verification Modal States
@@ -693,15 +695,26 @@ export const AdminUsersPage = () => {
                 <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
                   New Password (min. 6 characters)
                 </label>
-                <input
-                  type="password"
-                  required
-                  minLength={6}
-                  placeholder="Enter new password..."
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 px-3 py-2 text-xs text-zinc-900 dark:text-white font-mono"
-                />
+                <div className="relative">
+                  <input
+                    type={showNewPassword ? 'text' : 'password'}
+                    required
+                    minLength={6}
+                    placeholder="Enter new password..."
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="w-full rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 px-3 py-2 pr-9 text-xs text-zinc-900 dark:text-white font-mono"
+                  />
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                    aria-label={showNewPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showNewPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                  </button>
+                </div>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-2">

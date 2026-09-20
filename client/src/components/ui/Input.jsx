@@ -1,3 +1,6 @@
+import { useState } from 'react';
+import { Eye, EyeOff } from 'lucide-react';
+
 export const Input = ({
   label,
   id,
@@ -13,6 +16,24 @@ export const Input = ({
   rightElement,
   ...props
 }) => {
+  const [showPassword, setShowPassword] = useState(false);
+  const isPassword = type === 'password';
+  const effectiveType = isPassword ? (showPassword ? 'text' : 'password') : type;
+
+  const passwordToggleElement = isPassword ? (
+    <button
+      type="button"
+      tabIndex={-1}
+      onClick={() => setShowPassword((prev) => !prev)}
+      className="p-1 rounded-md text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors focus:outline-hidden"
+      aria-label={showPassword ? 'Hide password' : 'Show password'}
+      title={showPassword ? 'Hide password' : 'Show password'}
+    >
+      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+    </button>
+  ) : null;
+
+  const resolvedRightElement = rightElement || passwordToggleElement;
   return (
     <div className="w-full space-y-1.5">
       {label && (
@@ -26,7 +47,7 @@ export const Input = ({
       <div className="relative">
         <input
           id={id}
-          type={type}
+          type={effectiveType}
           value={value}
           onChange={onChange}
           placeholder={placeholder}
@@ -37,13 +58,13 @@ export const Input = ({
               ? 'border-rose-400/80 bg-rose-500/5 dark:border-rose-800 dark:bg-rose-950/20 focus:border-rose-500 focus:ring-2 focus:ring-rose-500/20'
               : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 hover:border-zinc-300 dark:hover:border-zinc-700 focus:border-zinc-900 dark:focus:border-zinc-100 focus:ring-2 focus:ring-zinc-900/10 dark:focus:ring-zinc-100/10'
           } ${disabled ? 'opacity-50 cursor-not-allowed bg-zinc-100/60 dark:bg-zinc-900/60' : ''} ${
-            rightElement ? 'pr-10' : ''
+            resolvedRightElement ? 'pr-10' : ''
           } ${className}`}
           {...props}
         />
-        {rightElement && (
+        {resolvedRightElement && (
           <div className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500 flex items-center">
-            {rightElement}
+            {resolvedRightElement}
           </div>
         )}
       </div>

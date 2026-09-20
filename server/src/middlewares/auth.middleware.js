@@ -24,6 +24,10 @@ export const authenticate = asyncHandler(async (req, res, next) => {
       throw new ApiError(401, 'User account no longer active or found');
     }
 
+    if (user.role !== 'SUPER_ADMIN' && user.isEmailVerified === false) {
+      throw new ApiError(403, 'Your email address must be verified before accessing this resource.');
+    }
+
     req.user = user;
     next();
   } catch (error) {

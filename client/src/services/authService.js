@@ -6,6 +6,16 @@ export const authService = {
     return response.data.data;
   },
 
+  verifyEmail: async (token) => {
+    const response = await api.get('/auth/verify-email', { params: { token } });
+    return response.data.data;
+  },
+
+  resendVerification: async (email) => {
+    const response = await api.post('/auth/resend-verification', { email });
+    return response.data;
+  },
+
   login: async (credentials) => {
     const response = await api.post('/auth/login', credentials);
     return response.data.data;

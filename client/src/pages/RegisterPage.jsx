@@ -1,16 +1,17 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useSnackbar } from '../hooks/useSnackbar';
+import { authService } from '../services/authService';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { ROUTES } from '../constants/routes';
-import { UserPlus, AlertCircle, ArrowRight, Building2, User, ShieldAlert } from 'lucide-react';
+import { UserPlus, AlertCircle, ArrowRight, Building2, User, ShieldAlert, Mail, CheckCircle2, RefreshCw } from 'lucide-react';
 
 export const RegisterPage = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
-  const { showSuccess } = useSnackbar();
+  const { showSuccess, showError } = useSnackbar();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -23,6 +24,20 @@ export const RegisterPage = () => {
   const [fieldErrors, setFieldErrors] = useState({});
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Email verification flow states
+  const [isVerificationPending, setIsVerificationPending] = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resending, setResending] = useState(false);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setResendCooldown((prev) => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
 
   // Validation functions
   const validateFullName = (name) => {
@@ -100,32 +115,113 @@ export const RegisterPage = () => {
     setLoading(true);
 
     try {
+      const email = formData.email.toLowerCase().trim();
       await register({
         name: formData.name.trim(),
-        email: formData.email.toLowerCase().trim(),
+        email,
         password: formData.password,
         userType: formData.userType,
       });
 
-      if (formData.userType === 'CUSTOMER') {
-        showSuccess(
-          'Account created successfully! Welcome to StockPulse.',
-          'Account Created'
-        );
-        navigate(ROUTES.CUSTOMER_PURCHASES, { replace: true });
-      } else {
-        showSuccess(
-          'Business account created! Please complete mandatory address verification and KYC upload to proceed.',
-          'Mandatory Verification Required'
-        );
-        navigate(ROUTES.ONBOARDING, { replace: true });
-      }
+      setSubmittedEmail(email);
+      setIsVerificationPending(true);
+      showSuccess(
+        'Registration successful! Please check your email inbox to verify your account.',
+        'Verification Email Sent'
+      );
     } catch (err) {
-      setError(err.message || 'Registration failed. Please try again.');
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          'Registration failed. Please try again.'
+      );
     } finally {
       setLoading(false);
     }
   };
+
+  const handleResendVerification = async () => {
+    if (!submittedEmail || resending || resendCooldown > 0) return;
+    setResending(true);
+    try {
+      await authService.resendVerification(submittedEmail);
+      showSuccess('Verification email resent. Please check your inbox.', 'Email Sent');
+      setResendCooldown(60);
+    } catch (err) {
+      showError(err.response?.data?.message || err.message || 'Failed to resend verification email.');
+    } finally {
+      setResending(false);
+    }
+  };
+
+  if (isVerificationPending) {
+    return (
+      <div>
+        <div className="mb-6 text-center">
+          <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 shadow-xs mb-3">
+            <Mail className="h-6 w-6" />
+          </div>
+          <h3 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
+            Verify Your Email
+          </h3>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 max-w-sm mx-auto">
+            We’ve sent a verification link to{' '}
+            <strong className="text-zinc-900 dark:text-zinc-100">{submittedEmail}</strong>.
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          <div className="p-4 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 text-xs text-zinc-600 dark:text-zinc-300 space-y-2">
+            <p className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
+              <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+              Verification Required to Continue
+            </p>
+            <p className="text-[11.5px] leading-relaxed text-zinc-500 dark:text-zinc-400">
+              To prevent spam and keep accounts authentic, you must verify your email address to proceed. Click the link in your email to continue directly to onboarding to verify your KYC and details.
+            </p>
+          </div>
+
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={resending || resendCooldown > 0}
+            onClick={handleResendVerification}
+            className="w-full"
+          >
+            {resending ? (
+              <RefreshCw className="h-4 w-4 animate-spin mr-1.5" />
+            ) : (
+              <Mail className="h-4 w-4 mr-1.5" />
+            )}
+            <span>
+              {resendCooldown > 0
+                ? `Resend available in ${resendCooldown}s`
+                : 'Resend Verification Email'}
+            </span>
+          </Button>
+
+          <div className="pt-2 flex items-center justify-between text-xs">
+            <button
+              type="button"
+              onClick={() => {
+                setIsVerificationPending(false);
+                setError('');
+              }}
+              className="text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 underline underline-offset-2 cursor-pointer"
+            >
+              ← Edit details
+            </button>
+            <Link
+              to={ROUTES.LOGIN}
+              className="font-semibold text-zinc-900 dark:text-zinc-100 hover:underline"
+            >
+              Go to Sign In →
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
