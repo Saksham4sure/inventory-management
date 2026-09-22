@@ -113,6 +113,17 @@ export const Select = ({
     }
   };
 
+  const handleSearchKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (filteredOptions.length > 0) {
+        handleSelectOption(filteredOptions[0].value);
+      }
+    } else if (e.key === 'Escape') {
+      closeMenu();
+    }
+  };
+
   const handleSelectOption = (optValue) => {
     if (onChange) {
       // Send standard synthetic-like event object for React compatibility
@@ -127,7 +138,10 @@ export const Select = ({
   };
 
   return (
-    <div className={`w-full ${label ? 'space-y-1.5' : ''}`} ref={containerRef}>
+    <div
+      className={`w-full ${label ? 'space-y-1.5' : ''} ${isOpen ? 'relative z-50' : 'relative z-10'}`}
+      ref={containerRef}
+    >
       {label && (
         <label
           htmlFor={id}
@@ -211,6 +225,7 @@ export const Select = ({
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={handleSearchKeyDown}
                     placeholder="Search options..."
                     className="w-full pl-8 pr-7 py-1.5 text-xs rounded-xl bg-black/[0.04] dark:bg-white/[0.06] text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 border border-transparent focus:border-black/[0.1] dark:focus:border-white/[0.15] focus:outline-none transition-all"
                   />
@@ -218,7 +233,7 @@ export const Select = ({
                     <button
                       type="button"
                       onClick={() => setSearchQuery('')}
-                      className="absolute right-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                      className="absolute right-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -237,7 +252,15 @@ export const Select = ({
                       key={opt.value}
                       role="option"
                       aria-selected={isSelected}
-                      onClick={() => handleSelectOption(opt.value)}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleSelectOption(opt.value);
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelectOption(opt.value);
+                      }}
                       className={`group flex items-center justify-between rounded-xl px-3 py-2 text-xs sm:text-sm transition-all duration-150 cursor-pointer select-none active:scale-[0.985] ${
                         isSelected
                           ? 'bg-black/[0.06] dark:bg-white/[0.09] text-zinc-950 dark:text-white font-semibold'

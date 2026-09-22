@@ -33,32 +33,61 @@ export const LocationSelect = ({
   // Whether to show the Street / Area input after the ward dropdown
   const shouldShowStreet = showStreetInput !== undefined ? Boolean(showStreetInput) : Boolean(isBusinessSetup);
 
-  // Parse initial or passed value
+  // Parse initial or passed value safely
   const parseIncomingValue = (val) => {
     if (!val) {
       return { province: '', district: '', municipality: '', ward: '', street: '' };
     }
-    if (typeof val === 'object') {
-      return {
-        province: val.province || '',
-        district: val.district || '',
-        municipality: val.municipality || '',
-        ward: val.ward || '',
-        street: val.street || '',
-      };
+    // Handle synthetic event object (e.g. if parent passes event directly: e or { target: ... })
+    if (typeof val === 'object' && val.target) {
+      const t = val.target;
+      if (t.province !== undefined || t.district !== undefined) {
+        return {
+          province: t.province ? String(t.province).trim() : '',
+          district: t.district ? String(t.district).trim() : '',
+          municipality: t.municipality ? String(t.municipality).trim() : '',
+          ward: t.ward ? String(t.ward).trim() : '',
+          street: t.street ? String(t.street).trim() : '',
+        };
+      }
+      if (typeof t.value === 'string') {
+        return parseLocationAddress(t.value);
+      }
     }
-    return parseLocationAddress(val);
+    // Handle structured location object
+    if (typeof val === 'object') {
+      if (val.province || val.district || val.municipality || val.ward) {
+        return {
+          province: val.province ? String(val.province).trim() : '',
+          district: val.district ? String(val.district).trim() : '',
+          municipality: val.municipality ? String(val.municipality).trim() : '',
+          ward: val.ward ? String(val.ward).trim() : '',
+          street: val.street ? String(val.street).trim() : '',
+        };
+      }
+      if (val.formattedAddress && typeof val.formattedAddress === 'string') {
+        return parseLocationAddress(val.formattedAddress);
+      }
+      return { province: '', district: '', municipality: '', ward: '', street: '' };
+    }
+    // Handle string
+    return parseLocationAddress(String(val));
   };
 
   const [state, setState] = useState(() => parseIncomingValue(value));
-  const lastEmittedValueRef = useRef(typeof value === 'string' ? value : '');
+  const lastEmittedValueRef = useRef('');
 
   // Synchronize internal state when external `value` changes
   useEffect(() => {
-    const stringVal = typeof value === 'string' ? value : formatLocationAddress(value || {});
-    if (stringVal !== lastEmittedValueRef.current) {
+    const parsed = parseIncomingValue(value);
+    const stringVal = formatLocationAddress(parsed);
+    const currentFormatted = formatLocationAddress(state);
+
+    // Only update internal state if external value represents a DIFFERENT location
+    // from our current internal state AND is not the value we just emitted
+    if (stringVal !== currentFormatted && stringVal !== lastEmittedValueRef.current) {
       lastEmittedValueRef.current = stringVal;
-      setState(parseIncomingValue(value));
+      setState(parsed);
     }
   }, [value]);
 
@@ -109,13 +138,31 @@ export const LocationSelect = ({
           ward: newState.ward,
           street: newState.street,
         },
+        value: formatted,
+        formattedAddress: formatted,
+        province: newState.province,
+        district: newState.district,
+        municipality: newState.municipality,
+        ward: newState.ward,
+        street: newState.street,
       };
       onChange(syntheticEvent, formatted, newState);
     }
   };
 
+  const extractValue = (eOrVal) => {
+    if (eOrVal && typeof eOrVal === 'object' && eOrVal.target) {
+      return eOrVal.target.value ?? '';
+    }
+    if (typeof eOrVal === 'string' || typeof eOrVal === 'number') {
+      return String(eOrVal);
+    }
+    return '';
+  };
+
   // Handlers for cascading dropdown changes
-  const handleProvinceChange = (newProvince) => {
+  const handleProvinceChange = (eOrVal) => {
+    const newProvince = extractValue(eOrVal).trim();
     const nextState = {
       province: newProvince,
       district: '',
@@ -127,7 +174,8 @@ export const LocationSelect = ({
     triggerChange(nextState);
   };
 
-  const handleDistrictChange = (newDistrict) => {
+  const handleDistrictChange = (eOrVal) => {
+    const newDistrict = extractValue(eOrVal).trim();
     const nextState = {
       ...state,
       district: newDistrict,
@@ -138,7 +186,8 @@ export const LocationSelect = ({
     triggerChange(nextState);
   };
 
-  const handleMunicipalityChange = (newMunicipality) => {
+  const handleMunicipalityChange = (eOrVal) => {
+    const newMunicipality = extractValue(eOrVal).trim();
     const nextState = {
       ...state,
       municipality: newMunicipality,
@@ -148,7 +197,8 @@ export const LocationSelect = ({
     triggerChange(nextState);
   };
 
-  const handleWardChange = (newWard) => {
+  const handleWardChange = (eOrVal) => {
+    const newWard = extractValue(eOrVal).trim();
     const nextState = {
       ...state,
       ward: newWard,
@@ -157,7 +207,8 @@ export const LocationSelect = ({
     triggerChange(nextState);
   };
 
-  const handleStreetChange = (newStreet) => {
+  const handleStreetChange = (eOrVal) => {
+    const newStreet = extractValue(eOrVal);
     const nextState = {
       ...state,
       street: newStreet,
@@ -208,13 +259,13 @@ export const LocationSelect = ({
       </div>
 
       {/* Cascading Dropdowns: Province & District */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-30">
         <Select
           label="Province"
           id={`${id}-province`}
           name="province"
           value={state.province}
-          onChange={(e) => handleProvinceChange(e.target.value)}
+          onChange={handleProvinceChange}
           options={provinces.map((p) => ({ value: p, label: p }))}
           placeholder="Select Province"
           disabled={disabled}
@@ -225,7 +276,7 @@ export const LocationSelect = ({
           id={`${id}-district`}
           name="district"
           value={state.district}
-          onChange={(e) => handleDistrictChange(e.target.value)}
+          onChange={handleDistrictChange}
           options={districts.map((d) => ({ value: d, label: d }))}
           placeholder={state.province ? 'Select District' : 'Select Province first'}
           disabled={disabled || !state.province}
@@ -234,13 +285,13 @@ export const LocationSelect = ({
       </div>
 
       {/* Cascading Dropdowns: Municipality & Ward */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-20">
         <Select
           label="Municipality / Local Level"
           id={`${id}-municipality`}
           name="municipality"
           value={state.municipality}
-          onChange={(e) => handleMunicipalityChange(e.target.value)}
+          onChange={handleMunicipalityChange}
           options={municipalities.map((m) => ({ value: m, label: m }))}
           placeholder={state.district ? 'Select Municipality' : 'Select District first'}
           disabled={disabled || !state.district}
@@ -252,7 +303,7 @@ export const LocationSelect = ({
           id={`${id}-ward`}
           name="ward"
           value={state.ward}
-          onChange={(e) => handleWardChange(e.target.value)}
+          onChange={handleWardChange}
           options={wards.map((w) => ({ value: String(w), label: `Ward ${w}` }))}
           placeholder={state.municipality ? 'Select Ward' : 'Select Municipality first'}
           disabled={disabled || !state.municipality}

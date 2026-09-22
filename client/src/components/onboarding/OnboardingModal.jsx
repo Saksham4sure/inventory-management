@@ -11,6 +11,7 @@ import { Button } from '../ui/Button';
 import { ROUTES } from '../../constants/routes';
 import { useSnackbar } from '../../hooks/useSnackbar';
 import { validateFullName } from '../../utils/inputValidator';
+import { formatLocationAddress } from '../../utils/nepalLocations';
 import {
   User,
   MapPin,
@@ -71,9 +72,19 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
   const [dobError, setDobError] = useState('');
 
   // STEP 2 STATE: Official Address Hierarchy & Coordinates
-  const [locationValue, setLocationValue] = useState(
-    user?.location?.formattedAddress || user?.location || ''
-  );
+  const [locationValue, setLocationValue] = useState(() => {
+    if (user?.location && typeof user.location === 'object') {
+      return {
+        province: user.location.province || '',
+        district: user.location.district || '',
+        municipality: user.location.municipality || '',
+        ward: user.location.ward || '',
+        street: user.location.street || '',
+        formattedAddress: user.location.formattedAddress || '',
+      };
+    }
+    return user?.location?.formattedAddress || user?.location || '';
+  });
   const [coordinates, setCoordinates] = useState({
     latitude: null,
     longitude: null,
@@ -98,8 +109,8 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
     if (user?.dob && !dob) {
       setDob(new Date(user.dob).toISOString().split('T')[0]);
     }
-    if (user?.location?.formattedAddress && !locationValue) {
-      setLocationValue(user.location.formattedAddress);
+    if (user?.location && !locationValue) {
+      setLocationValue(user.location);
     }
     if (user?.kyc?.documentNumber && !documentNumber) {
       setDocumentNumber(user.kyc.documentNumber);
@@ -209,7 +220,7 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
               locationValue.municipality &&
               locationValue.ward
           )
-        : Boolean(locationValue && locationValue.trim());
+        : Boolean(locationValue && String(locationValue).trim());
 
     if (!hasLoc) {
       showError('Please select your Province, District, Municipality, and Ward.');
@@ -218,16 +229,27 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
 
     try {
       setLoading(true);
+      const locPayload =
+        typeof locationValue === 'object'
+          ? {
+              province: locationValue.province || '',
+              district: locationValue.district || '',
+              municipality: locationValue.municipality || '',
+              ward: locationValue.ward ? String(locationValue.ward) : '',
+              street: locationValue.street || '',
+              formattedAddress:
+                locationValue.formattedAddress ||
+                formatLocationAddress(locationValue),
+            }
+          : { formattedAddress: String(locationValue).trim() };
+
       const res = await authService.updateOnboarding({
         step: 1,
         profile: {
           name: name.trim(),
           phone: phone.trim(),
           dob,
-          location:
-            typeof locationValue === 'object'
-              ? locationValue
-              : { formattedAddress: locationValue },
+          location: locPayload,
         },
         coordinates,
         googleMapsUrl,
@@ -507,7 +529,9 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
                   id="step2-location"
                   name="step2-location"
                   value={locationValue}
-                  onChange={(val) => setLocationValue(val)}
+                  onChange={(_e, formatted, newState) => {
+                    setLocationValue(newState || formatted);
+                  }}
                   required
                   isBusinessSetup={true}
                   showStreetInput={true}
