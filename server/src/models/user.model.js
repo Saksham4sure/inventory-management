@@ -61,13 +61,19 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: [true, 'Password is required'],
-      minlength: [6, 'Password must be at least 6 characters'],
+      minlength: [8, 'Password must be at least 8 characters'],
       select: false,
     },
     phone: {
       type: String,
       trim: true,
       default: '',
+    },
+    age: {
+      type: Number,
+      min: [16, 'You must be at least 16 years old'],
+      max: [120, 'Age must not exceed 120 years'],
+      default: null,
     },
     dob: {
       type: Date,
@@ -183,6 +189,20 @@ userSchema.pre('save', async function (next) {
     }
   } else if (this.userId && !this.accountId) {
     this.accountId = this.userId;
+  }
+
+  // Synchronize age and dob if one is updated
+  if (this.dob && (this.isModified('dob') || !this.age)) {
+    const today = new Date();
+    let computedAge = today.getFullYear() - this.dob.getFullYear();
+    const m = today.getMonth() - this.dob.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < this.dob.getDate())) {
+      computedAge--;
+    }
+    this.age = computedAge;
+  } else if (this.age && (this.isModified('age') || !this.dob)) {
+    const currentYear = new Date().getFullYear();
+    this.dob = new Date(Date.UTC(currentYear - this.age, 0, 1));
   }
 
   if (!this.isModified('password')) return next();

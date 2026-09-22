@@ -6,6 +6,7 @@ import { ApiError } from '../utils/apiError.js';
 import { ApiResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { ROLES } from '../constants/roles.js';
+import { validateEmail } from '../utils/inputValidator.js';
 
 export const getTeam = asyncHandler(async (req, res) => {
   const business = await Business.findById(req.user.businessId)
@@ -50,11 +51,12 @@ export const getTeam = asyncHandler(async (req, res) => {
 export const inviteMember = asyncHandler(async (req, res) => {
   const { email, role = ROLES.USER, limits = {} } = req.body;
 
-  if (!email || !email.trim()) {
-    throw new ApiError(400, 'Member email is required');
+  const emailResult = validateEmail(email);
+  if (!emailResult.isValid) {
+    throw new ApiError(400, emailResult.error);
   }
 
-  const cleanEmail = email.toLowerCase().trim();
+  const cleanEmail = emailResult.value;
   const business = req.business;
 
   // 1. Check if user exists in the database

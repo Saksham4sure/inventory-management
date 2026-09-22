@@ -11,6 +11,7 @@ import { Modal } from '../components/ui/Modal';
 import { LocationSelect } from '../components/ui/LocationSelect';
 import { formatDate } from '../utils/formatters';
 import { useSnackbar } from '../hooks/useSnackbar';
+import { validateFullName, validatePassword } from '../utils/inputValidator';
 import {
   User,
   KeyRound,
@@ -200,8 +201,9 @@ export const ProfilePage = () => {
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
 
-    if (!name.trim()) {
-      showError('Full name is required');
+    const nameErr = validateFullName(name);
+    if (nameErr) {
+      showError(nameErr);
       return;
     }
 
@@ -235,8 +237,9 @@ export const ProfilePage = () => {
       return;
     }
 
-    if (newPassword.length < 6) {
-      showError('New password must be at least 6 characters');
+    const passErr = validatePassword(newPassword);
+    if (passErr) {
+      showError(passErr);
       return;
     }
 

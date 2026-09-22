@@ -13,75 +13,59 @@ import { uploadImageToCloudinary } from '../config/cloudinary.js';
 import { generateAuthToken, sanitizeUser } from '../services/auth.service.js';
 import { sendVerificationEmail } from '../services/email.service.js';
 import { parseMapCoordinates, isValidCoordinates } from '../utils/mapCoordinates.js';
+import {
+  validateName,
+  validateEmail,
+  validatePassword,
+  validateAgeOrDob,
+  sanitizeString,
+} from '../utils/inputValidator.js';
+import { validateNepaliPhone } from '../utils/phoneValidator.js';
 
 export const register = asyncHandler(async (req, res) => {
-  const { name, email, password, phone, dob, userType = 'BUSINESS' } = req.body;
+  const { name, email, password, phone, dob, age, userType = 'BUSINESS' } = req.body;
   const selectedType = userType === 'CUSTOMER' ? 'CUSTOMER' : 'BUSINESS';
   const assignedRole = selectedType === 'CUSTOMER' ? ROLES.USER : ROLES.OWNER;
 
-  // 1. Full Name validation (Must contain first and last name, letters/spaces/periods/hyphens)
-  if (!name || typeof name !== 'string' || !name.trim()) {
-    throw new ApiError(400, 'Full name is required');
+  // 1. Full Name validation (Must contain first and last name, valid characters, 3-70 chars)
+  const nameResult = validateName(name);
+  if (!nameResult.isValid) {
+    throw new ApiError(400, nameResult.error);
   }
-  const trimmedName = name.trim();
-  const nameParts = trimmedName.split(/\s+/).filter(Boolean);
-  const nameRegex = /^[a-zA-Z\s.'-]+$/;
+  const cleanName = nameResult.value;
 
-  if (trimmedName.length < 3 || nameParts.length < 2 || !nameRegex.test(trimmedName)) {
-    throw new ApiError(
-      400,
-      'Please enter a valid full name containing both first and last name (letters only).'
-    );
+  // 2. Email validation (Strict RFC syntax, max 254 chars, CRLF injection defense)
+  const emailResult = validateEmail(email);
+  if (!emailResult.isValid) {
+    throw new ApiError(400, emailResult.error);
   }
+  const cleanEmail = emailResult.value;
 
-  // 2. Email validation
-  if (!email || typeof email !== 'string' || !email.trim()) {
-    throw new ApiError(400, 'Email address is required');
-  }
-  const trimmedEmail = email.toLowerCase().trim();
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(trimmedEmail)) {
-    throw new ApiError(400, 'Please enter a valid email address.');
+  // 3. Password validation (Production secure policy: min 8, max 128, uppercase, lowercase, number, special char)
+  const passResult = validatePassword(password);
+  if (!passResult.isValid) {
+    throw new ApiError(400, passResult.error);
   }
 
-  // 3. Contact Phone validation (Optional at initial registration, collected during mandatory verification)
+  // 4. Age / Date of Birth validation (Integer 16-120 bounds, consistency verification)
+  const ageDobResult = validateAgeOrDob({ age, dob, required: false });
+  if (!ageDobResult.isValid) {
+    throw new ApiError(400, ageDobResult.error);
+  }
+  const verifiedAge = ageDobResult.age;
+  const verifiedDob = ageDobResult.dob;
+
+  // 5. Contact Phone validation (Optional at initial registration, validated if provided)
   let trimmedPhone = '';
-  if (phone && typeof phone === 'string' && phone.trim()) {
-    trimmedPhone = phone.trim();
-    const phoneRegex = /^[0-9+\s()-]{7,20}$/;
-    if (!phoneRegex.test(trimmedPhone)) {
-      throw new ApiError(400, 'Please enter a valid contact phone number.');
+  if (phone !== undefined && phone !== null && String(phone).trim() !== '') {
+    const phoneResult = validateNepaliPhone(phone);
+    if (!phoneResult.isValid) {
+      throw new ApiError(400, phoneResult.error);
     }
+    trimmedPhone = phoneResult.normalized;
   }
 
-  // 4. Password validation
-  if (!password || typeof password !== 'string' || password.length < 6) {
-    throw new ApiError(400, 'Password must be at least 6 characters long.');
-  }
-
-  // 5. Date of Birth (DOB) validation (Optional at initial registration, collected during mandatory verification)
-  let birthDate = null;
-  if (dob) {
-    const parsedDate = new Date(dob);
-    if (isNaN(parsedDate.getTime())) {
-      throw new ApiError(400, 'Please provide a valid date of birth.');
-    }
-    const today = new Date();
-    let age = today.getFullYear() - parsedDate.getFullYear();
-    const m = today.getMonth() - parsedDate.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < parsedDate.getDate())) {
-      age--;
-    }
-    if (parsedDate > today) {
-      throw new ApiError(400, 'Date of birth cannot be in the future.');
-    }
-    if (age < 16) {
-      throw new ApiError(400, 'You must be at least 16 years old to create an account.');
-    }
-    birthDate = parsedDate;
-  }
-
-  const existingUser = await User.findOne({ email: trimmedEmail });
+  const existingUser = await User.findOne({ email: cleanEmail });
   if (existingUser) {
     if (existingUser.isEmailVerified) {
       throw new ApiError(409, 'A user with this email already exists');
@@ -90,10 +74,11 @@ export const register = asyncHandler(async (req, res) => {
     // Account was created previously but email was never verified.
     // Refresh verification token, update credentials and resend verification email.
     const verificationToken = crypto.randomBytes(32).toString('hex');
-    existingUser.name = trimmedName;
+    existingUser.name = cleanName;
     existingUser.password = password; // Will be hashed by pre('save') hook
     existingUser.phone = trimmedPhone;
-    existingUser.dob = birthDate;
+    existingUser.dob = verifiedDob;
+    existingUser.age = verifiedAge;
     existingUser.userType = selectedType;
     existingUser.role = assignedRole;
     existingUser.emailVerificationToken = verificationToken;
@@ -129,10 +114,11 @@ export const register = asyncHandler(async (req, res) => {
 
   const verificationToken = crypto.randomBytes(32).toString('hex');
   const user = await User.create({
-    name: trimmedName,
-    email: trimmedEmail,
+    name: cleanName,
+    email: cleanEmail,
     phone: trimmedPhone,
-    dob: birthDate,
+    dob: verifiedDob,
+    age: verifiedAge,
     password,
     userType: selectedType,
     role: assignedRole,
@@ -172,10 +158,20 @@ export const register = asyncHandler(async (req, res) => {
 
 export const login = asyncHandler(async (req, res) => {
   const { email, username, password } = req.body;
-  const identifier = (email || username || '').toLowerCase().trim();
 
-  if (!identifier || !password) {
+  if ((!email && !username) || !password) {
     throw new ApiError(400, 'Username or email and password are required');
+  }
+
+  if (typeof password !== 'string' || password.length > 128) {
+    throw new ApiError(401, 'Invalid email or password');
+  }
+
+  const rawId = typeof email === 'string' ? email : typeof username === 'string' ? username : '';
+  const identifier = sanitizeString(rawId, 254).toLowerCase();
+
+  if (!identifier) {
+    throw new ApiError(400, 'Valid username or email is required');
   }
 
   const user = await User.findOne({
@@ -246,7 +242,7 @@ export const getMe = asyncHandler(async (req, res) => {
 });
 
 export const updateProfile = asyncHandler(async (req, res) => {
-  const { name, phone, location, dob, currentPassword, newPassword } = req.body;
+  const { name, phone, location, dob, age, currentPassword, newPassword } = req.body;
 
   // Immutability Check: Email cannot be changed
   if (req.body.email && req.body.email.toLowerCase().trim() !== req.user.email) {
@@ -266,19 +262,29 @@ export const updateProfile = asyncHandler(async (req, res) => {
     throw new ApiError(404, 'User not found');
   }
 
-  if (name && name.trim()) {
-    user.name = name.trim();
-  }
-
-  if (phone !== undefined) {
-    user.phone = phone.trim();
-  }
-
-  if (dob) {
-    const birthDate = new Date(dob);
-    if (!isNaN(birthDate.getTime())) {
-      user.dob = birthDate;
+  if (name !== undefined) {
+    const nameResult = validateName(name);
+    if (!nameResult.isValid) {
+      throw new ApiError(400, nameResult.error);
     }
+    user.name = nameResult.value;
+  }
+
+  if (phone !== undefined && String(phone).trim() !== '') {
+    const phoneResult = validateNepaliPhone(phone);
+    if (!phoneResult.isValid) {
+      throw new ApiError(400, phoneResult.error);
+    }
+    user.phone = phoneResult.normalized;
+  }
+
+  if (dob !== undefined || age !== undefined) {
+    const ageDobResult = validateAgeOrDob({ age, dob, required: false });
+    if (!ageDobResult.isValid) {
+      throw new ApiError(400, ageDobResult.error);
+    }
+    if (ageDobResult.dob) user.dob = ageDobResult.dob;
+    if (ageDobResult.age) user.age = ageDobResult.age;
   }
 
   if (location) {
@@ -289,16 +295,16 @@ export const updateProfile = asyncHandler(async (req, res) => {
         municipality: user.location?.municipality || '',
         ward: user.location?.ward || '',
         street: user.location?.street || '',
-        formattedAddress: location,
+        formattedAddress: sanitizeString(location, 250),
       };
     } else {
       user.location = {
-        province: location.province !== undefined ? location.province : user.location?.province || '',
-        district: location.district !== undefined ? location.district : user.location?.district || '',
-        municipality: location.municipality !== undefined ? location.municipality : user.location?.municipality || '',
-        ward: location.ward !== undefined ? location.ward : user.location?.ward || '',
-        street: location.street !== undefined ? location.street : user.location?.street || '',
-        formattedAddress: location.formattedAddress || user.location?.formattedAddress || '',
+        province: location.province !== undefined ? sanitizeString(location.province, 50) : user.location?.province || '',
+        district: location.district !== undefined ? sanitizeString(location.district, 50) : user.location?.district || '',
+        municipality: location.municipality !== undefined ? sanitizeString(location.municipality, 50) : user.location?.municipality || '',
+        ward: location.ward !== undefined ? sanitizeString(location.ward, 20) : user.location?.ward || '',
+        street: location.street !== undefined ? sanitizeString(location.street, 100) : user.location?.street || '',
+        formattedAddress: sanitizeString(location.formattedAddress || user.location?.formattedAddress || '', 250),
       };
     }
   }
@@ -314,8 +320,9 @@ export const updateProfile = asyncHandler(async (req, res) => {
       throw new ApiError(400, 'Current password does not match');
     }
 
-    if (newPassword.length < 6) {
-      throw new ApiError(400, 'New password must be at least 6 characters');
+    const passResult = validatePassword(newPassword);
+    if (!passResult.isValid) {
+      throw new ApiError(400, passResult.error);
     }
 
     user.password = newPassword;
@@ -422,19 +429,32 @@ export const updateOnboarding = asyncHandler(async (req, res) => {
 
   // STEP 1: Address & Contact Verification (Applied across the app where user address is needed)
   if (step === 1 || profile || location || address) {
-    if (profile?.name && profile.name.trim()) user.name = profile.name.trim();
+    if (profile?.name) {
+      const nameResult = validateName(profile.name);
+      if (!nameResult.isValid) {
+        throw new ApiError(400, nameResult.error);
+      }
+      user.name = nameResult.value;
+    }
 
     const incomingPhone = profile?.phone || req.body.phone;
-    if (incomingPhone && typeof incomingPhone === 'string' && incomingPhone.trim()) {
-      user.phone = incomingPhone.trim();
+    if (incomingPhone !== undefined && incomingPhone !== null && String(incomingPhone).trim()) {
+      const phoneResult = validateNepaliPhone(incomingPhone);
+      if (!phoneResult.isValid) {
+        throw new ApiError(400, phoneResult.error);
+      }
+      user.phone = phoneResult.normalized;
     }
 
     const incomingDob = profile?.dob || req.body.dob;
-    if (incomingDob) {
-      const parsedDate = new Date(incomingDob);
-      if (!isNaN(parsedDate.getTime())) {
-        user.dob = parsedDate;
+    const incomingAge = profile?.age || req.body.age;
+    if (incomingDob !== undefined || incomingAge !== undefined) {
+      const ageDobResult = validateAgeOrDob({ age: incomingAge, dob: incomingDob, required: false });
+      if (!ageDobResult.isValid) {
+        throw new ApiError(400, ageDobResult.error);
       }
+      if (ageDobResult.dob) user.dob = ageDobResult.dob;
+      if (ageDobResult.age) user.age = ageDobResult.age;
     }
 
     const incomingLoc = profile?.location || location || address;
@@ -846,6 +866,10 @@ export const verifyEmail = asyncHandler(async (req, res) => {
   }
 
   const cleanToken = token.trim();
+  // Protection against malformed tokens
+  if (cleanToken.length < 10 || cleanToken.length > 128 || !/^[a-zA-Z0-9_-]+$/.test(cleanToken)) {
+    throw new ApiError(400, 'Invalid verification token format.');
+  }
 
   const user = await User.findOne({
     emailVerificationToken: cleanToken,
@@ -892,11 +916,12 @@ export const verifyEmail = asyncHandler(async (req, res) => {
 export const resendVerification = asyncHandler(async (req, res) => {
   const { email } = req.body;
 
-  if (!email || typeof email !== 'string' || !email.trim()) {
-    throw new ApiError(400, 'Email address is required.');
+  const emailResult = validateEmail(email);
+  if (!emailResult.isValid) {
+    throw new ApiError(400, emailResult.error);
   }
 
-  const trimmedEmail = email.toLowerCase().trim();
+  const trimmedEmail = emailResult.value;
   const user = await User.findOne({ email: trimmedEmail });
 
   if (!user) {

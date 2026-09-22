@@ -4,10 +4,14 @@ import morgan from 'morgan';
 import compression from 'compression';
 import apiRouter from './routes/index.js';
 import { errorHandler } from './middlewares/error.middleware.js';
+import { securityHeaders, sanitizeInputs } from './middlewares/security.middleware.js';
 import { ApiError } from './utils/apiError.js';
 import { ENV } from './config/env.js';
 
 const app = express();
+
+// Security: HTTP security headers
+app.use(securityHeaders);
 
 // Performance: gzip / deflate compression
 app.use(compression());
@@ -48,6 +52,9 @@ app.use(
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Input sanitization against NoSQL injection
+app.use(sanitizeInputs);
 
 if (ENV.NODE_ENV === 'development') {
   app.use(morgan('dev'));

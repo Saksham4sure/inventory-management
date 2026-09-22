@@ -10,6 +10,7 @@ import { DatePicker } from '../ui/DatePicker';
 import { Button } from '../ui/Button';
 import { ROUTES } from '../../constants/routes';
 import { useSnackbar } from '../../hooks/useSnackbar';
+import { validateFullName } from '../../utils/inputValidator';
 import {
   User,
   MapPin,
@@ -176,8 +177,9 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
   const handleStep1PersonalSubmit = (e) => {
     e.preventDefault();
 
-    if (!name.trim()) {
-      showError('Full name is required.');
+    const nameErr = validateFullName(name);
+    if (nameErr) {
+      showError(nameErr);
       return;
     }
 

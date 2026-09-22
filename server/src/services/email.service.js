@@ -1,4 +1,5 @@
 import { ENV } from '../config/env.js';
+import { validateEmail, escapeHtml, sanitizeString } from '../utils/inputValidator.js';
 
 let cachedSender = null;
 
@@ -55,7 +56,21 @@ async function getValidSender() {
 }
 
 export const sendVerificationEmail = async ({ email, name, token }) => {
-  const verificationUrl = `${ENV.CLIENT_URL}/verify-email?token=${token}`;
+  // Validate recipient email
+  const emailValidation = validateEmail(email);
+  if (!emailValidation.isValid) {
+    throw new Error(`Invalid recipient email: ${emailValidation.error}`);
+  }
+  const cleanEmail = emailValidation.value;
+
+  if (!token || typeof token !== 'string') {
+    throw new Error('Verification token is required and must be a valid string.');
+  }
+
+  const safeToken = encodeURIComponent(token.trim());
+  const verificationUrl = `${ENV.CLIENT_URL}/verify-email?token=${safeToken}`;
+  const safeVerificationUrl = escapeHtml(verificationUrl);
+  const safeName = escapeHtml(sanitizeString(name || '', 70)) || 'there';
 
   const htmlContent = `
 <!DOCTYPE html>
@@ -92,7 +107,7 @@ export const sendVerificationEmail = async ({ email, name, token }) => {
                 Verify your email address
               </h2>
               <p style="margin: 0 0 16px; font-size: 14px; line-height: 1.6; color: #cbd5e1;">
-                Hi <strong style="color: #ffffff;">${name || 'there'}</strong>,
+                Hi <strong style="color: #ffffff;">${safeName}</strong>,
               </p>
               <p style="margin: 0 0 24px; font-size: 14px; line-height: 1.6; color: #cbd5e1;">
                 Thank you for creating an account with StockPulse. To prevent automated spam and protect your workspace, we require email validation before you can proceed to identity onboarding and activate your workspace.
@@ -102,7 +117,7 @@ export const sendVerificationEmail = async ({ email, name, token }) => {
               <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin: 28px 0;">
                 <tr>
                   <td align="center">
-                    <a href="${verificationUrl}" target="_blank" style="display: inline-block; background: #ffffff; color: #09090b; font-size: 14px; font-weight: 700; text-decoration: none; padding: 14px 34px; border-radius: 12px; box-shadow: 0 4px 14px rgba(255,255,255,0.15);">
+                    <a href="${safeVerificationUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; background: #ffffff; color: #09090b; font-size: 14px; font-weight: 700; text-decoration: none; padding: 14px 34px; border-radius: 12px; box-shadow: 0 4px 14px rgba(255,255,255,0.15);">
                       Verify Email & Continue Onboarding →
                     </a>
                   </td>
@@ -113,7 +128,7 @@ export const sendVerificationEmail = async ({ email, name, token }) => {
                 If the button above does not work, copy and paste this link into your browser:
               </p>
               <p style="margin: 0 0 24px; font-size: 12px; word-break: break-all; color: #60a5fa; background: #0f1117; padding: 12px 14px; border-radius: 8px; border: 1px solid #272b3b;">
-                <a href="${verificationUrl}" style="color: #60a5fa; text-decoration: none;">${verificationUrl}</a>
+                <a href="${safeVerificationUrl}" target="_blank" rel="noopener noreferrer" style="color: #60a5fa; text-decoration: none;">${safeVerificationUrl}</a>
               </p>
 
               <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.25); border-radius: 10px; padding: 12px 14px; margin-top: 20px;">
@@ -150,7 +165,7 @@ export const sendVerificationEmail = async ({ email, name, token }) => {
 
   const sender = await getValidSender();
 
-  // Call Brevo transactional email API
+  // Call Brevo transactional email API with strict sanitized inputs
   const response = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: {
@@ -162,8 +177,8 @@ export const sendVerificationEmail = async ({ email, name, token }) => {
       sender,
       to: [
         {
-          email,
-          name: name || email,
+          email: cleanEmail,
+          name: sanitizeString(name || cleanEmail, 70),
         },
       ],
       subject: 'Verify your email address - StockPulse',

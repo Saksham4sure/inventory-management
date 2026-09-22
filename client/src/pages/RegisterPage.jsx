@@ -8,6 +8,15 @@ import { Button } from '../components/ui/Button';
 import { ROUTES } from '../constants/routes';
 import { UserPlus, AlertCircle, ArrowRight, Building2, User, ShieldAlert, Mail, CheckCircle2, RefreshCw } from 'lucide-react';
 
+import {
+  validateFullName,
+  validateEmail,
+  validatePassword,
+  validateConfirmPassword,
+  validateAge,
+  getPasswordCriteria,
+} from '../utils/inputValidator';
+
 export const RegisterPage = () => {
   const navigate = useNavigate();
   const { register } = useAuth();
@@ -16,6 +25,7 @@ export const RegisterPage = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    age: '',
     password: '',
     confirmPassword: '',
     userType: 'CUSTOMER', // 'CUSTOMER' (Normal user) | 'BUSINESS' (Store / Business user)
@@ -39,49 +49,13 @@ export const RegisterPage = () => {
     return () => clearInterval(timer);
   }, [resendCooldown]);
 
-  // Validation functions
-  const validateFullName = (name) => {
-    if (!name || !name.trim()) return 'Full name is required';
-    const trimmed = name.trim();
-    const parts = trimmed.split(/\s+/).filter(Boolean);
-    const regex = /^[a-zA-Z\s.'-]+$/;
-    if (!regex.test(trimmed)) {
-      return 'Name should contain letters, spaces, hyphens, or periods only';
-    }
-    if (parts.length < 2) {
-      return 'Please enter your full name (both first and last name)';
-    }
-    if (trimmed.length < 3) {
-      return 'Full name must be at least 3 characters long';
-    }
-    return '';
-  };
-
-  const validateEmail = (email) => {
-    if (!email || !email.trim()) return 'Email address is required';
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!regex.test(email.trim())) {
-      return 'Please enter a valid email address (e.g. name@company.com)';
-    }
-    return '';
-  };
-
-  const validatePassword = (pass) => {
-    if (!pass) return 'Password is required';
-    if (pass.length < 6) return 'Password must be at least 6 characters long';
-    return '';
-  };
-
-  const validateConfirmPassword = (pass, confirm) => {
-    if (!confirm) return 'Please re-enter your password';
-    if (pass !== confirm) return 'Passwords do not match';
-    return '';
-  };
+  const passwordCriteria = getPasswordCriteria(formData.password);
 
   const handleBlur = (field) => {
     let err = '';
     if (field === 'name') err = validateFullName(formData.name);
     if (field === 'email') err = validateEmail(formData.email);
+    if (field === 'age') err = validateAge(formData.age);
     if (field === 'password') err = validatePassword(formData.password);
     if (field === 'confirmPassword')
       err = validateConfirmPassword(formData.password, formData.confirmPassword);
@@ -95,19 +69,21 @@ export const RegisterPage = () => {
 
     const nameErr = validateFullName(formData.name);
     const emailErr = validateEmail(formData.email);
+    const ageErr = validateAge(formData.age);
     const passErr = validatePassword(formData.password);
     const confirmErr = validateConfirmPassword(formData.password, formData.confirmPassword);
 
     const errors = {
       name: nameErr,
       email: emailErr,
+      age: ageErr,
       password: passErr,
       confirmPassword: confirmErr,
     };
 
     setFieldErrors(errors);
 
-    if (nameErr || emailErr || passErr || confirmErr) {
+    if (nameErr || emailErr || ageErr || passErr || confirmErr) {
       setError('Please resolve all validation errors before proceeding.');
       return;
     }
@@ -119,6 +95,7 @@ export const RegisterPage = () => {
       await register({
         name: formData.name.trim(),
         email,
+        age: Number(formData.age),
         password: formData.password,
         userType: formData.userType,
       });
@@ -343,13 +320,33 @@ export const RegisterPage = () => {
           />
         </div>
 
+        {/* Age */}
+        <div>
+          <Input
+            label="Age (Years, 16 - 120)"
+            id="age"
+            type="number"
+            min="16"
+            max="120"
+            placeholder="e.g. 25"
+            required
+            value={formData.age}
+            onChange={(e) => {
+              setFormData({ ...formData, age: e.target.value });
+              if (fieldErrors.age) setFieldErrors({ ...fieldErrors, age: '' });
+            }}
+            onBlur={() => handleBlur('age')}
+            error={fieldErrors.age}
+          />
+        </div>
+
         {/* Password */}
         <div>
           <Input
             label="Password"
             id="password"
             type="password"
-            placeholder="Min. 6 characters"
+            placeholder="Min. 8 characters"
             required
             value={formData.password}
             onChange={(e) => {
@@ -359,6 +356,22 @@ export const RegisterPage = () => {
             onBlur={() => handleBlur('password')}
             error={fieldErrors.password}
           />
+          {formData.password && (
+            <div className="mt-2 grid grid-cols-2 gap-1.5 p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 text-[11px]">
+              <span className={`flex items-center gap-1 ${passwordCriteria.minLength ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-zinc-400 dark:text-zinc-500'}`}>
+                <CheckCircle2 className="h-3 w-3 shrink-0" /> 8-128 characters
+              </span>
+              <span className={`flex items-center gap-1 ${passwordCriteria.hasUpper && passwordCriteria.hasLower ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-zinc-400 dark:text-zinc-500'}`}>
+                <CheckCircle2 className="h-3 w-3 shrink-0" /> Upper & lowercase
+              </span>
+              <span className={`flex items-center gap-1 ${passwordCriteria.hasNumber ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-zinc-400 dark:text-zinc-500'}`}>
+                <CheckCircle2 className="h-3 w-3 shrink-0" /> One number (0-9)
+              </span>
+              <span className={`flex items-center gap-1 ${passwordCriteria.hasSpecial ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-zinc-400 dark:text-zinc-500'}`}>
+                <CheckCircle2 className="h-3 w-3 shrink-0" /> Special symbol (!@#$)
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Confirm Password */}

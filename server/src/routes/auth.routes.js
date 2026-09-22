@@ -13,14 +13,15 @@ import {
   getCustomerCredits,
 } from '../controllers/auth.controller.js';
 import { authenticate } from '../middlewares/auth.middleware.js';
+import { authRateLimiter, emailRateLimiter } from '../middlewares/security.middleware.js';
 
 const router = Router();
 
-router.post('/register', register);
-router.post('/login', login);
+router.post('/register', authRateLimiter, register);
+router.post('/login', authRateLimiter, login);
 router.get('/verify-email', verifyEmail);
-router.post('/verify-email', verifyEmail);
-router.post('/resend-verification', resendVerification);
+router.post('/verify-email', emailRateLimiter, verifyEmail);
+router.post('/resend-verification', emailRateLimiter, resendVerification);
 router.get('/me', authenticate, getMe);
 router.put('/profile', authenticate, updateProfile);
 router.put('/onboarding', authenticate, updateOnboarding);
