@@ -400,16 +400,19 @@ export const NotificationsPage = () => {
             <span>Refresh</span>
           </button>
 
-          {unreadCount > 0 && (
-            <button
-              type="button"
-              onClick={handleMarkAllRead}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white text-xs font-semibold transition-all cursor-pointer shadow-xs"
-            >
-              <CheckCheck className="h-3.5 w-3.5" />
-              <span>Mark all read</span>
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={handleMarkAllRead}
+            disabled={unreadCount === 0}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all shadow-xs ${
+              unreadCount > 0
+                ? 'bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-white cursor-pointer'
+                : 'bg-zinc-100 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500 cursor-not-allowed opacity-70'
+            }`}
+          >
+            <CheckCheck className="h-3.5 w-3.5" />
+            <span>Mark all read</span>
+          </button>
 
           {notifications.some((n) => n.isRead) && (
             <button
@@ -574,32 +577,46 @@ export const NotificationsPage = () => {
                     {/* Party Invitation Accept / Decline buttons */}
                     {notif.type === 'PARTY_INVITATION' && notif.data?.partyId && (
                       <div className="flex items-center gap-2.5 mt-3 pt-3 border-t border-zinc-100 dark:border-zinc-800">
-                        <button
-                          type="button"
-                          disabled={respondingId === notif.data.partyId}
-                          onClick={(e) =>
-                            handleRespondParty(e, notif.data.partyId, 'ACCEPT', notif._id)
-                          }
-                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs active:scale-95 transition-all cursor-pointer disabled:opacity-50"
-                        >
-                          {respondingId === notif.data.partyId ? (
-                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Check className="h-3.5 w-3.5" />
-                          )}
-                          <span>Accept Party Connection</span>
-                        </button>
+                        {notif.partyStatus === 'PENDING' ? (
+                          <>
+                            <button
+                              type="button"
+                              disabled={respondingId === notif.data.partyId}
+                              onClick={(e) =>
+                                handleRespondParty(e, notif.data.partyId, 'ACCEPT', notif._id)
+                              }
+                              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-xs active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                            >
+                              {respondingId === notif.data.partyId ? (
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Check className="h-3.5 w-3.5" />
+                              )}
+                              <span>Accept Party Connection</span>
+                            </button>
 
-                        <button
-                          type="button"
-                          disabled={respondingId === notif.data.partyId}
-                          onClick={(e) =>
-                            handleRespondParty(e, notif.data.partyId, 'REJECT', notif._id)
-                          }
-                          className="px-3.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-semibold active:scale-95 transition-all cursor-pointer disabled:opacity-50"
-                        >
-                          Decline
-                        </button>
+                            <button
+                              type="button"
+                              disabled={respondingId === notif.data.partyId}
+                              onClick={(e) =>
+                                handleRespondParty(e, notif.data.partyId, 'REJECT', notif._id)
+                              }
+                              className="px-3.5 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-semibold active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                            >
+                              Decline
+                            </button>
+                          </>
+                        ) : notif.partyStatus === 'ACCEPTED' ? (
+                          <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-1.5">
+                            <CheckCircle2 className="h-4 w-4" />
+                            <span>Party connection accepted</span>
+                          </div>
+                        ) : (
+                          <div className="text-xs font-semibold text-zinc-400 inline-flex items-center gap-1.5">
+                            <XCircle className="h-4 w-4" />
+                            <span>Party request declined</span>
+                          </div>
+                        )}
                       </div>
                     )}
 

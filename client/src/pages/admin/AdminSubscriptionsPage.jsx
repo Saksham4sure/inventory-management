@@ -467,9 +467,9 @@ export const AdminSubscriptionsPage = () => {
       </div>
 
       {/* SECTION 1: Dynamic Trial System Configuration */}
-      <div className="rounded-3xl border border-indigo-200 dark:border-indigo-900/60 bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-transparent p-5 sm:p-7 shadow-xs relative overflow-hidden">
+      <div className="rounded-3xl border border-indigo-200 dark:border-indigo-900/60 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 p-5 sm:p-7 shadow-xs relative overflow-hidden">
         <div className="flex items-center gap-3 mb-4">
-          <div className="h-10 w-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30">
+          <div className="h-10 w-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-sm">
             <Clock className="h-5 w-5" />
           </div>
           <div>
@@ -614,7 +614,7 @@ export const AdminSubscriptionsPage = () => {
                 key={p._id}
                 className={`rounded-3xl border flex flex-col justify-between p-6 shadow-xs transition-all relative ${
                   isTrial
-                    ? 'border-indigo-500 bg-white dark:bg-zinc-900/90 shadow-md shadow-indigo-500/10'
+                    ? 'border-indigo-500 bg-white dark:bg-zinc-900/90 shadow-md shadow-sm'
                     : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/70'
                 }`}
               >

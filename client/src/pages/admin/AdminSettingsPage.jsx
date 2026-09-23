@@ -299,7 +299,7 @@ export const AdminSettingsPage = () => {
           <button
             type="submit"
             disabled={saving}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md shadow-indigo-600/20 transition-all cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md shadow-sm transition-all cursor-pointer disabled:opacity-50"
           >
             <Save className="h-4 w-4" />
             {saving ? 'Saving Platform Rules...' : 'Save All Platform Settings'}

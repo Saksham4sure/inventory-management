@@ -36,7 +36,7 @@ export const PlatformAdminLoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col justify-center items-center bg-gradient-to-br from-zinc-950 via-zinc-900 to-indigo-950 p-4 text-zinc-100 relative">
+    <div className="min-h-screen w-full flex flex-col justify-center items-center bg-zinc-950 p-4 text-zinc-100 relative">
       <div className="absolute top-6 right-6">
         <ThemeToggle />
       </div>
@@ -44,7 +44,7 @@ export const PlatformAdminLoginPage = () => {
       <div className="w-full max-w-md bg-zinc-900/90 border border-zinc-800 backdrop-blur-xl rounded-2xl p-6 sm:p-8 shadow-2xl">
         {/* Header */}
         <div className="flex flex-col items-center text-center mb-6">
-          <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white shadow-xl shadow-indigo-500/30 mb-3">
+          <div className="h-14 w-14 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-xl shadow-sm mb-3">
             <ShieldAlert className="h-7 w-7" />
           </div>
           <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-full border border-indigo-500/20 mb-1">
@@ -113,7 +113,7 @@ export const PlatformAdminLoginPage = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full mt-3 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-medium py-2.5 text-sm shadow-lg shadow-indigo-600/30 transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+            className="w-full mt-3 flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 text-sm shadow-lg shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
           >
             {loading ? (
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />

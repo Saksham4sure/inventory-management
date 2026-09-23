@@ -145,16 +145,19 @@ export const NotificationBell = () => {
               )}
             </div>
 
-            {unreadCount > 0 && (
-              <button
-                type="button"
-                onClick={handleMarkAllAsRead}
-                className="inline-flex items-center gap-1 text-[11px] font-semibold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 transition-colors"
-              >
-                <CheckCheck className="h-3.5 w-3.5" />
-                <span>Mark all read</span>
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={handleMarkAllAsRead}
+              disabled={unreadCount === 0}
+              className={`inline-flex items-center gap-1 text-[11px] font-semibold transition-colors ${
+                unreadCount > 0
+                  ? 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 cursor-pointer'
+                  : 'text-zinc-300 dark:text-zinc-600 cursor-not-allowed'
+              }`}
+            >
+              <CheckCheck className="h-3.5 w-3.5" />
+              <span>Mark all read</span>
+            </button>
           </div>
 
           {/* Notifications List */}

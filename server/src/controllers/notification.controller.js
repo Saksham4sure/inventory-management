@@ -1,6 +1,7 @@
 import { Notification } from '../models/notification.model.js';
 import { Invitation } from '../models/invitation.model.js';
 import { Business } from '../models/business.model.js';
+import { Party } from '../models/party.model.js';
 import { User } from '../models/user.model.js';
 import { ApiError } from '../utils/apiError.js';
 import { ApiResponse } from '../utils/apiResponse.js';
@@ -64,6 +65,10 @@ export const getMyNotifications = asyncHandler(async (req, res) => {
       if (obj.data?.invitationId) {
         const inv = await Invitation.findById(obj.data.invitationId);
         obj.invitationStatus = inv ? inv.status : 'CANCELLED';
+      }
+      if (obj.data?.partyId) {
+        const party = await Party.findById(obj.data.partyId);
+        obj.partyStatus = party ? party.status : 'CANCELLED';
       }
       return obj;
     })

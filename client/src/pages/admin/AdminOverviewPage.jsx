@@ -174,10 +174,10 @@ export const AdminOverviewPage = () => {
 
         {/* HEADLINE 1: Subscription Plan Applied Alert Card */}
         {pendingRequestsCount > 0 ? (
-          <div className="rounded-3xl border border-indigo-200 dark:border-indigo-900/80 bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-transparent p-5 sm:p-6 shadow-sm">
+          <div className="rounded-3xl border border-indigo-200 dark:border-indigo-900/80 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 p-5 sm:p-6 shadow-sm">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-indigo-100 dark:border-indigo-900/60">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-indigo-600/30">
+                <div className="h-10 w-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-sm">
                   <CreditCard className="h-5 w-5" />
                 </div>
                 <div>
@@ -321,9 +321,9 @@ export const AdminOverviewPage = () => {
       </div>
 
       {/* Trial System Active Banner */}
-      <div className="rounded-2xl border border-indigo-200/80 dark:border-indigo-900/60 bg-gradient-to-r from-indigo-500/10 via-purple-500/5 to-transparent p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="rounded-2xl border border-indigo-200/80 dark:border-indigo-900/60 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-start sm:items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-indigo-600/20">
+          <div className="h-10 w-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-sm">
             <Sparkles className="h-5 w-5" />
           </div>
           <div>

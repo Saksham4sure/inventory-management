@@ -384,7 +384,7 @@ export const AdminUsersPage = () => {
                           <div
                             className={`h-8 w-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
                               isSuper
-                                ? 'bg-gradient-to-tr from-rose-500 to-indigo-600 text-white shadow-xs'
+                                ? 'bg-indigo-600 text-white shadow-xs'
                                 : 'bg-purple-500/10 text-purple-600 dark:text-purple-400'
                             }`}
                           >

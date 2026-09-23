@@ -70,18 +70,18 @@ export const PlatformAdminLayout = () => {
   ];
 
   const sidebarContent = (
-    <div className="flex flex-col justify-between h-full p-4 bg-zinc-950 text-zinc-200 border-r border-zinc-800/80">
+    <div className="flex flex-col justify-between h-full p-4 bg-zinc-950 text-zinc-200 border-r border-zinc-800">
       <div>
         {/* Brand */}
         <div className="flex items-center justify-between px-2 mb-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-lg shadow-indigo-500/25">
+            <div className="flex h-10 w-10 items-center justify-center rounded bg-indigo-600 text-white">
               <ShieldAlert className="h-5 w-5" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="font-bold text-sm tracking-tight text-white font-mono">StockPulse</span>
-                <span className="rounded bg-indigo-500/20 px-1.5 py-0.5 text-[10px] font-bold text-indigo-400 border border-indigo-500/30">
+                <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] font-bold text-zinc-300 border border-zinc-700">
                   ROOT
                 </span>
               </div>
@@ -99,16 +99,15 @@ export const PlatformAdminLayout = () => {
         </div>
 
         {/* Live status badge */}
-        <div className="mb-6 rounded-xl bg-zinc-900/90 border border-zinc-800 p-3">
+        <div className="mb-6 rounded bg-zinc-900 border border-zinc-800 p-3">
           <div className="flex items-center justify-between text-xs">
             <span className="flex items-center gap-2 text-zinc-400 font-medium">
               <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
               </span>
               Platform Core
             </span>
-            <span className="text-[10px] font-mono text-emerald-400 uppercase bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-800/40">
+            <span className="text-[10px] font-mono text-emerald-500 uppercase bg-zinc-800 px-2 py-0.5 rounded border border-zinc-700">
               Active
             </span>
           </div>
@@ -118,7 +117,7 @@ export const PlatformAdminLayout = () => {
         </div>
 
         {/* Navigation items */}
-        <nav className="space-y-1.5">
+        <nav className="space-y-1">
           <p className="px-3 text-[10px] font-bold tracking-wider uppercase text-zinc-400 mb-2 font-mono">
             Administration
           </p>
@@ -130,25 +129,25 @@ export const PlatformAdminLayout = () => {
                 to={item.path}
                 onClick={() => setMobileOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium transition-all duration-200 group ${
+                  `flex items-center gap-3 px-3 py-2 rounded text-xs font-medium transition-colors group ${
                     isActive
-                      ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-md shadow-indigo-600/30'
-                      : 'text-zinc-400 hover:text-white hover:bg-zinc-900/80'
+                      ? 'bg-zinc-800 text-white'
+                      : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
                   }`
                 }
               >
                 {({ isActive }) => (
                   <>
                     <Icon
-                      className={`h-4 w-4 shrink-0 transition-transform group-hover:scale-110 ${
-                        isActive ? 'text-white' : 'text-zinc-400 group-hover:text-indigo-400'
+                      className={`h-4 w-4 shrink-0 ${
+                        isActive ? 'text-white' : 'text-zinc-400'
                       }`}
                     />
                     <div className="flex flex-col">
                       <span className="leading-tight">{item.label}</span>
                       <span
                         className={`text-[10px] leading-tight ${
-                          isActive ? 'text-indigo-200' : 'text-zinc-400'
+                          isActive ? 'text-zinc-300' : 'text-zinc-500'
                         }`}
                       >
                         {item.description}
