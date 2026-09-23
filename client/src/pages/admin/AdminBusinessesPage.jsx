@@ -187,7 +187,7 @@ export const AdminBusinessesPage = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-white flex items-center gap-2">
-            <Building2 className="h-6 w-6 text-indigo-500" />
+            <Building2 className="h-6 w-6 text-zinc-600" />
             Businesses & Multi-Tenancy
           </h1>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
@@ -211,7 +211,7 @@ export const AdminBusinessesPage = () => {
             placeholder="Search by business name, category, or owner email..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 px-3.5 py-2 pl-10 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
+            className="w-full rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 px-3.5 py-2 pl-10 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-hidden focus:ring-1 focus:ring-zinc-600"
           />
         </div>
 
@@ -253,7 +253,7 @@ export const AdminBusinessesPage = () => {
         {loading ? (
           <div className="flex h-64 w-full items-center justify-center">
             <div className="flex flex-col items-center gap-2">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-800 border-t-transparent" />
               <p className="text-xs text-zinc-400">Loading businesses directory...</p>
             </div>
           </div>
@@ -290,7 +290,7 @@ export const AdminBusinessesPage = () => {
                     >
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-3">
-                          <div className="h-9 w-9 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 font-bold flex items-center justify-center shrink-0">
+                          <div className="h-9 w-9 rounded-xl bg-zinc-600/10 text-zinc-800 dark:text-zinc-400 font-bold flex items-center justify-center shrink-0">
                             {b.name.charAt(0).toUpperCase()}
                           </div>
                           <div>
@@ -321,7 +321,7 @@ export const AdminBusinessesPage = () => {
 
                       <td className="px-4 py-3.5">
                         <span className="inline-flex items-center gap-1.5 font-mono text-[11px] font-bold px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-800 dark:text-zinc-200 border border-zinc-200 dark:border-zinc-700">
-                          <CreditCard className="h-3 w-3 text-indigo-500" />
+                          <CreditCard className="h-3 w-3 text-zinc-600" />
                           {planId}
                         </span>
                       </td>
@@ -333,7 +333,7 @@ export const AdminBusinessesPage = () => {
                               className={`inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
                                 b.isExpired
                                   ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
-                                  : 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20'
+                                  : 'bg-zinc-600/10 text-zinc-800 dark:text-zinc-400 border border-zinc-600/20'
                               }`}
                             >
                               <Clock className="h-3 w-3" />
@@ -376,7 +376,7 @@ export const AdminBusinessesPage = () => {
                           <button
                             onClick={() => openSubscriptionModal(b)}
                             title="Manage Subscription & Trial"
-                            className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 transition-colors cursor-pointer"
+                            className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-950/60 text-zinc-800 dark:text-zinc-400 hover:bg-zinc-200 transition-colors cursor-pointer"
                           >
                             <CreditCard className="h-3.5 w-3.5" />
                           </button>
@@ -417,7 +417,7 @@ export const AdminBusinessesPage = () => {
             </button>
 
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="h-9 w-9 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+              <div className="h-9 w-9 rounded-xl bg-zinc-600/10 text-zinc-800 dark:text-zinc-400 flex items-center justify-center">
                 <CreditCard className="h-5 w-5" />
               </div>
               <div>
@@ -465,10 +465,10 @@ export const AdminBusinessesPage = () => {
               </div>
 
               {/* Trial quick extension */}
-              <div className="p-3.5 rounded-xl bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-900/60 space-y-2.5">
-                <div className="text-xs font-semibold text-indigo-950 dark:text-indigo-300 flex items-center justify-between">
+              <div className="p-3.5 rounded-xl bg-zinc-100/60 dark:bg-zinc-950/40 border border-zinc-300 dark:border-zinc-900/60 space-y-2.5">
+                <div className="text-xs font-semibold text-zinc-950 dark:text-zinc-400 flex items-center justify-between">
                   <span>Extend Trial Period</span>
-                  <span className="text-[10px] text-indigo-500 font-normal">
+                  <span className="text-[10px] text-zinc-600 font-normal">
                     Currently: {subscriptionModal.daysRemaining} days left
                   </span>
                 </div>
@@ -480,7 +480,7 @@ export const AdminBusinessesPage = () => {
                       onClick={() => setExtendDays(days)}
                       className={`flex-1 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
                         extendDays === days
-                          ? 'bg-indigo-600 text-white border-indigo-600 shadow-xs'
+                          ? 'bg-zinc-800 text-white border-zinc-800 shadow-xs'
                           : 'bg-white dark:bg-zinc-900 text-zinc-700 dark:text-zinc-300 border-zinc-200 dark:border-zinc-800 hover:bg-zinc-100'
                       }`}
                     >
@@ -512,7 +512,7 @@ export const AdminBusinessesPage = () => {
                 <button
                   type="submit"
                   disabled={actionLoading}
-                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                  className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-600 text-white text-xs font-medium shadow-sm transition-all cursor-pointer disabled:opacity-50"
                 >
                   {actionLoading ? 'Saving...' : 'Update Subscription'}
                 </button>

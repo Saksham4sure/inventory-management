@@ -80,7 +80,7 @@ export const AdminOverviewPage = () => {
     return (
       <div className="flex h-96 w-full items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-800 border-t-transparent" />
           <p className="text-xs text-zinc-500 font-mono">Aggregating platform metrics...</p>
         </div>
       </div>
@@ -123,7 +123,7 @@ export const AdminOverviewPage = () => {
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-white flex items-center gap-2.5">
             Platform Master Console
-            <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
+            <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-zinc-200 text-zinc-700 dark:bg-zinc-950 dark:text-zinc-400 border border-zinc-300 dark:border-zinc-800">
               Live Telemetry
             </span>
           </h1>
@@ -142,7 +142,7 @@ export const AdminOverviewPage = () => {
           </button>
           <Link
             to={ROUTES.ADMIN_SUBSCRIPTIONS}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium shadow-sm transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-600 text-white text-xs font-medium shadow-sm transition-all cursor-pointer"
           >
             <Sliders className="h-3.5 w-3.5" />
             Manage 3 Tiers & Trial
@@ -162,7 +162,7 @@ export const AdminOverviewPage = () => {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="h-2 w-2 rounded-full bg-indigo-500 animate-ping" />
+            <div className="h-2 w-2 rounded-full bg-zinc-600 animate-ping" />
             <h2 className="text-xs font-bold tracking-wider text-zinc-800 dark:text-zinc-200 uppercase font-mono">
               Platform Important Headlines & Alerts
             </h2>
@@ -174,18 +174,18 @@ export const AdminOverviewPage = () => {
 
         {/* HEADLINE 1: Subscription Plan Applied Alert Card */}
         {pendingRequestsCount > 0 ? (
-          <div className="rounded-3xl border border-indigo-200 dark:border-indigo-900/80 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 p-5 sm:p-6 shadow-sm">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-indigo-100 dark:border-indigo-900/60">
+          <div className="rounded-3xl border border-zinc-300 dark:border-zinc-900/80 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 p-5 sm:p-6 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-zinc-200 dark:border-zinc-900/60">
               <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-sm">
+                <div className="h-10 w-10 rounded-2xl bg-zinc-800 text-white flex items-center justify-center shrink-0 shadow-md shadow-sm">
                   <CreditCard className="h-5 w-5" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-xs font-black uppercase tracking-wider text-indigo-700 dark:text-indigo-400">
+                    <span className="text-xs font-black uppercase tracking-wider text-zinc-700 dark:text-zinc-400">
                       Subscription Plan Applied
                     </span>
-                    <span className="rounded-full bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.5">
+                    <span className="rounded-full bg-zinc-800 text-white text-[10px] font-bold px-2 py-0.5">
                       {pendingRequestsCount} PENDING
                     </span>
                   </div>
@@ -197,7 +197,7 @@ export const AdminOverviewPage = () => {
 
               <Link
                 to={ROUTES.ADMIN_SUBSCRIPTIONS}
-                className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline inline-flex items-center gap-1 self-start sm:self-auto"
+                className="text-xs font-semibold text-zinc-800 dark:text-zinc-400 hover:underline inline-flex items-center gap-1 self-start sm:self-auto"
               >
                 <span>Manage Subscriptions</span>
                 <ArrowUpRight className="h-3.5 w-3.5" />
@@ -209,7 +209,7 @@ export const AdminOverviewPage = () => {
               {pendingSubscriptionRequests.map((req) => (
                 <div
                   key={req._id}
-                  className="rounded-2xl border border-zinc-200/90 dark:border-zinc-800/90 bg-white/95 dark:bg-zinc-900/90 backdrop-blur-md p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:border-indigo-300 dark:hover:border-indigo-750"
+                  className="rounded-2xl border border-zinc-200/90 dark:border-zinc-800/90 bg-white/95 dark:bg-zinc-900/90 backdrop-blur-md p-4 sm:p-5 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:border-zinc-400 dark:hover:border-zinc-700"
                 >
                   <div className="space-y-1.5 min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -230,8 +230,8 @@ export const AdminOverviewPage = () => {
                       <span>•</span>
                       <span className="inline-flex items-center gap-1 font-semibold text-zinc-700 dark:text-zinc-300">
                         <span>Current: <code className="text-zinc-500 font-mono text-[11px]">{req.currentPlan}</code></span>
-                        <ArrowRight className="h-3 w-3 text-indigo-500" />
-                        <span className="text-indigo-600 dark:text-indigo-400 font-bold">
+                        <ArrowRight className="h-3 w-3 text-zinc-600" />
+                        <span className="text-zinc-800 dark:text-zinc-400 font-bold">
                           {req.action === 'EXTEND'
                             ? `Extend Trial (+${req.extendDays} Days)`
                             : `Requesting ${req.requestedPlanName || req.requestedPlan}`}
@@ -287,7 +287,7 @@ export const AdminOverviewPage = () => {
             </div>
             <Link
               to={ROUTES.ADMIN_SUBSCRIPTIONS}
-              className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+              className="text-xs font-semibold text-zinc-800 dark:text-zinc-400 hover:underline"
             >
               Subscription Tiers & Trial →
             </Link>
@@ -321,28 +321,28 @@ export const AdminOverviewPage = () => {
       </div>
 
       {/* Trial System Active Banner */}
-      <div className="rounded-2xl border border-indigo-200/80 dark:border-indigo-900/60 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="rounded-2xl border border-zinc-300/80 dark:border-zinc-900/60 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-start sm:items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-md shadow-sm">
+          <div className="h-10 w-10 rounded-xl bg-zinc-800 text-white flex items-center justify-center shrink-0 shadow-md shadow-sm">
             <Sparkles className="h-5 w-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+              <span className="text-xs font-bold uppercase tracking-wider text-zinc-800 dark:text-zinc-400">
                 Dynamic Trial System
               </span>
-              <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
+              <span className="h-1.5 w-1.5 rounded-full bg-zinc-600" />
               <span className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
                 {settings?.trialConfig?.enabled ? 'Active for new businesses' : 'Currently Disabled'}
               </span>
             </div>
             <p className="text-xs text-zinc-600 dark:text-zinc-400 mt-0.5">
               New registrations receive{' '}
-              <span className="font-semibold text-indigo-600 dark:text-indigo-300">
+              <span className="font-semibold text-zinc-800 dark:text-zinc-400">
                 {settings?.trialConfig?.trialPlanId || 'STARTER'} (Tier {settings?.trialConfig?.trialTierOrder || 1})
               </span>{' '}
               for{' '}
-              <span className="font-semibold text-indigo-600 dark:text-indigo-300">
+              <span className="font-semibold text-zinc-800 dark:text-zinc-400">
                 {settings?.trialConfig?.durationDays || 14} days
               </span>
               . Fully adjustable anytime.
@@ -352,7 +352,7 @@ export const AdminOverviewPage = () => {
 
         <Link
           to={ROUTES.ADMIN_SUBSCRIPTIONS}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 hover:underline shrink-0"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-zinc-800 dark:text-zinc-400 hover:text-zinc-600 hover:underline shrink-0"
         >
           Configure Trial Parameters <ArrowUpRight className="h-3.5 w-3.5" />
         </Link>
@@ -379,7 +379,7 @@ export const AdminOverviewPage = () => {
               <CheckCircle2 className="h-3 w-3" /> {metrics.activePaid} Paid
             </span>
             <span>•</span>
-            <span className="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400 font-medium">
+            <span className="inline-flex items-center gap-1 text-zinc-800 dark:text-zinc-400 font-medium">
               <Clock className="h-3 w-3" /> {metrics.activeTrials} in Trial
             </span>
           </div>
@@ -389,12 +389,12 @@ export const AdminOverviewPage = () => {
         <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/70 p-4 sm:p-5 shadow-xs">
           <div className="flex items-center justify-between">
             <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Active Trials</span>
-            <div className="h-8 w-8 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+            <div className="h-8 w-8 rounded-xl bg-zinc-600/10 text-zinc-800 dark:text-zinc-400 flex items-center justify-center">
               <Clock className="h-4 w-4" />
             </div>
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl font-bold tracking-tight text-indigo-600 dark:text-indigo-400">
+            <span className="text-2xl font-bold tracking-tight text-zinc-800 dark:text-zinc-400">
               {metrics.activeTrials}
             </span>
             <span className="text-xs text-zinc-500">businesses</span>
@@ -451,7 +451,7 @@ export const AdminOverviewPage = () => {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-sm font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-              <CreditCard className="h-4 w-4 text-indigo-500" />
+              <CreditCard className="h-4 w-4 text-zinc-600" />
               Dynamic Subscription Tiers Breakdown
             </h2>
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
@@ -460,7 +460,7 @@ export const AdminOverviewPage = () => {
           </div>
           <Link
             to={ROUTES.ADMIN_SUBSCRIPTIONS}
-            className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+            className="text-xs font-semibold text-zinc-800 dark:text-zinc-400 hover:underline"
           >
             Edit Tiers →
           </Link>
@@ -482,7 +482,7 @@ export const AdminOverviewPage = () => {
                     </span>
                   </div>
                   {p.isDefaultTrial && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-600/10 text-zinc-800 dark:text-zinc-400 border border-zinc-600/20">
                       Trial Tier
                     </span>
                   )}
@@ -498,7 +498,7 @@ export const AdminOverviewPage = () => {
                 {/* Progress bar */}
                 <div className="mt-3 w-full bg-zinc-200 dark:bg-zinc-800 rounded-full h-1.5 overflow-hidden">
                   <div
-                    className="bg-indigo-600 h-1.5 rounded-full transition-all duration-500"
+                    className="bg-zinc-800 h-1.5 rounded-full transition-all duration-500"
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -520,7 +520,7 @@ export const AdminOverviewPage = () => {
             </h2>
             <Link
               to={ROUTES.ADMIN_BUSINESSES}
-              className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+              className="text-xs font-semibold text-zinc-800 dark:text-zinc-400 hover:underline"
             >
               View All ({metrics.totalBusinesses}) →
             </Link>
@@ -569,7 +569,7 @@ export const AdminOverviewPage = () => {
             </h2>
             <Link
               to={ROUTES.ADMIN_USERS}
-              className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 hover:underline"
+              className="text-xs font-semibold text-zinc-800 dark:text-zinc-400 hover:underline"
             >
               View All ({metrics.totalUsers}) →
             </Link>
@@ -677,7 +677,7 @@ export const AdminOverviewPage = () => {
                     ? 'e.g. Approved. Welcome to the new tier!'
                     : 'e.g. Please verify payment or contact platform support.'
                 }
-                className="w-full rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 px-3 py-2 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 resize-none focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 px-3 py-2 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 resize-none focus:outline-hidden focus:ring-1 focus:ring-zinc-600"
               />
             </div>
 

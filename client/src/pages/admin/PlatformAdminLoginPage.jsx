@@ -44,10 +44,10 @@ export const PlatformAdminLoginPage = () => {
       <div className="w-full max-w-md bg-zinc-900/90 border border-zinc-800 backdrop-blur-xl rounded-2xl p-6 sm:p-8 shadow-2xl">
         {/* Header */}
         <div className="flex flex-col items-center text-center mb-6">
-          <div className="h-14 w-14 rounded-2xl bg-indigo-600 flex items-center justify-center text-white shadow-xl shadow-sm mb-3">
+          <div className="h-14 w-14 rounded-2xl bg-zinc-800 flex items-center justify-center text-white shadow-xl shadow-sm mb-3">
             <ShieldAlert className="h-7 w-7" />
           </div>
-          <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-full border border-indigo-500/20 mb-1">
+          <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-zinc-400 bg-zinc-600/10 px-2.5 py-1 rounded-full border border-zinc-600/20 mb-1">
             Restricted Clearance
           </span>
           <h1 className="text-xl font-bold tracking-tight text-white mt-1">Platform Administrator</h1>
@@ -79,7 +79,7 @@ export const PlatformAdminLoginPage = () => {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="admin"
-                className="w-full rounded-xl bg-zinc-800/80 border border-zinc-700/80 px-3.5 py-2.5 pl-10 text-sm text-white placeholder-zinc-500 focus:outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-mono"
+                className="w-full rounded-xl bg-zinc-800/80 border border-zinc-700/80 px-3.5 py-2.5 pl-10 text-sm text-white placeholder-zinc-500 focus:outline-hidden focus:border-zinc-600 focus:ring-1 focus:ring-zinc-600 transition-all font-mono"
               />
             </div>
           </div>
@@ -96,7 +96,7 @@ export const PlatformAdminLoginPage = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full rounded-xl bg-zinc-800/80 border border-zinc-700/80 px-3.5 py-2.5 pl-10 pr-10 text-sm text-white placeholder-zinc-500 focus:outline-hidden focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-mono"
+                className="w-full rounded-xl bg-zinc-800/80 border border-zinc-700/80 px-3.5 py-2.5 pl-10 pr-10 text-sm text-white placeholder-zinc-500 focus:outline-hidden focus:border-zinc-600 focus:ring-1 focus:ring-zinc-600 transition-all font-mono"
               />
               <button
                 type="button"
@@ -113,7 +113,7 @@ export const PlatformAdminLoginPage = () => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full mt-3 flex items-center justify-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2.5 text-sm shadow-lg shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+            className="w-full mt-3 flex items-center justify-center gap-2 rounded-xl bg-zinc-800 hover:bg-zinc-600 text-white font-medium py-2.5 text-sm shadow-lg shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
           >
             {loading ? (
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />

@@ -267,7 +267,7 @@ export const AdminSubscriptionsPage = () => {
     return (
       <div className="flex h-96 w-full items-center justify-center">
         <div className="flex flex-col items-center gap-2">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-800 border-t-transparent" />
           <p className="text-xs text-zinc-400">Loading subscription architecture...</p>
         </div>
       </div>
@@ -299,7 +299,7 @@ export const AdminSubscriptionsPage = () => {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-white flex items-center gap-2">
-            <CreditCard className="h-6 w-6 text-indigo-500" />
+            <CreditCard className="h-6 w-6 text-zinc-600" />
             Dynamic Subscription Tiers & Trial Governance
           </h1>
           <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
@@ -320,7 +320,7 @@ export const AdminSubscriptionsPage = () => {
       <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/80 p-5 sm:p-7 shadow-xs">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-zinc-100 dark:border-zinc-800">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+            <div className="h-10 w-10 rounded-2xl bg-zinc-600/10 text-zinc-800 dark:text-zinc-400 flex items-center justify-center">
               <CreditCard className="h-5 w-5" />
             </div>
             <div>
@@ -369,7 +369,7 @@ export const AdminSubscriptionsPage = () => {
         {/* Requests List */}
         {requestsLoading ? (
           <div className="py-12 text-center">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent mx-auto mb-2" />
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-800 border-t-transparent mx-auto mb-2" />
             <p className="text-xs text-zinc-400">Loading applications...</p>
           </div>
         ) : requests.length === 0 ? (
@@ -385,7 +385,7 @@ export const AdminSubscriptionsPage = () => {
                   key={r._id}
                   className={`rounded-2xl border p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all ${
                     isPending
-                      ? 'border-indigo-200 dark:border-indigo-900/60 bg-indigo-500/[0.02] dark:bg-zinc-900/90'
+                      ? 'border-zinc-300 dark:border-zinc-900/60 bg-zinc-600/[0.02] dark:bg-zinc-900/90'
                       : 'border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950/40'
                   }`}
                 >
@@ -416,8 +416,8 @@ export const AdminSubscriptionsPage = () => {
                       <span>•</span>
                       <span className="inline-flex items-center gap-1 font-semibold text-zinc-700 dark:text-zinc-300">
                         <span>Current: <code className="text-zinc-500 font-mono text-[11px]">{r.currentPlan}</code></span>
-                        <ArrowRight className="h-3 w-3 text-indigo-500" />
-                        <span className="text-indigo-600 dark:text-indigo-400 font-bold">
+                        <ArrowRight className="h-3 w-3 text-zinc-600" />
+                        <span className="text-zinc-800 dark:text-zinc-400 font-bold">
                           {r.action === 'EXTEND'
                             ? `Extend Trial (+${r.extendDays} Days)`
                             : `Switch to ${r.requestedPlanName || r.requestedPlan}`}
@@ -467,9 +467,9 @@ export const AdminSubscriptionsPage = () => {
       </div>
 
       {/* SECTION 1: Dynamic Trial System Configuration */}
-      <div className="rounded-3xl border border-indigo-200 dark:border-indigo-900/60 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 p-5 sm:p-7 shadow-xs relative overflow-hidden">
+      <div className="rounded-3xl border border-zinc-300 dark:border-zinc-900/60 bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 p-5 sm:p-7 shadow-xs relative overflow-hidden">
         <div className="flex items-center gap-3 mb-4">
-          <div className="h-10 w-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-sm">
+          <div className="h-10 w-10 rounded-2xl bg-zinc-800 text-white flex items-center justify-center shadow-lg shadow-sm">
             <Clock className="h-5 w-5" />
           </div>
           <div>
@@ -477,7 +477,7 @@ export const AdminSubscriptionsPage = () => {
               <h2 className="text-base font-bold text-zinc-900 dark:text-white">
                 Automated Trial System
               </h2>
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-600 text-white shadow-2xs">
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-zinc-800 text-white shadow-2xs">
                 Dynamic Rule
               </span>
             </div>
@@ -509,7 +509,7 @@ export const AdminSubscriptionsPage = () => {
                   type="button"
                   onClick={() => setTrialEnabled(!trialEnabled)}
                   className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden ${
-                    trialEnabled ? 'bg-indigo-600' : 'bg-zinc-300 dark:bg-zinc-700'
+                    trialEnabled ? 'bg-zinc-800' : 'bg-zinc-300 dark:bg-zinc-700'
                   }`}
                 >
                   <span
@@ -571,17 +571,17 @@ export const AdminSubscriptionsPage = () => {
               <Zap className="h-4 w-4 text-amber-500 shrink-0" />
               <span>
                 Active Policy:{' '}
-                <strong className="text-indigo-600 dark:text-indigo-400">
+                <strong className="text-zinc-800 dark:text-zinc-400">
                   {selectedTrialPlan ? `${selectedTrialPlan.name} (Tier ${selectedTrialPlan.tierOrder})` : trialPlanId}
                 </strong>{' '}
-                for <strong className="text-indigo-600 dark:text-indigo-400">{durationDays} calendar days</strong> upon tenant creation.
+                for <strong className="text-zinc-800 dark:text-zinc-400">{durationDays} calendar days</strong> upon tenant creation.
               </span>
             </div>
 
             <button
               type="submit"
               disabled={trialSaving}
-              className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-sm transition-all cursor-pointer disabled:opacity-50"
+              className="flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-600 text-white text-xs font-semibold shadow-sm transition-all cursor-pointer disabled:opacity-50"
             >
               <Save className="h-3.5 w-3.5" />
               {trialSaving ? 'Applying...' : 'Apply Trial Configuration'}
@@ -595,7 +595,7 @@ export const AdminSubscriptionsPage = () => {
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-base font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-              <Sliders className="h-4 w-4 text-indigo-500" />
+              <Sliders className="h-4 w-4 text-zinc-600" />
               Configured Subscription Tiers
             </h2>
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
@@ -614,7 +614,7 @@ export const AdminSubscriptionsPage = () => {
                 key={p._id}
                 className={`rounded-3xl border flex flex-col justify-between p-6 shadow-xs transition-all relative ${
                   isTrial
-                    ? 'border-indigo-500 bg-white dark:bg-zinc-900/90 shadow-md shadow-sm'
+                    ? 'border-zinc-600 bg-white dark:bg-zinc-900/90 shadow-md shadow-sm'
                     : 'border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/70'
                 }`}
               >
@@ -624,7 +624,7 @@ export const AdminSubscriptionsPage = () => {
                     Tier {p.tierOrder} • {p.planId}
                   </span>
                   {isTrial ? (
-                    <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-600 text-white">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-zinc-800 text-white">
                       <Star className="h-2.5 w-2.5 fill-white" /> Default Trial
                     </span>
                   ) : p.badgeText ? (
@@ -700,7 +700,7 @@ export const AdminSubscriptionsPage = () => {
                     <button
                       onClick={() => handleMakeTrial(p)}
                       title="Set as Default Trial Tier"
-                      className="px-3 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 text-xs font-semibold transition-colors cursor-pointer"
+                      className="px-3 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-950/60 text-zinc-800 dark:text-zinc-400 hover:bg-zinc-200 text-xs font-semibold transition-colors cursor-pointer"
                     >
                       Make Trial
                     </button>
@@ -734,7 +734,7 @@ export const AdminSubscriptionsPage = () => {
             </button>
 
             <div className="flex items-center gap-2.5 mb-4">
-              <div className="h-9 w-9 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center">
+              <div className="h-9 w-9 rounded-xl bg-zinc-600/10 text-zinc-800 dark:text-zinc-400 flex items-center justify-center">
                 <CreditCard className="h-5 w-5" />
               </div>
               <div>
@@ -935,7 +935,7 @@ export const AdminSubscriptionsPage = () => {
                     onChange={(e) =>
                       setPlanForm({ ...planForm, isDefaultTrial: e.target.checked })
                     }
-                    className="rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500"
+                    className="rounded border-zinc-300 text-zinc-800 focus:ring-zinc-600"
                   />
                   <label
                     htmlFor="modalTrialDefault"
@@ -957,7 +957,7 @@ export const AdminSubscriptionsPage = () => {
                 <button
                   type="submit"
                   disabled={modalLoading}
-                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                  className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-600 text-white text-xs font-semibold shadow-sm transition-all cursor-pointer disabled:opacity-50"
                 >
                   {modalLoading ? 'Saving...' : 'Save Tier Changes'}
                 </button>
@@ -1030,7 +1030,7 @@ export const AdminSubscriptionsPage = () => {
                     ? 'e.g. Approved. Quotas increased.'
                     : 'e.g. Please verify payment or contact platform support.'
                 }
-                className="w-full rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 px-3 py-2 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 resize-none focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
+                className="w-full rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 px-3 py-2 text-xs text-zinc-900 dark:text-white placeholder:text-zinc-400 resize-none focus:outline-hidden focus:ring-1 focus:ring-zinc-600"
               />
             </div>
 

@@ -82,7 +82,7 @@ export const AdminSettingsPage = () => {
     return (
       <div className="flex h-96 w-full items-center justify-center">
         <div className="flex flex-col items-center gap-2">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-indigo-600 border-t-transparent" />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-800 border-t-transparent" />
           <p className="text-xs text-zinc-400">Loading settings...</p>
         </div>
       </div>
@@ -94,7 +94,7 @@ export const AdminSettingsPage = () => {
       {/* Header */}
       <div>
         <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-white flex items-center gap-2">
-          <Settings className="h-6 w-6 text-indigo-500" />
+          <Settings className="h-6 w-6 text-zinc-600" />
           Platform Settings & Environment
         </h1>
         <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1">
@@ -120,7 +120,7 @@ export const AdminSettingsPage = () => {
         {/* Section 1: General Branding & Support */}
         <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/70 p-6 shadow-xs space-y-4">
           <h2 className="text-sm font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-            <Server className="h-4 w-4 text-indigo-500" />
+            <Server className="h-4 w-4 text-zinc-600" />
             General Branding & Contact
           </h2>
 
@@ -159,7 +159,7 @@ export const AdminSettingsPage = () => {
         {/* Section 2: Platform Operational States */}
         <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/70 p-6 shadow-xs space-y-4">
           <h2 className="text-sm font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-            <Shield className="h-4 w-4 text-indigo-500" />
+            <Shield className="h-4 w-4 text-zinc-600" />
             Platform Availability & Tenancy Access
           </h2>
 
@@ -178,7 +178,7 @@ export const AdminSettingsPage = () => {
                 type="button"
                 onClick={() => setForm({ ...form, allowRegistrations: !form.allowRegistrations })}
                 className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                  form.allowRegistrations ? 'bg-indigo-600' : 'bg-zinc-300 dark:bg-zinc-700'
+                  form.allowRegistrations ? 'bg-zinc-800' : 'bg-zinc-300 dark:bg-zinc-700'
                 }`}
               >
                 <span
@@ -220,7 +220,7 @@ export const AdminSettingsPage = () => {
         <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/70 p-6 shadow-xs space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-              <Bell className="h-4 w-4 text-indigo-500" />
+              <Bell className="h-4 w-4 text-zinc-600" />
               Global Notice Banner
             </h2>
             <div className="flex items-center gap-2">
@@ -237,7 +237,7 @@ export const AdminSettingsPage = () => {
                   })
                 }
                 className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                  form.noticeBanner.active ? 'bg-indigo-600' : 'bg-zinc-300 dark:bg-zinc-700'
+                  form.noticeBanner.active ? 'bg-zinc-800' : 'bg-zinc-300 dark:bg-zinc-700'
                 }`}
               >
                 <span
@@ -299,7 +299,7 @@ export const AdminSettingsPage = () => {
           <button
             type="submit"
             disabled={saving}
-            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-md shadow-sm transition-all cursor-pointer disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-600 text-white text-xs font-semibold shadow-md shadow-sm transition-all cursor-pointer disabled:opacity-50"
           >
             <Save className="h-4 w-4" />
             {saving ? 'Saving Platform Rules...' : 'Save All Platform Settings'}

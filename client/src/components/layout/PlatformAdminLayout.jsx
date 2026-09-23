@@ -75,7 +75,7 @@ export const PlatformAdminLayout = () => {
         {/* Brand */}
         <div className="flex items-center justify-between px-2 mb-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded bg-indigo-600 text-white">
+            <div className="flex h-10 w-10 items-center justify-center rounded bg-zinc-800 text-white">
               <ShieldAlert className="h-5 w-5" />
             </div>
             <div>
@@ -176,7 +176,7 @@ export const PlatformAdminLayout = () => {
 
         <div className="flex items-center justify-between p-2 rounded-xl bg-zinc-900 border border-zinc-800">
           <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-xs font-bold text-white shadow-xs">
+            <div className="h-7 w-7 rounded-full bg-gradient-to-tr from-zinc-600 to-purple-600 flex items-center justify-center text-xs font-bold text-white shadow-xs">
               A
             </div>
             <div className="flex flex-col leading-tight">
@@ -226,11 +226,11 @@ export const PlatformAdminLayout = () => {
               <Menu className="h-5 w-5" />
             </button>
             <div className="flex items-center gap-2">
-              <div className="h-2.5 w-2.5 rounded-full bg-indigo-500 shadow-sm shadow-indigo-500"></div>
+              <div className="h-2.5 w-2.5 rounded-full bg-zinc-600 shadow-sm shadow-zinc-600"></div>
               <span className="font-semibold text-xs sm:text-sm tracking-tight">
                 Platform Administration Console
               </span>
-              <span className="hidden sm:inline-block rounded-full bg-indigo-50 dark:bg-indigo-950/60 px-2 py-0.5 text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/60">
+              <span className="hidden sm:inline-block rounded-full bg-zinc-100 dark:bg-zinc-950/60 px-2 py-0.5 text-[10px] font-semibold text-zinc-800 dark:text-zinc-400 border border-zinc-300 dark:border-zinc-800/60">
                 Restricted Access
               </span>
             </div>
@@ -239,10 +239,6 @@ export const PlatformAdminLayout = () => {
           <div className="flex items-center gap-3">
             <ThemeToggle />
             <NotificationBell />
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-600 dark:text-zinc-400 font-mono">
-              <Zap className="h-3 w-3 text-amber-500" />
-              <span>Node API 200 OK</span>
-            </div>
             <button
               onClick={handleLogout}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-zinc-200 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-rose-500/10 hover:text-rose-600 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 transition-colors"

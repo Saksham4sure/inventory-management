@@ -290,7 +290,7 @@ export const AdminUsersPage = () => {
             placeholder="Search by name, email, or username..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 px-3.5 py-2 pl-10 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-hidden focus:ring-1 focus:ring-indigo-500"
+            className="w-full rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 px-3.5 py-2 pl-10 text-xs text-zinc-900 dark:text-white placeholder-zinc-400 focus:outline-hidden focus:ring-1 focus:ring-zinc-600"
           />
         </div>
 
@@ -384,7 +384,7 @@ export const AdminUsersPage = () => {
                           <div
                             className={`h-8 w-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
                               isSuper
-                                ? 'bg-indigo-600 text-white shadow-xs'
+                                ? 'bg-zinc-800 text-white shadow-xs'
                                 : 'bg-purple-500/10 text-purple-600 dark:text-purple-400'
                             }`}
                           >
@@ -395,7 +395,7 @@ export const AdminUsersPage = () => {
                               {u.name}
                             </span>
                             {u.username && (
-                              <span className="text-[10px] font-mono text-indigo-600 dark:text-indigo-400">
+                              <span className="text-[10px] font-mono text-zinc-800 dark:text-zinc-400">
                                 @{u.username}
                               </span>
                             )}
@@ -413,7 +413,7 @@ export const AdminUsersPage = () => {
                             isSuper
                               ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/30'
                               : u.role === 'OWNER'
-                              ? 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20'
+                              ? 'bg-zinc-600/10 text-zinc-800 dark:text-zinc-400 border border-zinc-600/20'
                               : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
                           }`}
                         >
@@ -522,7 +522,7 @@ export const AdminUsersPage = () => {
                           <button
                             onClick={() => openEditModal(u)}
                             title="Edit User Profile"
-                            className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 transition-colors cursor-pointer"
+                            className="p-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-950/60 text-zinc-800 dark:text-zinc-400 hover:bg-zinc-200 transition-colors cursor-pointer"
                           >
                             <Edit className="h-3.5 w-3.5" />
                           </button>
@@ -558,7 +558,7 @@ export const AdminUsersPage = () => {
             </button>
 
             <h3 className="font-bold text-sm text-zinc-900 dark:text-white mb-4 flex items-center gap-2">
-              <Users className="h-4 w-4 text-indigo-500" />
+              <Users className="h-4 w-4 text-zinc-600" />
               Edit User Account
             </h3>
 
@@ -630,7 +630,7 @@ export const AdminUsersPage = () => {
                   id="isActiveToggle"
                   checked={editForm.isActive}
                   onChange={(e) => setEditForm({ ...editForm, isActive: e.target.checked })}
-                  className="rounded border-zinc-300 text-indigo-600 focus:ring-indigo-500"
+                  className="rounded border-zinc-300 text-zinc-800 focus:ring-zinc-600"
                 />
                 <label htmlFor="isActiveToggle" className="text-xs text-zinc-700 dark:text-zinc-300 font-medium">
                   Account is Active (Uncheck to suspend access)
@@ -648,7 +648,7 @@ export const AdminUsersPage = () => {
                 <button
                   type="submit"
                   disabled={actionLoading}
-                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium shadow-sm transition-all cursor-pointer disabled:opacity-50"
+                  className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-600 text-white text-xs font-medium shadow-sm transition-all cursor-pointer disabled:opacity-50"
                 >
                   {actionLoading ? 'Saving...' : 'Update Account'}
                 </button>
@@ -862,9 +862,9 @@ export const AdminUsersPage = () => {
             </div>
 
             {/* 2. Identity Document Attributes */}
-            <div className="p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-200/60 dark:border-indigo-900/40 mb-5 space-y-3">
+            <div className="p-4 rounded-2xl bg-zinc-100/50 dark:bg-zinc-950/30 border border-zinc-300/60 dark:border-zinc-900/40 mb-5 space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-300">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-400">
                   Government Document Details
                 </span>
                 <span className="flex items-center gap-1.5">
@@ -906,7 +906,7 @@ export const AdminUsersPage = () => {
                       <button
                         type="button"
                         onClick={() => handleCopyDocNumber(kycModal.kyc.documentNumber)}
-                        className="text-zinc-400 hover:text-indigo-600 transition-colors p-0.5 cursor-pointer"
+                        className="text-zinc-400 hover:text-zinc-800 transition-colors p-0.5 cursor-pointer"
                         title="Copy document number"
                       >
                         {copiedDoc ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
@@ -957,7 +957,7 @@ export const AdminUsersPage = () => {
                       <span className="font-semibold text-zinc-700 dark:text-zinc-300">
                         Front Side Photo
                       </span>
-                      <span className="text-[10px] text-indigo-600 dark:text-indigo-400 flex items-center gap-1 font-medium">
+                      <span className="text-[10px] text-zinc-800 dark:text-zinc-400 flex items-center gap-1 font-medium">
                         <ZoomIn className="h-3 w-3" /> Click to zoom
                       </span>
                     </div>
@@ -997,7 +997,7 @@ export const AdminUsersPage = () => {
                       <span className="font-semibold text-zinc-700 dark:text-zinc-300">
                         Back Side Photo
                       </span>
-                      <span className="text-[10px] text-indigo-600 dark:text-indigo-400 flex items-center gap-1 font-medium">
+                      <span className="text-[10px] text-zinc-800 dark:text-zinc-400 flex items-center gap-1 font-medium">
                         <ZoomIn className="h-3 w-3" /> Click to zoom
                       </span>
                     </div>
