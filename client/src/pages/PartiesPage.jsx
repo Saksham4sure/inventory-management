@@ -32,6 +32,8 @@ import {
   CheckCircle2,
   Eye,
   UserCheck,
+  Check,
+  Loader2,
 } from 'lucide-react';
 
 export const PartiesPage = () => {
@@ -73,6 +75,7 @@ export const PartiesPage = () => {
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [searchingUser, setSearchingUser] = useState(false);
   const [userSearchError, setUserSearchError] = useState('');
+  const [candidateUser, setCandidateUser] = useState(null);
   const [matchedUser, setMatchedUser] = useState(null);
   const [partyFormData, setPartyFormData] = useState({
     name: '',
@@ -149,6 +152,7 @@ export const PartiesPage = () => {
     setEditingParty(null);
     setUserSearchQuery('');
     setUserSearchError('');
+    setCandidateUser(null);
     setMatchedUser(null);
     setPartyFormData({
       name: '',
@@ -163,40 +167,101 @@ export const PartiesPage = () => {
     setIsPartyModalOpen(true);
   };
 
-  // Search User by User ID or Email for Party Registration
-  const handleSearchUserForParty = async (e) => {
-    if (e) e.preventDefault();
-    if (!userSearchQuery.trim()) {
-      setUserSearchError('Please enter User ID (8-digit number) or Email');
+  // Automatic user lookup when user types 8-digit ID, complete email, or stops typing
+  useEffect(() => {
+    if (editingParty || !isPartyModalOpen) return;
+    const query = userSearchQuery.trim();
+
+    if (!query) {
+      setCandidateUser(null);
+      setUserSearchError('');
+      setSearchingUser(false);
       return;
     }
 
-    try {
-      setSearchingUser(true);
-      setUserSearchError('');
-      const res = await authService.searchUsers(userSearchQuery.trim());
-      if (res?.user) {
-        setMatchedUser(res.user);
-        setPartyFormData((prev) => ({
-          ...prev,
-          name: res.user.name || '',
-          email: res.user.email || '',
-          phone: res.user.phone || '',
-          address: res.user.location?.formattedAddress || prev.address || '',
-          type: res.user.userType === 'CUSTOMER' ? 'CUSTOMER' : prev.type,
-        }));
-        showSuccess(`Found registered user: ${res.user.name}`);
-      } else {
-        setUserSearchError('User not found. Parties can only be added for registered users.');
-      }
-    } catch (err) {
-      const msg = err?.response?.data?.message || err.message || 'User does not exist in the system';
-      setUserSearchError(msg);
-      showError(msg);
-      setMatchedUser(null);
-    } finally {
-      setSearchingUser(false);
+    // If query matches the currently confirmed user, no need to re-search
+    if (
+      matchedUser &&
+      (query === matchedUser.userId ||
+        query === matchedUser.accountId ||
+        query.toLowerCase() === (matchedUser.email || '').toLowerCase())
+    ) {
+      return;
     }
+
+    const isEightDigitId = /^\d{8}$/.test(query);
+    const isCompleteEmail = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(query);
+    const isTenDigitPhone = /^9[678]\d{8}$/.test(query);
+    const isCompleteFormat = isEightDigitId || isCompleteEmail || isTenDigitPhone;
+
+    // Wait until at least 4 characters or completed format
+    if (query.length < 4 && !isCompleteFormat) {
+      setCandidateUser(null);
+      return;
+    }
+
+    const delay = isCompleteFormat ? 200 : 500;
+
+    const timer = setTimeout(async () => {
+      try {
+        setSearchingUser(true);
+        setUserSearchError('');
+        const res = await authService.searchUsers(query);
+        if (res?.user) {
+          setCandidateUser(res.user);
+        } else {
+          setCandidateUser(null);
+          setUserSearchError('No registered user found with this User ID or Email.');
+        }
+      } catch (err) {
+        setCandidateUser(null);
+        const msg =
+          err?.response?.data?.message ||
+          err.message ||
+          'No registered user found with this User ID or Email.';
+        setUserSearchError(msg);
+      } finally {
+        setSearchingUser(false);
+      }
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [userSearchQuery, editingParty, isPartyModalOpen, matchedUser]);
+
+  // Explicit confirmation of candidate user
+  const handleConfirmUser = (userToConfirm) => {
+    const user = userToConfirm || candidateUser;
+    if (!user) return;
+    setMatchedUser(user);
+    setCandidateUser(null);
+    setUserSearchError('');
+    setPartyFormData((prev) => ({
+      ...prev,
+      name: user.name || '',
+      email: user.email || '',
+      phone: user.phone || '',
+      address: user.location?.formattedAddress || prev.address || '',
+      type: user.userType === 'CUSTOMER' ? 'CUSTOMER' : prev.type,
+    }));
+    showSuccess(`Confirmed registered user: ${user.name}`);
+  };
+
+  // Reset user selection to search again
+  const handleResetUser = () => {
+    setMatchedUser(null);
+    setCandidateUser(null);
+    setUserSearchQuery('');
+    setUserSearchError('');
+    setPartyFormData({
+      name: '',
+      phone: '',
+      email: '',
+      type: 'CUSTOMER',
+      address: '',
+      creditLimit: '',
+      openingBalance: '',
+      notes: '',
+    });
   };
 
   // Open Edit Modal
@@ -205,6 +270,7 @@ export const PartiesPage = () => {
     setEditingParty(party);
     setUserSearchQuery('');
     setUserSearchError('');
+    setCandidateUser(null);
     setMatchedUser(null);
     setPartyFormData({
       name: party.name || '',
@@ -907,79 +973,141 @@ export const PartiesPage = () => {
                 Search the user by their 8-digit <strong className="text-zinc-700 dark:text-zinc-300">User ID</strong> or registered <strong className="text-zinc-700 dark:text-zinc-300">Email</strong>. An invitation will be sent for them to accept before transactions begin.
               </p>
 
-              {/* User Search Bar */}
-              <div className="flex items-center gap-1.5">
-                <div className="relative flex-1">
-                  <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-400" />
-                  <input
-                    type="text"
-                    placeholder="Enter 8-digit User ID or Email..."
-                    value={userSearchQuery}
-                    onChange={(e) => {
-                      setUserSearchQuery(e.target.value);
-                      if (userSearchError) setUserSearchError('');
-                    }}
-                    className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 pl-8 pr-3 py-2 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/30"
-                  />
-                </div>
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleSearchUserForParty}
-                  loading={searchingUser}
-                  className="text-xs py-2 shrink-0 font-semibold"
-                >
-                  Search
-                </Button>
+              {/* User Search Bar - Auto searches on complete typing */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+                <input
+                  type="text"
+                  placeholder="Type 8-digit User ID or registered Email..."
+                  value={userSearchQuery}
+                  onChange={(e) => {
+                    setUserSearchQuery(e.target.value);
+                    if (userSearchError) setUserSearchError('');
+                  }}
+                  className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 pl-9 pr-9 py-2.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/30"
+                />
+                {searchingUser ? (
+                  <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 animate-spin" />
+                ) : userSearchQuery ? (
+                  <button
+                    type="button"
+                    onClick={handleResetUser}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                ) : null}
               </div>
 
               {userSearchError && (
-                <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-xs text-rose-700 dark:text-rose-300 flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
+                <div className="p-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-750 text-xs text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-zinc-500" />
                   <span>{userSearchError}</span>
                 </div>
               )}
 
-              {/* Matched User Display Card */}
-              {matchedUser && (
-                <div className="p-3.5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-300/80 dark:border-emerald-800 space-y-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-600 text-white font-bold text-xs shadow-xs">
-                        <UserCheck className="h-5 w-5" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-emerald-950 dark:text-emerald-100">
-                          {matchedUser.name}
+              {/* Candidate User Found -> Requires User Confirmation */}
+              {candidateUser && !matchedUser && (
+                <div className="rounded-2xl border border-zinc-200 dark:border-zinc-750 bg-zinc-50 dark:bg-zinc-850 p-4 space-y-3.5 animate-in fade-in duration-200">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                      User Found — Please Confirm
+                    </span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-200">
+                      Auto-Matched
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold text-sm">
+                      {candidateUser.name ? candidateUser.name.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate">
+                        {candidateUser.name}
+                      </p>
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 font-mono truncate">
+                        ID: {candidateUser.userId || candidateUser.accountId || 'NO-ID'} • {candidateUser.email}
+                      </p>
+                      {candidateUser.phone && (
+                        <p className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">
+                          {candidateUser.phone}
                         </p>
-                        <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-mono">
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-1 border-t border-zinc-200 dark:border-zinc-750">
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      onClick={() => handleConfirmUser(candidateUser)}
+                      className="flex-1 text-xs py-2 rounded-xl font-semibold"
+                    >
+                      <Check className="h-3.5 w-3.5 mr-1" /> Confirm This User
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleResetUser}
+                      className="text-xs py-2 rounded-xl"
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {/* Confirmed Matched User Display Card */}
+              {matchedUser && (
+                <div className="rounded-2xl border border-zinc-200 dark:border-zinc-750 bg-zinc-100/80 dark:bg-zinc-850/80 p-3.5 space-y-3 animate-in fade-in duration-200">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold text-xs">
+                        <UserCheck className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate">
+                            {matchedUser.name}
+                          </p>
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shrink-0">
+                            Confirmed
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono truncate">
                           ID: {matchedUser.userId || matchedUser.accountId || 'NO-ID'} • {matchedUser.email}
                         </p>
                         {matchedUser.phone && (
-                          <p className="text-[11px] text-emerald-600/80 dark:text-emerald-500 font-mono">
+                          <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">
                             {matchedUser.phone}
                           </p>
                         )}
                       </div>
                     </div>
-                    <Badge variant="success" size="sm">
-                      Verified
-                    </Badge>
+                    <button
+                      type="button"
+                      onClick={handleResetUser}
+                      className="text-xs font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 underline underline-offset-2 ml-2 shrink-0"
+                    >
+                      Change
+                    </button>
                   </div>
 
-                  {/* Party Type selector */}
-                  <div className="pt-2 border-t border-emerald-200/60 dark:border-emerald-900/40">
-                    <label className="block text-[10px] font-semibold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 mb-1.5">
+                  {/* Party Type selector - Black & White style */}
+                  <div className="pt-2 border-t border-zinc-200/80 dark:border-zinc-750">
+                    <label className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5">
                       Add As Party Type *
                     </label>
-                    <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-white dark:bg-zinc-900 border border-emerald-200 dark:border-emerald-800">
+                    <div className="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-750">
                       <button
                         type="button"
                         onClick={() => setPartyFormData({ ...partyFormData, type: 'CUSTOMER' })}
                         className={`py-1.5 rounded-lg text-xs font-semibold transition-all ${
                           partyFormData.type === 'CUSTOMER'
-                            ? 'bg-emerald-600 text-white shadow-xs'
+                            ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-xs'
                             : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400'
                         }`}
                       >
@@ -990,7 +1118,7 @@ export const PartiesPage = () => {
                         onClick={() => setPartyFormData({ ...partyFormData, type: 'SUPPLIER' })}
                         className={`py-1.5 rounded-lg text-xs font-semibold transition-all ${
                           partyFormData.type === 'SUPPLIER'
-                            ? 'bg-emerald-600 text-white shadow-xs'
+                            ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-xs'
                             : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400'
                         }`}
                       >
@@ -1092,14 +1220,14 @@ export const PartiesPage = () => {
                     }
                     className={`p-2.5 rounded-xl text-left border transition-all ${
                       creditFormData.entryType === 'CREDIT_GIVEN'
-                        ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 font-bold'
-                        : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400'
+                        ? 'border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-900 font-bold shadow-xs'
+                        : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
                     }`}
                   >
                     <div className="text-xs font-semibold flex items-center gap-1.5">
                       <ArrowUpRight className="h-3.5 w-3.5" /> Give Credit
                     </div>
-                    <p className="text-[10px] text-zinc-400 mt-0.5">Customer owes you</p>
+                    <p className={`text-[10px] mt-0.5 ${creditFormData.entryType === 'CREDIT_GIVEN' ? 'text-zinc-300 dark:text-zinc-700' : 'text-zinc-400'}`}>Customer owes you</p>
                   </button>
 
                   <button
@@ -1109,14 +1237,14 @@ export const PartiesPage = () => {
                     }
                     className={`p-2.5 rounded-xl text-left border transition-all ${
                       creditFormData.entryType === 'PAYMENT_RECEIVED'
-                        ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-950/20 text-blue-800 dark:text-blue-300 font-bold'
-                        : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400'
+                        ? 'border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-900 font-bold shadow-xs'
+                        : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
                     }`}
                   >
                     <div className="text-xs font-semibold flex items-center gap-1.5">
                       <CheckCircle2 className="h-3.5 w-3.5" /> Receive Payment
                     </div>
-                    <p className="text-[10px] text-zinc-400 mt-0.5">Customer pays cash/online</p>
+                    <p className={`text-[10px] mt-0.5 ${creditFormData.entryType === 'PAYMENT_RECEIVED' ? 'text-zinc-300 dark:text-zinc-700' : 'text-zinc-400'}`}>Customer pays cash/online</p>
                   </button>
                 </div>
               ) : (
@@ -1128,14 +1256,14 @@ export const PartiesPage = () => {
                     }
                     className={`p-2.5 rounded-xl text-left border transition-all ${
                       creditFormData.entryType === 'CREDIT_TAKEN'
-                        ? 'border-amber-500 bg-amber-50/50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300 font-bold'
-                        : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400'
+                        ? 'border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-900 font-bold shadow-xs'
+                        : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
                     }`}
                   >
                     <div className="text-xs font-semibold flex items-center gap-1.5">
                       <ArrowDownLeft className="h-3.5 w-3.5" /> Purchase on Credit
                     </div>
-                    <p className="text-[10px] text-zinc-400 mt-0.5">You owe supplier</p>
+                    <p className={`text-[10px] mt-0.5 ${creditFormData.entryType === 'CREDIT_TAKEN' ? 'text-zinc-300 dark:text-zinc-700' : 'text-zinc-400'}`}>You owe supplier</p>
                   </button>
 
                   <button
@@ -1145,14 +1273,14 @@ export const PartiesPage = () => {
                     }
                     className={`p-2.5 rounded-xl text-left border transition-all ${
                       creditFormData.entryType === 'PAYMENT_MADE'
-                        ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-800 dark:text-emerald-300 font-bold'
-                        : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400'
+                        ? 'border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-900 font-bold shadow-xs'
+                        : 'border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'
                     }`}
                   >
                     <div className="text-xs font-semibold flex items-center gap-1.5">
                       <CheckCircle2 className="h-3.5 w-3.5" /> Pay Supplier
                     </div>
-                    <p className="text-[10px] text-zinc-400 mt-0.5">You cleared payment</p>
+                    <p className={`text-[10px] mt-0.5 ${creditFormData.entryType === 'PAYMENT_MADE' ? 'text-zinc-300 dark:text-zinc-700' : 'text-zinc-400'}`}>You cleared payment</p>
                   </button>
                 </div>
               )}

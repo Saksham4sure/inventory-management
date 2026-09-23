@@ -36,6 +36,8 @@ import {
   UserCheck,
   Search,
   ExternalLink,
+  Check,
+  Loader2,
 } from 'lucide-react';
 import { useSnackbar } from '../hooks/useSnackbar';
 import { useConfirm } from '../hooks/useConfirm';
@@ -52,6 +54,7 @@ export const QRScanPage = () => {
 
   // Customer Selection state via unique Account ID or Email search
   const [customerSearchInput, setCustomerSearchInput] = useState('');
+  const [candidateCustomer, setCandidateCustomer] = useState(null);
   const [selectedCustomer, setSelectedCustomer] = useState(null); // { _id, name, email, phone, accountId }
   const [searchingCustomer, setSearchingCustomer] = useState(false);
   const [customerSearchError, setCustomerSearchError] = useState('');
@@ -587,36 +590,78 @@ export const QRScanPage = () => {
     );
   }, [existingParties, partySearch]);
 
-  // Search customer user by User ID or Email
-  const handleSearchCustomer = async (e) => {
-    if (e) e.preventDefault();
-    if (!customerSearchInput.trim()) {
-      setCustomerSearchError('Please enter an 8-digit User ID or Email');
+  // Auto search customer by User ID or Email when completely typed
+  useEffect(() => {
+    const query = customerSearchInput.trim();
+
+    if (!query) {
+      setCandidateCustomer(null);
+      setCustomerSearchError('');
+      setSearchingCustomer(false);
       return;
     }
 
-    try {
-      setSearchingCustomer(true);
-      setCustomerSearchError('');
-      const res = await authService.searchUsers(customerSearchInput.trim());
-      if (res?.user) {
-        setSelectedCustomer(res.user);
-        setCustomerSearchInput('');
-        showSuccess(`Customer identified: ${res.user.name} (ID: ${res.user.userId || res.user.accountId || res.user.email})`);
-      } else {
-        setCustomerSearchError('User not found. Please verify the 8-digit User ID or Email.');
-      }
-    } catch (err) {
-      const errMsg = err?.response?.data?.message || err.message || 'User does not exist in the system';
-      setCustomerSearchError(errMsg);
-      showError(errMsg);
-    } finally {
-      setSearchingCustomer(false);
+    // If query matches the currently selected customer, no need to re-search
+    if (
+      selectedCustomer &&
+      (query === selectedCustomer.userId ||
+        query === selectedCustomer.accountId ||
+        query.toLowerCase() === (selectedCustomer.email || '').toLowerCase())
+    ) {
+      return;
     }
+
+    const isEightDigitId = /^\d{8}$/.test(query);
+    const isCompleteEmail = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(query);
+    const isTenDigitPhone = /^9[678]\d{8}$/.test(query);
+    const isCompleteFormat = isEightDigitId || isCompleteEmail || isTenDigitPhone;
+
+    if (query.length < 4 && !isCompleteFormat) {
+      setCandidateCustomer(null);
+      return;
+    }
+
+    const delay = isCompleteFormat ? 200 : 500;
+
+    const timer = setTimeout(async () => {
+      try {
+        setSearchingCustomer(true);
+        setCustomerSearchError('');
+        const res = await authService.searchUsers(query);
+        if (res?.user) {
+          setCandidateCustomer(res.user);
+        } else {
+          setCandidateCustomer(null);
+          setCustomerSearchError('No registered customer found with this User ID or Email.');
+        }
+      } catch (err) {
+        setCandidateCustomer(null);
+        const errMsg =
+          err?.response?.data?.message ||
+          err.message ||
+          'No registered customer found with this User ID or Email.';
+        setCustomerSearchError(errMsg);
+      } finally {
+        setSearchingCustomer(false);
+      }
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [customerSearchInput, selectedCustomer]);
+
+  const handleConfirmCustomer = (cust) => {
+    const c = cust || candidateCustomer;
+    if (!c) return;
+    setSelectedCustomer(c);
+    setCandidateCustomer(null);
+    setCustomerSearchError('');
+    showSuccess(`Customer confirmed: ${c.name} (ID: ${c.userId || c.accountId || c.email})`);
   };
 
   const handleClearCustomer = () => {
     setSelectedCustomer(null);
+    setCandidateCustomer(null);
+    setCustomerSearchInput('');
     setCustomerSearchError('');
   };
 
@@ -1337,7 +1382,7 @@ export const QRScanPage = () => {
                           }}
                           className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold transition-all ${
                             creditType === 'FULL'
-                              ? 'bg-amber-500 text-white shadow-xs'
+                              ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-xs'
                               : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400'
                           }`}
                         >
@@ -1348,7 +1393,7 @@ export const QRScanPage = () => {
                           onClick={() => setCreditType('PARTIAL')}
                           className={`px-2.5 py-0.5 rounded-md text-[10px] font-bold transition-all ${
                             creditType === 'PARTIAL'
-                              ? 'bg-amber-500 text-white shadow-xs'
+                              ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-xs'
                               : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400'
                           }`}
                         >
@@ -1371,14 +1416,14 @@ export const QRScanPage = () => {
                             placeholder="0.00"
                             value={creditPaidAmount}
                             onChange={(e) => setCreditPaidAmount(e.target.value)}
-                            className="w-full rounded-lg border border-amber-300 dark:border-amber-800 bg-white dark:bg-zinc-900 px-2 py-1 text-xs font-mono font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none"
+                            className="w-full rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2 py-1 text-xs font-mono font-bold text-zinc-900 dark:text-zinc-100 focus:outline-none"
                           />
                         </div>
                         <div>
                           <label className="block text-[10px] font-semibold text-zinc-500 mb-0.5">
                             Remaining Due ({currency})
                           </label>
-                          <div className="w-full rounded-lg bg-amber-100/50 dark:bg-amber-900/30 px-2 py-1 text-xs font-mono font-bold text-amber-900 dark:text-amber-200 border border-amber-200/80 dark:border-amber-900/40">
+                          <div className="w-full rounded-lg bg-zinc-100 dark:bg-zinc-800 px-2 py-1 text-xs font-mono font-bold text-zinc-900 dark:text-zinc-100 border border-zinc-200 dark:border-zinc-700">
                             {formatCurrency(
                               Math.max(
                                 0,
@@ -1405,22 +1450,78 @@ export const QRScanPage = () => {
                 />
               </div>
 
-              {/* Customer ID / Email Finder */}
+              {/* Customer ID / Email Finder - Automatic search & confirmation */}
               <div className="space-y-2">
                 <label className="block text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
                   User ID / Email Lookup
                 </label>
+
+                {/* Candidate Customer Confirmation Card */}
+                {candidateCustomer && !selectedCustomer && (
+                  <div className="rounded-2xl border border-zinc-200 dark:border-zinc-750 bg-zinc-50 dark:bg-zinc-850 p-3 space-y-2.5 animate-in fade-in duration-200">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                        Customer Found
+                      </span>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-200">
+                        Confirm
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold text-xs">
+                        {candidateCustomer.name ? candidateCustomer.name.charAt(0).toUpperCase() : 'C'}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate">
+                          {candidateCustomer.name}
+                        </p>
+                        <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono truncate">
+                          ID: {candidateCustomer.userId || candidateCustomer.accountId || 'NO-ID'} • {candidateCustomer.email}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-1 border-t border-zinc-200 dark:border-zinc-750">
+                      <Button
+                        type="button"
+                        variant="primary"
+                        size="sm"
+                        onClick={() => handleConfirmCustomer(candidateCustomer)}
+                        className="flex-1 text-xs py-1.5 rounded-xl font-semibold"
+                      >
+                        <Check className="h-3.5 w-3.5 mr-1" /> Confirm Customer
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={handleClearCustomer}
+                        className="text-xs py-1.5 rounded-xl"
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Confirmed Selected Customer Card */}
                 {selectedCustomer ? (
-                  <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+                  <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-zinc-100/90 dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-750">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold text-xs">
                         <UserCheck className="h-4 w-4" />
                       </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-emerald-900 dark:text-emerald-200 truncate">
-                          {selectedCustomer.name}
-                        </p>
-                        <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-mono truncate">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate">
+                            {selectedCustomer.name}
+                          </p>
+                          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-zinc-900 text-white dark:bg-white dark:text-zinc-900">
+                            Confirmed
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono truncate">
                           ID: {selectedCustomer.userId || selectedCustomer.accountId || selectedCustomer.email}
                         </p>
                       </div>
@@ -1428,41 +1529,40 @@ export const QRScanPage = () => {
                     <button
                       type="button"
                       onClick={handleClearCustomer}
-                      className="p-1.5 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-lg text-emerald-700 dark:text-emerald-300 transition-colors"
-                      title="Remove Customer"
+                      className="text-xs font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 underline underline-offset-2 shrink-0 ml-1"
+                      title="Change Customer"
                     >
-                      <X className="h-3.5 w-3.5" />
+                      Change
                     </button>
                   </div>
-                ) : (
-                  <form onSubmit={handleSearchCustomer} className="flex items-center gap-2">
-                    <div className="relative flex-1">
-                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
-                      <input
-                        type="text"
-                        placeholder="Enter 8-digit User ID or Email"
-                        value={customerSearchInput}
-                        onChange={(e) => {
-                          setCustomerSearchInput(e.target.value);
-                          if (customerSearchError) setCustomerSearchError('');
-                        }}
-                        className="w-full rounded-xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 pl-8 pr-3 py-2 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/20"
-                      />
-                    </div>
-                    <Button
-                      type="submit"
-                      variant="secondary"
-                      size="sm"
-                      loading={searchingCustomer}
-                      className="text-xs px-3 py-2 rounded-xl whitespace-nowrap"
-                    >
-                      <Search className="h-3.5 w-3.5 mr-1" />
-                      Find
-                    </Button>
-                  </form>
+                ) : !candidateCustomer && (
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-400" />
+                    <input
+                      type="text"
+                      placeholder="Type 8-digit User ID or Email..."
+                      value={customerSearchInput}
+                      onChange={(e) => {
+                        setCustomerSearchInput(e.target.value);
+                        if (customerSearchError) setCustomerSearchError('');
+                      }}
+                      className="w-full rounded-xl border border-zinc-200/90 dark:border-zinc-800 bg-white dark:bg-zinc-900 pl-8 pr-8 py-2 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/20"
+                    />
+                    {searchingCustomer ? (
+                      <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500 animate-spin" />
+                    ) : customerSearchInput ? (
+                      <button
+                        type="button"
+                        onClick={handleClearCustomer}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    ) : null}
+                  </div>
                 )}
                 {customerSearchError && (
-                  <p className="text-[11px] text-rose-600 dark:text-rose-400 flex items-center gap-1">
+                  <p className="text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
                     <AlertTriangle className="h-3 w-3 shrink-0" />
                     {customerSearchError}
                   </p>

@@ -257,6 +257,28 @@ export const updateProfile = asyncHandler(async (req, res) => {
     );
   }
 
+  // Immutability Check: Location cannot be altered once KYC is verified
+  const isKycVerified = req.user.kyc?.status === 'VERIFIED';
+  if (isKycVerified && location !== undefined) {
+    const existing = req.user.location || {};
+    let isDifferent = false;
+    if (typeof location === 'string') {
+      isDifferent = location.trim() !== (existing.formattedAddress || '').trim();
+    } else if (typeof location === 'object' && location !== null) {
+      if (location.province !== undefined && location.province !== (existing.province || '')) isDifferent = true;
+      if (location.district !== undefined && location.district !== (existing.district || '')) isDifferent = true;
+      if (location.municipality !== undefined && location.municipality !== (existing.municipality || '')) isDifferent = true;
+      if (location.ward !== undefined && String(location.ward) !== String(existing.ward || '')) isDifferent = true;
+      if (location.street !== undefined && location.street !== (existing.street || '')) isDifferent = true;
+    }
+    if (isDifferent) {
+      throw new ApiError(
+        400,
+        'Your residential location is permanently locked and cannot be changed after your KYC has been verified.'
+      );
+    }
+  }
+
   const user = await User.findById(req.user._id).select('+password');
   if (!user) {
     throw new ApiError(404, 'User not found');
@@ -287,7 +309,7 @@ export const updateProfile = asyncHandler(async (req, res) => {
     if (ageDobResult.age) user.age = ageDobResult.age;
   }
 
-  if (location) {
+  if (location && !isKycVerified) {
     if (typeof location === 'string') {
       user.location = {
         province: user.location?.province || '',

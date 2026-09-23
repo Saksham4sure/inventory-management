@@ -16,8 +16,16 @@ export const extractNepaliLocalDigits = (input) => {
   return str.replace(/\D/g, '');
 };
 
-export const validateNepaliPhone = (phone) => {
+export const validateNepaliPhone = (phone, required = true) => {
   if (!phone || !String(phone).trim()) {
+    if (!required) {
+      return {
+        isValid: true,
+        error: null,
+        normalized: '',
+        localDigits: '',
+      };
+    }
     return {
       isValid: false,
       error: 'Contact phone number is required.',

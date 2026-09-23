@@ -9,9 +9,11 @@ import { DatePicker } from '../components/ui/DatePicker';
 import { Badge } from '../components/ui/Badge';
 import { Modal } from '../components/ui/Modal';
 import { LocationSelect } from '../components/ui/LocationSelect';
+import { PhoneInput } from '../components/ui/PhoneInput';
 import { formatDate } from '../utils/formatters';
 import { useSnackbar } from '../hooks/useSnackbar';
 import { validateFullName, validatePassword } from '../utils/inputValidator';
+import { validateNepaliPhone } from '../utils/phoneValidator';
 import {
   User,
   KeyRound,
@@ -207,20 +209,30 @@ export const ProfilePage = () => {
       return;
     }
 
+    if (phone && phone.trim()) {
+      const phoneValidation = validateNepaliPhone(phone, false);
+      if (!phoneValidation.isValid) {
+        showError(phoneValidation.error || 'Please enter a valid Nepali contact number.');
+        return;
+      }
+    }
+
+    const isKycVerified = user?.kyc?.status === 'VERIFIED';
+
     try {
       setProfileLoading(true);
       const payload = {
         name: name.trim(),
         phone: phone.trim(),
         dob: dob || null,
-        location: locationState,
+        ...(!isKycVerified && { location: locationState }),
       };
 
       const res = await authService.updateProfile(payload);
       if (res?.user) {
         updateUser(res.user);
       }
-      showSuccess('Profile details and address updated successfully!');
+      showSuccess('Profile details updated successfully!');
     } catch (err) {
       showError(err.message || 'Failed to update profile');
     } finally {
@@ -487,14 +499,12 @@ export const ProfilePage = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Contact Phone */}
-                <Input
+                <PhoneInput
                   label="Contact Phone Number"
                   id="contactPhone"
-                  type="tel"
-                  placeholder="e.g. 9841234567"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  helperText="Primary mobile number for notifications"
+                  helperText="Primary Nepali mobile or landline number (+977)"
                 />
 
                 {/* Date of Birth */}
@@ -513,16 +523,43 @@ export const ProfilePage = () => {
               </div>
 
               {/* Nepal Cascading Location Selector */}
-              <div className="pt-2 border-t border-black/[0.05] dark:border-white/[0.08]">
+              <div className="pt-2 border-t border-black/[0.05] dark:border-white/[0.08] space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="block text-[11px] font-semibold tracking-wider uppercase text-zinc-500 dark:text-zinc-400">
+                    Residential / Personal Location (Nepal)
+                  </span>
+                  {user?.kyc?.status === 'VERIFIED' && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-zinc-900 text-white dark:bg-white dark:text-zinc-900">
+                      <Lock className="h-2.5 w-2.5" /> Locked by KYC
+                    </span>
+                  )}
+                </div>
+
+                {user?.kyc?.status === 'VERIFIED' && (
+                  <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-zinc-100 dark:bg-zinc-850 border border-zinc-200/80 dark:border-zinc-750 text-xs text-zinc-700 dark:text-zinc-300">
+                    <Lock className="h-4 w-4 shrink-0 text-zinc-900 dark:text-zinc-100" />
+                    <p className="leading-relaxed">
+                      Your residential location is permanently locked and cannot be changed after successful government KYC identity verification.
+                    </p>
+                  </div>
+                )}
+
                 <LocationSelect
-                  label="Residential / Personal Location (Nepal)"
+                  label=""
                   id="profile-location"
                   value={locationState}
+                  disabled={user?.kyc?.status === 'VERIFIED'}
                   onChange={(_e, _formatted, newState) => {
-                    setLocationState(newState);
+                    if (user?.kyc?.status !== 'VERIFIED') {
+                      setLocationState(newState);
+                    }
                   }}
                   showStreetInput={true}
-                  helperText="Province, District, Municipality, Ward, and Street / Tole"
+                  helperText={
+                    user?.kyc?.status === 'VERIFIED'
+                      ? 'Location locked against verified government records'
+                      : 'Province, District, Municipality, Ward, and Street / Tole'
+                  }
                 />
               </div>
 
@@ -546,8 +583,8 @@ export const ProfilePage = () => {
                 <div
                   className={`flex h-8 w-8 items-center justify-center rounded-xl ${
                     hasKyc
-                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                      : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                      ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900'
+                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
                   }`}
                 >
                   {hasKyc ? <ShieldCheck className="h-4 w-4" /> : <ShieldAlert className="h-4 w-4" />}
@@ -563,9 +600,9 @@ export const ProfilePage = () => {
               </div>
 
               {hasKyc && (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-xs font-semibold border border-emerald-500/20">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 text-xs font-semibold">
                   <Lock className="h-3 w-3" />
-                  Verified & Immutable
+                  Verified &amp; Immutable
                 </span>
               )}
             </div>
@@ -574,37 +611,37 @@ export const ProfilePage = () => {
             {hasKyc ? (
               <div className="space-y-4">
                 {user?.kyc?.status === 'VERIFIED' ? (
-                  /* Verified Notice Banner */
-                  <div className="flex items-start gap-3 p-4 rounded-2xl bg-emerald-500/10 dark:bg-emerald-950/30 border border-emerald-500/20 text-emerald-800 dark:text-emerald-300">
-                    <ShieldCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                  /* Verified Notice Banner - Apple B&W style */
+                  <div className="flex items-start gap-3 p-4 rounded-2xl bg-zinc-100 dark:bg-zinc-850 border border-zinc-200/90 dark:border-zinc-750 text-zinc-900 dark:text-zinc-100">
+                    <ShieldCheck className="h-5 w-5 text-zinc-900 dark:text-zinc-100 shrink-0 mt-0.5" />
                     <div className="text-xs space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-sm text-emerald-900 dark:text-emerald-100">
-                          Identity Document Verified & Permanent
+                        <span className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
+                          Identity Document Verified &amp; Permanent
                         </span>
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 text-[10px] font-semibold">
                           <Lock className="h-2.5 w-2.5" /> Approved
                         </span>
                       </div>
-                      <p className="text-emerald-700 dark:text-emerald-400/90 leading-relaxed">
-                        Your government-issued identity document is officially verified by Platform Compliance. Per platform security standards, your verified citizenship or driving license details are permanent and cannot be modified or replaced.
+                      <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                        Your government-issued identity document is officially verified by Platform Compliance. Per platform security standards, your verified citizenship or driving license details and residential location are permanent and cannot be modified or replaced.
                       </p>
                     </div>
                   </div>
                 ) : (
                   /* Pending Platform Compliance Review Banner */
-                  <div className="flex items-start gap-3 p-4 rounded-2xl bg-amber-500/10 dark:bg-amber-950/30 border border-amber-500/20 text-amber-800 dark:text-amber-200">
-                    <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5 animate-spin" />
+                  <div className="flex items-start gap-3 p-4 rounded-2xl bg-zinc-100/70 dark:bg-zinc-850/60 border border-zinc-200/80 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200">
+                    <Clock className="h-5 w-5 text-zinc-600 dark:text-zinc-400 shrink-0 mt-0.5 animate-spin" />
                     <div className="text-xs space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-sm text-amber-950 dark:text-amber-100">
+                        <span className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
                           Identity Document Under Platform Compliance Review
                         </span>
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 text-[10px] font-semibold text-amber-800 dark:text-amber-300">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-200 dark:bg-zinc-700 text-[10px] font-semibold text-zinc-800 dark:text-zinc-200">
                           Pending Validation
                         </span>
                       </div>
-                      <p className="text-amber-800/90 dark:text-amber-300/90 leading-relaxed">
+                      <p className="text-zinc-500 dark:text-zinc-400 leading-relaxed">
                         Your government-issued identity document has been submitted and is currently awaiting validation by the Platform Compliance team. You can view your submitted copies below. You may continue operating while verification is in progress.
                       </p>
                     </div>
@@ -638,12 +675,12 @@ export const ProfilePage = () => {
                       Verification Status
                     </span>
                     {user?.kyc?.status === 'VERIFIED' ? (
-                      <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">
+                      <span className="inline-flex items-center gap-1 text-zinc-900 dark:text-zinc-100 font-bold mt-0.5">
                         <CheckCircle2 className="h-3.5 w-3.5" />
                         VERIFIED
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold mt-0.5">
+                      <span className="inline-flex items-center gap-1 text-zinc-500 dark:text-zinc-400 font-bold mt-0.5">
                         <Clock className="h-3.5 w-3.5 animate-spin" />
                         UNDER REVIEW
                       </span>
@@ -660,7 +697,7 @@ export const ProfilePage = () => {
                         Front Side Document
                       </span>
                       <span className="text-[10px] text-zinc-400 font-mono flex items-center gap-1">
-                        <Lock className="h-2.5 w-2.5 text-emerald-500" /> Immutable
+                        <Lock className="h-2.5 w-2.5 text-zinc-700 dark:text-zinc-300" /> Immutable
                       </span>
                     </div>
                     <div
@@ -698,7 +735,7 @@ export const ProfilePage = () => {
                         Back Side Document
                       </span>
                       <span className="text-[10px] text-zinc-400 font-mono flex items-center gap-1">
-                        <Lock className="h-2.5 w-2.5 text-emerald-500" /> Immutable
+                        <Lock className="h-2.5 w-2.5 text-zinc-700 dark:text-zinc-300" /> Immutable
                       </span>
                     </div>
                     <div
@@ -735,37 +772,37 @@ export const ProfilePage = () => {
               <form onSubmit={handleUploadKyc} className="space-y-4">
                 {user?.kyc?.status === 'REJECTED' ? (
                   /* Rejection Alert Notice with Reason */
-                  <div className="flex items-start gap-3 p-4 rounded-2xl bg-rose-500/10 dark:bg-rose-950/30 border border-rose-500/20 text-rose-900 dark:text-rose-200">
-                    <AlertCircle className="h-5 w-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                  <div className="flex items-start gap-3 p-4 rounded-2xl bg-zinc-100 dark:bg-zinc-850 border border-zinc-300 dark:border-zinc-700 text-zinc-900 dark:text-zinc-100">
+                    <AlertCircle className="h-5 w-5 text-zinc-900 dark:text-zinc-100 shrink-0 mt-0.5" />
                     <div className="text-xs space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-sm text-rose-950 dark:text-rose-100">
+                        <span className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
                           Identity Verification Rejected
                         </span>
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-500/20 text-[10px] font-semibold text-rose-800 dark:text-rose-300">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-200 dark:bg-zinc-700 text-[10px] font-semibold text-zinc-800 dark:text-zinc-200">
                           Re-upload Allowed
                         </span>
                       </div>
-                      <p className="text-rose-800/90 dark:text-rose-300/90 leading-relaxed">
-                        Reason from Platform Compliance: <strong className="font-semibold text-rose-950 dark:text-white">"{user?.kyc?.rejectionReason || 'Document details or images could not be verified.'}"</strong>.
+                      <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">
+                        Reason from Platform Compliance: <strong className="font-semibold text-zinc-900 dark:text-white">"{user?.kyc?.rejectionReason || 'Document details or images could not be verified.'}"</strong>.
                         Please correct your document number and upload clearer photos of both sides to re-submit for review.
                       </p>
                     </div>
                   </div>
                 ) : (
                   /* Pending Alert Notice */
-                  <div className="flex items-start gap-3 p-4 rounded-2xl bg-amber-500/10 dark:bg-amber-950/30 border border-amber-500/20 text-amber-900 dark:text-amber-200">
-                    <ShieldAlert className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <div className="flex items-start gap-3 p-4 rounded-2xl bg-zinc-100/80 dark:bg-zinc-850/80 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100">
+                    <ShieldAlert className="h-5 w-5 text-zinc-700 dark:text-zinc-300 shrink-0 mt-0.5" />
                     <div className="text-xs space-y-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-sm text-amber-950 dark:text-amber-100">
+                        <span className="font-bold text-sm text-zinc-900 dark:text-zinc-100">
                           Identity Document Pending
                         </span>
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 text-[10px] font-semibold text-amber-800 dark:text-amber-300">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 text-[10px] font-semibold">
                           Upload Required
                         </span>
                       </div>
-                      <p className="text-amber-800/90 dark:text-amber-300/90 leading-relaxed">
+                      <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">
                         You did not complete identity document verification during onboarding. Please select your document type and upload front and back photos below to verify your account.
                       </p>
                     </div>
@@ -794,7 +831,7 @@ export const ProfilePage = () => {
                         </p>
                       </div>
                       {kycDocType === 'CITIZENSHIP' && (
-                        <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        <CheckCircle2 className="h-4 w-4 text-zinc-900 dark:text-zinc-100 shrink-0" />
                       )}
                     </button>
 
@@ -814,7 +851,7 @@ export const ProfilePage = () => {
                         </p>
                       </div>
                       {kycDocType === 'DRIVING_LICENSE' && (
-                        <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                        <CheckCircle2 className="h-4 w-4 text-zinc-900 dark:text-zinc-100 shrink-0" />
                       )}
                     </button>
                   </div>

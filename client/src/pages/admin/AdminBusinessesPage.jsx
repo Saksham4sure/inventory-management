@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { adminService } from '../../services/adminService';
 import { Select } from '../../components/ui/Select';
 import { DatePicker } from '../../components/ui/DatePicker';
+import { PhoneInput } from '../../components/ui/PhoneInput';
+import { validateNepaliPhone } from '../../utils/phoneValidator';
 import {
   Building2,
   Search,
@@ -139,6 +141,14 @@ export const AdminBusinessesPage = () => {
   const handleEditBusiness = async (e) => {
     e.preventDefault();
     if (!editModal) return;
+
+    if (editForm.phone && editForm.phone.trim()) {
+      const pCheck = validateNepaliPhone(editForm.phone, false);
+      if (!pCheck.isValid) {
+        alert(pCheck.error || 'Please enter a valid Nepali contact number.');
+        return;
+      }
+    }
 
     try {
       setActionLoading(true);
@@ -588,17 +598,12 @@ export const AdminBusinessesPage = () => {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">
-                  Phone Number
-                </label>
-                <input
-                  type="text"
-                  value={editForm.phone}
-                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                  className="w-full rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200 dark:border-zinc-800 px-3 py-2 text-xs text-zinc-900 dark:text-white"
-                />
-              </div>
+              <PhoneInput
+                label="Business Phone Number"
+                value={editForm.phone}
+                onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                helperText="Nepal business contact number (+977)"
+              />
 
               <div>
                 <label className="block text-xs font-medium text-zinc-700 dark:text-zinc-300 mb-1">

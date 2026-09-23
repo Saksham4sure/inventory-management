@@ -6,11 +6,13 @@ import { authService } from '../../services/authService';
 import { LocationSelect } from '../ui/LocationSelect';
 import { CoordinateInput } from '../ui/CoordinateInput';
 import { Input } from '../ui/Input';
+import { PhoneInput } from '../ui/PhoneInput';
 import { DatePicker } from '../ui/DatePicker';
 import { Button } from '../ui/Button';
 import { ROUTES } from '../../constants/routes';
 import { useSnackbar } from '../../hooks/useSnackbar';
 import { validateFullName } from '../../utils/inputValidator';
+import { validateNepaliPhone } from '../../utils/phoneValidator';
 import { formatLocationAddress } from '../../utils/nepalLocations';
 import {
   User,
@@ -128,13 +130,8 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
 
   // Validation functions
   const validatePhone = (val) => {
-    if (!val || !val.trim()) return 'Contact phone number is required';
-    const clean = val.replace(/[\s()-]/g, '');
-    const regex = /^[0-9+]{7,15}$/;
-    if (!regex.test(clean)) {
-      return 'Please enter a valid contact phone number (e.g. 9801234567 or +977-98...)';
-    }
-    return '';
+    const res = validateNepaliPhone(val, true);
+    return res.isValid ? '' : (res.error || 'Please enter a valid Nepali contact number.');
   };
 
   const validateDob = (val) => {
@@ -448,11 +445,9 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
                 />
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  <Input
+                  <PhoneInput
                     label="Contact Phone Number"
                     id="step1-phone"
-                    type="tel"
-                    placeholder="e.g. 9801234567"
                     required
                     value={phone}
                     onChange={(e) => {
@@ -460,6 +455,7 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
                       if (phoneError) setPhoneError('');
                     }}
                     error={phoneError}
+                    helperText="Nepali 10-digit mobile (+977) or landline"
                   />
 
                   <DatePicker
