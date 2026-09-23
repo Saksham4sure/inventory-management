@@ -8,6 +8,7 @@ import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
 import { Modal } from '../components/ui/Modal';
 import { formatCurrency, formatDate, formatPaymentMethod } from '../utils/formatters';
+import ReceiptBill from '../components/common/ReceiptBill';
 import {
   Search,
   ArrowLeftRight,
@@ -265,73 +266,13 @@ export const TransactionsPage = () => {
         maxWidth="max-w-md"
       >
         {selectedTxn && (
-          <div className="space-y-3.5">
-            <div className="flex items-center justify-between pb-3 border-b border-zinc-100 dark:border-zinc-800/80">
-              <div>
-                <span className="text-[10px] font-medium text-zinc-400 uppercase tracking-wider">
-                  Reference
-                </span>
-                <p className="font-mono font-bold text-zinc-900 dark:text-zinc-100">
-                  {selectedTxn.referenceNumber}
-                </p>
-              </div>
-              <Badge variant={selectedTxn.type === 'SALE' ? 'accent' : 'default'} dot>
-                {selectedTxn.type}
-              </Badge>
-            </div>
-
-            <div className="space-y-1.5">
-              <span className="text-[10px] font-medium text-zinc-400 uppercase tracking-wider">
-                Line Items
-              </span>
-              <div className="divide-y divide-zinc-100 dark:divide-zinc-800/80 border border-zinc-200/80 dark:border-zinc-800 rounded-lg p-3 bg-zinc-50/50 dark:bg-zinc-850/50">
-                {selectedTxn.items?.map((item, idx) => (
-                  <div key={idx} className="flex justify-between items-center py-2 text-xs">
-                    <div>
-                      <p className="font-medium text-zinc-800 dark:text-zinc-200">{item.productName}</p>
-                      <p className="text-zinc-400 font-mono text-[11px]">
-                        SKU: {item.sku} • {item.quantity} x {formatCurrency(item.unitPrice, currency)}
-                      </p>
-                    </div>
-                    <span className="font-bold font-mono text-zinc-900 dark:text-zinc-100">
-                      {formatCurrency(item.subtotal, currency)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex justify-between items-center pt-2.5 border-t border-zinc-100 dark:border-zinc-800/80">
-              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">Total:</span>
-              <span className="text-base font-bold font-mono text-zinc-900 dark:text-zinc-100">
-                {formatCurrency(selectedTxn.totalAmount, currency)}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 text-[11px] text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-850 p-3 rounded-lg border border-zinc-200/60 dark:border-zinc-800">
-              <div>
-                <span className="font-medium">Payment:</span> {formatPaymentMethod(selectedTxn.paymentMethod)}
-              </div>
-              <div>
-                <span className="font-medium">QR Scanned:</span>{' '}
-                {selectedTxn.scannedViaQR ? 'Yes' : 'No'}
-              </div>
-              <div>
-                <span className="font-medium">Date:</span> {formatDate(selectedTxn.createdAt)}
-              </div>
-              <div>
-                <span className="font-medium">Author:</span> {selectedTxn.createdBy?.name || 'Staff'}
-              </div>
-            </div>
-
-            {selectedTxn.notes && (
-              <div className="text-xs text-zinc-600 dark:text-zinc-300 bg-zinc-100/70 dark:bg-zinc-800/70 p-2.5 rounded-lg border border-zinc-200/60 dark:border-zinc-700/60">
-                <span className="font-medium text-zinc-800 dark:text-zinc-200">Notes: </span>
-                {selectedTxn.notes}
-              </div>
-            )}
-
-            <div className="flex gap-2 pt-1">
+          <div className="space-y-4">
+            <ReceiptBill 
+              transaction={selectedTxn} 
+              business={business} 
+              currency={currency} 
+            />
+            <div className="flex gap-2 pt-1 print-hide border-t border-zinc-100 dark:border-zinc-800 mt-4 pt-4">
               <Button
                 variant="danger"
                 size="sm"
@@ -345,8 +286,7 @@ export const TransactionsPage = () => {
               </Button>
             </div>
           </div>
-        )}
-      </Modal>
+        )}</Modal>
     </div>
   );
 };

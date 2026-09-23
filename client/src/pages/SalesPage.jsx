@@ -12,6 +12,7 @@ import { Select } from '../components/ui/Select';
 import { DatePicker } from '../components/ui/DatePicker';
 import { Modal } from '../components/ui/Modal';
 import { formatCurrency, formatPaymentMethod } from '../utils/formatters';
+import ReceiptBill from '../components/common/ReceiptBill';
 import {
   DATE_FILTERS,
   getDateFilterBounds,
@@ -749,69 +750,13 @@ export const SalesPage = () => {
         maxWidth="max-w-md"
       >
         {selectedTxn && (
-          <div className="space-y-3.5">
-            <div className="flex justify-between items-center pb-2 border-b border-zinc-100 dark:border-zinc-800">
-              <div>
-                <span className="text-[10px] uppercase font-bold text-zinc-400">Reference</span>
-                <p className="font-mono font-bold text-sm text-zinc-900 dark:text-zinc-100">
-                  {selectedTxn.referenceNumber}
-                </p>
-              </div>
-              <Badge
-                variant={selectedTxn.type === 'SALE_RETURN' ? 'warning' : 'accent'}
-                size="sm"
-                dot
-              >
-                {selectedTxn.type === 'SALE_RETURN' ? 'Customer Return' : 'Sale'}
-              </Badge>
-            </div>
-
-            <div className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center justify-between">
-              <span>Timestamp:</span>
-              <span className="font-mono text-zinc-700 dark:text-zinc-300 font-medium">
-                {formatDateTime(selectedTxn.createdAt)}
-              </span>
-            </div>
-
-            <div className="divide-y divide-zinc-100 dark:divide-zinc-800 border rounded-xl p-2.5 bg-zinc-50/50 dark:bg-zinc-850/50 max-h-48 overflow-y-auto">
-              {selectedTxn.items?.map((it, i) => (
-                <div key={i} className="flex justify-between py-1.5 text-xs">
-                  <div>
-                    <p className="font-semibold text-zinc-800 dark:text-zinc-200">
-                      {it.productName}
-                    </p>
-                    <p className="text-[10px] text-zinc-400 font-mono">
-                      {it.quantity} x {formatCurrency(it.unitPrice, currency)}
-                    </p>
-                  </div>
-                  <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100">
-                    {formatCurrency(it.subtotal, currency)}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex justify-between text-sm font-bold border-t border-zinc-100 dark:border-zinc-800 pt-2">
-              <span>Total Amount:</span>
-              <span
-                className={`font-mono text-base ${
-                  selectedTxn.type === 'SALE_RETURN'
-                    ? 'text-amber-600 dark:text-amber-400'
-                    : 'text-zinc-900 dark:text-zinc-100'
-                }`}
-              >
-                {selectedTxn.type === 'SALE_RETURN' ? '-' : '+'}
-                {formatCurrency(selectedTxn.totalAmount, currency)}
-              </span>
-            </div>
-
-            {selectedTxn.notes && (
-              <p className="text-xs text-zinc-500 bg-zinc-50 dark:bg-zinc-850 p-2.5 rounded-xl border border-zinc-200/50 dark:border-zinc-800">
-                {selectedTxn.notes}
-              </p>
-            )}
-
-            <div className="flex gap-2 pt-1">
+          <div className="space-y-4">
+            <ReceiptBill 
+              transaction={selectedTxn} 
+              business={business} 
+              currency={currency} 
+            />
+            <div className="flex gap-2 pt-1 print-hide border-t border-zinc-100 dark:border-zinc-800 mt-4 pt-4">
               <Button
                 variant="danger"
                 size="sm"
@@ -825,8 +770,7 @@ export const SalesPage = () => {
               </Button>
             </div>
           </div>
-        )}
-      </Modal>
+        )}</Modal>
     </div>
   );
 };

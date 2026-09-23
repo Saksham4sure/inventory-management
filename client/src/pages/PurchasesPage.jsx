@@ -14,6 +14,7 @@ import { DatePicker } from '../components/ui/DatePicker';
 import { Modal } from '../components/ui/Modal';
 import { formatCurrency, formatPaymentMethod } from '../utils/formatters';
 import { validateNepaliPhone } from '../utils/phoneValidator';
+import ReceiptBill from '../components/common/ReceiptBill';
 import {
   DATE_FILTERS,
   getDateFilterBounds,
@@ -900,133 +901,13 @@ export const PurchasesPage = () => {
         maxWidth="max-w-md"
       >
         {selectedTxn && (
-          <div className="space-y-3.5">
-            <div className="flex justify-between items-center pb-2 border-b border-zinc-100 dark:border-zinc-800">
-              <div>
-                <span className="text-[10px] uppercase font-bold text-zinc-400">Reference</span>
-                <p className="font-mono font-bold text-sm text-zinc-900 dark:text-zinc-100">
-                  {selectedTxn.referenceNumber}
-                </p>
-              </div>
-              <Badge
-                variant={selectedTxn.type === 'PURCHASE_RETURN' ? 'warning' : 'default'}
-                size="sm"
-                dot
-              >
-                {selectedTxn.type === 'PURCHASE_RETURN' ? 'Vendor Return' : 'Stock-In Purchase'}
-              </Badge>
-            </div>
-
-            <div className="text-xs text-zinc-500 dark:text-zinc-400 flex items-center justify-between">
-              <span>Timestamp:</span>
-              <span className="font-mono text-zinc-700 dark:text-zinc-300 font-medium">
-                {formatDateTime(selectedTxn.createdAt)}
-              </span>
-            </div>
-
-            <div className="divide-y divide-zinc-100 dark:divide-zinc-800 border rounded-xl p-2.5 bg-zinc-50/50 dark:bg-zinc-850/50 max-h-48 overflow-y-auto">
-              {selectedTxn.items?.map((it, i) => (
-                <div key={i} className="flex justify-between py-1.5 text-xs">
-                  <div>
-                    <p className="font-semibold text-zinc-800 dark:text-zinc-200">
-                      {it.productName}
-                    </p>
-                    <p className="text-[10px] text-zinc-400 font-mono">
-                      {it.quantity} x {formatCurrency(it.unitPrice, currency)}
-                    </p>
-                  </div>
-                  <span className="font-mono font-bold text-zinc-900 dark:text-zinc-100">
-                    {formatCurrency(it.subtotal, currency)}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex justify-between text-sm font-bold border-t border-zinc-100 dark:border-zinc-800 pt-2">
-              <span>Total Amount:</span>
-              <span
-                className={`font-mono text-base ${
-                  selectedTxn.type === 'PURCHASE_RETURN'
-                    ? 'text-amber-600 dark:text-amber-400'
-                    : 'text-zinc-900 dark:text-zinc-100'
-                }`}
-              >
-                {selectedTxn.type === 'PURCHASE_RETURN' ? '-' : '+'}
-                {formatCurrency(selectedTxn.totalAmount, currency)}
-              </span>
-            </div>
-
-            {/* Manual Bill Details if present */}
-            {selectedTxn.manualBillDetails && (
-              <div className="p-3 rounded-xl bg-zinc-50 dark:bg-zinc-800/60 border border-zinc-200/80 dark:border-zinc-700/80 text-xs space-y-2">
-                <div className="flex items-center justify-between font-bold text-zinc-900 dark:text-zinc-100 border-b border-zinc-200/60 dark:border-zinc-700 pb-1.5">
-                  <span>Vendor Bill Details</span>
-                  <Badge variant="neutral" size="sm">
-                    {selectedTxn.manualBillDetails.billCategory || 'Bill'}
-                  </Badge>
-                </div>
-                <div className="grid grid-cols-2 gap-1.5 text-[11px]">
-                  <div>
-                    <span className="text-zinc-400">Vendor:</span>{' '}
-                    <span className="font-semibold text-zinc-800 dark:text-zinc-200">
-                      {selectedTxn.manualBillDetails.sellerName}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-zinc-400">PAN / VAT:</span>{' '}
-                    <span className="font-mono font-semibold text-zinc-800 dark:text-zinc-200">
-                      {selectedTxn.manualBillDetails.vendorPanVat || 'N/A'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-zinc-400">Bill No:</span>{' '}
-                    <span className="font-mono font-semibold text-zinc-800 dark:text-zinc-200">
-                      {selectedTxn.manualBillDetails.billNumber}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-zinc-400">Contact:</span>{' '}
-                    <span className="font-mono text-zinc-800 dark:text-zinc-200">
-                      {selectedTxn.manualBillDetails.contactNumber || 'N/A'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Attached Bill Photos */}
-                {selectedTxn.manualBillDetails.billPhotos?.length > 0 && (
-                  <div className="pt-2 border-t border-zinc-200/60 dark:border-zinc-700">
-                    <span className="text-[10px] uppercase font-semibold text-zinc-400 block mb-1.5">
-                      Attached Bill Photos ({selectedTxn.manualBillDetails.billPhotos.length})
-                    </span>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedTxn.manualBillDetails.billPhotos.map((photo, pIdx) => (
-                        <a
-                          key={pIdx}
-                          href={photo}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-14 h-14 rounded-lg overflow-hidden border border-zinc-200 dark:border-zinc-700 shadow-2xs hover:opacity-80 transition-opacity"
-                        >
-                          <img
-                            src={photo}
-                            alt={`Bill photo ${pIdx + 1}`}
-                            className="w-full h-full object-cover"
-                          />
-                        </a>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {selectedTxn.notes && (
-              <p className="text-xs text-zinc-500 bg-zinc-50 dark:bg-zinc-850 p-2.5 rounded-xl border border-zinc-200/50 dark:border-zinc-800">
-                {selectedTxn.notes}
-              </p>
-            )}
-
-            <div className="flex gap-2 pt-1">
+          <div className="space-y-4">
+            <ReceiptBill 
+              transaction={selectedTxn} 
+              business={business} 
+              currency={currency} 
+            />
+            <div className="flex gap-2 pt-1 print-hide border-t border-zinc-100 dark:border-zinc-800 mt-4 pt-4">
               <Button
                 variant="danger"
                 size="sm"
@@ -1040,8 +921,7 @@ export const PurchasesPage = () => {
               </Button>
             </div>
           </div>
-        )}
-      </Modal>
+        )}</Modal>
       {/* MODAL: Manually Add Purchase Bill */}
       <Modal
         isOpen={isManualModalOpen}
