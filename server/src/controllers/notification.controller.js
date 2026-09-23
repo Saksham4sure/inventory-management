@@ -3,6 +3,7 @@ import { Invitation } from '../models/invitation.model.js';
 import { Business } from '../models/business.model.js';
 import { Party } from '../models/party.model.js';
 import { User } from '../models/user.model.js';
+import { SubscriptionRequest } from '../models/subscriptionRequest.model.js';
 import { ApiError } from '../utils/apiError.js';
 import { ApiResponse } from '../utils/apiResponse.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
@@ -69,6 +70,14 @@ export const getMyNotifications = asyncHandler(async (req, res) => {
       if (obj.data?.partyId) {
         const party = await Party.findById(obj.data.partyId);
         obj.partyStatus = party ? party.status : 'CANCELLED';
+      }
+      if (obj.type === 'SUBSCRIPTION_REQUEST' && obj.data?.requestId) {
+        const subReq = await SubscriptionRequest.findById(obj.data.requestId);
+        obj.subscriptionStatus = subReq ? subReq.status : 'CANCELLED';
+      }
+      if (obj.type === 'KYC_SUBMITTED' && obj.data?.targetUserId) {
+        const targetUser = await User.findById(obj.data.targetUserId);
+        obj.kycStatus = targetUser ? targetUser.kyc.status : 'NOT_SUBMITTED';
       }
       return obj;
     })

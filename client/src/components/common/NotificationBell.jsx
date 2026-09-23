@@ -260,37 +260,61 @@ export const NotificationBell = () => {
 
                         {notif.type === 'SUBSCRIPTION_REQUEST' && (
                           <div className="mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
-                            <Link
-                              to="/platform-admin/subscriptions"
-                              onClick={() => {
-                                setIsOpen(false);
-                                if (!notif.isRead) markAsRead(notif._id);
-                              }}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold shadow-2xs transition-colors"
-                            >
-                              <CreditCard className="h-3 w-3" />
-                              <span>Review Applications</span>
-                            </Link>
+                            {notif.subscriptionStatus === 'PENDING' ? (
+                              <Link
+                                to="/platform-admin/subscriptions"
+                                onClick={() => {
+                                  setIsOpen(false);
+                                  if (!notif.isRead) markAsRead(notif._id);
+                                }}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-bold shadow-2xs transition-colors"
+                              >
+                                <CreditCard className="h-3 w-3" />
+                                <span>Review Applications</span>
+                              </Link>
+                            ) : notif.subscriptionStatus === 'APPROVED' ? (
+                              <div className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-1">
+                                <CheckCircle2 className="h-3.5 w-3.5" />
+                                <span>Request Approved</span>
+                              </div>
+                            ) : (
+                              <div className="text-[11px] font-semibold text-zinc-400 inline-flex items-center gap-1">
+                                <XCircle className="h-3.5 w-3.5" />
+                                <span>Request Rejected</span>
+                              </div>
+                            )}
                           </div>
                         )}
 
                         {notif.type === 'KYC_SUBMITTED' && isSuperAdmin && (
                           <div className="mt-2 pt-2 border-t border-zinc-100 dark:border-zinc-800">
-                            <Link
-                              to={
-                                notif.data?.targetUserId
-                                  ? `/platform-admin/users?kyc=PENDING&userId=${notif.data.targetUserId}`
-                                  : '/platform-admin/users?kyc=PENDING'
-                              }
-                              onClick={() => {
-                                setIsOpen(false);
-                                if (!notif.isRead) markAsRead(notif._id);
-                              }}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-[10px] font-bold shadow-2xs transition-colors"
-                            >
-                              <FileCheck2 className="h-3 w-3" />
-                              <span>Review User Identity</span>
-                            </Link>
+                            {notif.kycStatus === 'PENDING' ? (
+                              <Link
+                                to={
+                                  notif.data?.targetUserId
+                                    ? `/platform-admin/users?kyc=PENDING&userId=${notif.data.targetUserId}`
+                                    : '/platform-admin/users?kyc=PENDING'
+                                }
+                                onClick={() => {
+                                  setIsOpen(false);
+                                  if (!notif.isRead) markAsRead(notif._id);
+                                }}
+                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-[10px] font-bold shadow-2xs transition-colors"
+                              >
+                                <FileCheck2 className="h-3 w-3" />
+                                <span>Review User Identity</span>
+                              </Link>
+                            ) : notif.kycStatus === 'VERIFIED' ? (
+                              <div className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-1">
+                                <ShieldCheck className="h-3.5 w-3.5" />
+                                <span>Identity Verified</span>
+                              </div>
+                            ) : (
+                              <div className="text-[11px] font-semibold text-zinc-400 inline-flex items-center gap-1">
+                                <XCircle className="h-3.5 w-3.5" />
+                                <span>Identity Rejected</span>
+                              </div>
+                            )}
                           </div>
                         )}
 

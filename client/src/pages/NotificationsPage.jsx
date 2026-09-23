@@ -636,14 +636,26 @@ export const NotificationsPage = () => {
 
                     {notif.type === 'SUBSCRIPTION_REQUEST' && isSuperAdmin && (
                       <div className="mt-3 pt-2.5 border-t border-zinc-100 dark:border-zinc-800 flex items-center gap-3">
-                        <Link
-                          to="/platform-admin/subscriptions"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-xs transition-colors"
-                        >
-                          <CreditCard className="h-3.5 w-3.5" />
-                          <span>Review in Administration Console</span>
-                          <ArrowRight className="h-3 w-3" />
-                        </Link>
+                        {notif.subscriptionStatus === 'PENDING' ? (
+                          <Link
+                            to="/platform-admin/subscriptions"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-xs transition-colors"
+                          >
+                            <CreditCard className="h-3.5 w-3.5" />
+                            <span>Review in Administration Console</span>
+                            <ArrowRight className="h-3 w-3" />
+                          </Link>
+                        ) : notif.subscriptionStatus === 'APPROVED' ? (
+                          <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-1.5">
+                            <CheckCircle2 className="h-4 w-4" />
+                            <span>Subscription Request Approved</span>
+                          </div>
+                        ) : (
+                          <div className="text-xs font-semibold text-zinc-400 inline-flex items-center gap-1.5">
+                            <XCircle className="h-4 w-4" />
+                            <span>Subscription Request Rejected</span>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -661,18 +673,30 @@ export const NotificationsPage = () => {
 
                     {notif.type === 'KYC_SUBMITTED' && isSuperAdmin && (
                       <div className="mt-3 pt-2.5 border-t border-zinc-100 dark:border-zinc-800 flex items-center gap-3">
-                        <Link
-                          to={
-                            notif.data?.targetUserId
-                              ? `/platform-admin/users?kyc=PENDING&userId=${notif.data.targetUserId}`
-                              : '/platform-admin/users?kyc=PENDING'
-                          }
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold shadow-xs transition-colors"
-                        >
-                          <FileCheck2 className="h-3.5 w-3.5" />
-                          <span>Review Identity Document</span>
-                          <ArrowRight className="h-3 w-3" />
-                        </Link>
+                        {notif.kycStatus === 'PENDING' ? (
+                          <Link
+                            to={
+                              notif.data?.targetUserId
+                                ? `/platform-admin/users?kyc=PENDING&userId=${notif.data.targetUserId}`
+                                : '/platform-admin/users?kyc=PENDING'
+                            }
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold shadow-xs transition-colors"
+                          >
+                            <FileCheck2 className="h-3.5 w-3.5" />
+                            <span>Review Identity Document</span>
+                            <ArrowRight className="h-3 w-3" />
+                          </Link>
+                        ) : notif.kycStatus === 'VERIFIED' ? (
+                          <div className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-1.5">
+                            <ShieldCheck className="h-4 w-4" />
+                            <span>Identity Document Verified</span>
+                          </div>
+                        ) : (
+                          <div className="text-xs font-semibold text-zinc-400 inline-flex items-center gap-1.5">
+                            <XCircle className="h-4 w-4" />
+                            <span>Identity Document Rejected</span>
+                          </div>
+                        )}
                       </div>
                     )}
 
