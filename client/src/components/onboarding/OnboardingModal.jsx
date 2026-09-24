@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useBusiness } from '../../hooks/useBusiness';
 import { authService } from '../../services/authService';
@@ -35,9 +35,13 @@ import {
 
 export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, updateUser, logout } = useAuth();
   const { refreshBusiness } = useBusiness();
   const { showSuccess, showError } = useSnackbar();
+
+  const searchParams = new URLSearchParams(location.search);
+  const isKycRequiredRedirect = searchParams.get('required') === 'kyc';
 
   // Determine initial step:
   const hasExistingAddress = Boolean(
@@ -51,12 +55,18 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
       user?.kyc?.status !== 'NOT_SUBMITTED'
   );
 
+  // If user already completed address, skipped KYC previously, or was redirected from a KYC-mandatory feature:
+  // previous steps (Step 1 Personal Details & Step 2 Address) are permanently disabled/completed.
+  const isPreviousStepsDisabled = Boolean(
+    hasExistingAddress || user?.kycSkipped || isKycRequiredRedirect
+  );
+
   const [currentStep, setCurrentStep] = useState(() => {
     if (hasExistingAddress && isKycSubmitted) {
       if (user?.kyc?.status === 'REJECTED') return 3;
       return 5; // Completed state
     }
-    if (hasExistingAddress && !isKycSubmitted) {
+    if (hasExistingAddress || user?.kycSkipped || isKycRequiredRedirect) {
       return 3; // Document selection
     }
     return 1; // Start at step 1
@@ -331,6 +341,35 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
     }
   };
 
+  const handleSkipKyc = async () => {
+    try {
+      setLoading(true);
+      const res = await authService.updateOnboarding({ skipKyc: true });
+      if (res?.user) updateUser(res.user);
+      if (refreshBusiness) refreshBusiness();
+      showSuccess('KYC skipped. You can access the app and complete verification later.');
+      if (onClose) onClose();
+      if (user?.userType === 'CUSTOMER') {
+        navigate(ROUTES.CUSTOMER_PURCHASES, { replace: true });
+      } else {
+        navigate(ROUTES.DASHBOARD, { replace: true });
+      }
+    } catch (err) {
+      showError(err.message || 'Failed to skip KYC.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReturnToDashboard = () => {
+    if (onClose) onClose();
+    if (user?.userType === 'CUSTOMER') {
+      navigate(ROUTES.CUSTOMER_PURCHASES, { replace: true });
+    } else {
+      navigate(ROUTES.DASHBOARD, { replace: true });
+    }
+  };
+
   const handleSignOut = () => {
     logout();
     navigate(ROUTES.LOGIN, { replace: true });
@@ -339,14 +378,17 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
   if (!isOpen) return null;
 
   // Multiple steps progression: Step 1 (25%), Step 2 (50%), Step 3 (75%), Step 4 (100%), Step 5 (100%)
-  const progressPercent =
-    currentStep === 1
-      ? 25
-      : currentStep === 2
+  const progressPercent = isPreviousStepsDisabled
+    ? currentStep === 3
       ? 50
-      : currentStep === 3
-      ? 75
-      : 100;
+      : 100
+    : currentStep === 1
+    ? 25
+    : currentStep === 2
+    ? 50
+    : currentStep === 3
+    ? 75
+    : 100;
 
   const maxDobDate = new Date().toISOString().split('T')[0];
   const formattedAddressDisplay =
@@ -375,12 +417,19 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-0.5">
                   <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-wider font-mono text-zinc-700 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md border border-zinc-200 dark:border-zinc-700 shrink-0 whitespace-nowrap">
-                    {currentStep === 5 ? 'Completed' : `Step ${currentStep} of 4`}
+                    {currentStep === 5
+                      ? 'Completed'
+                      : isPreviousStepsDisabled
+                      ? `KYC Step ${currentStep - 2} of 2`
+                      : `Step ${currentStep} of 4`}
                   </span>
                   <span className="text-[11px] sm:text-xs font-medium text-zinc-500 dark:text-zinc-400 truncate">
                     {currentStep === 1 && 'Personal Information'}
                     {currentStep === 2 && 'Official Address'}
-                    {currentStep === 3 && 'Document Information'}
+                    {currentStep === 3 &&
+                      (isPreviousStepsDisabled
+                        ? 'Document Information (Steps 1-2 Completed & Locked)'
+                        : 'Document Information')}
                     {currentStep === 4 && 'Upload KYC Photos'}
                     {currentStep === 5 && 'Verification Submitted'}
                   </span>
@@ -555,6 +604,21 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
               onSubmit={handleStep3DocSubmit}
               className="space-y-4"
             >
+              {/* KYC Required Alert Banner */}
+              {isKycRequiredRedirect && (
+                <div className="p-3.5 rounded-2xl bg-zinc-100 dark:bg-zinc-800/80 border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-700 dark:text-zinc-300 flex items-start gap-2.5">
+                  <ShieldAlert className="h-4 w-4 text-zinc-500 dark:text-zinc-400 shrink-0 mt-0.5" />
+                  <div>
+                    <span className="font-semibold block mb-0.5 text-zinc-900 dark:text-zinc-100">
+                      Identity Verification (KYC) Required
+                    </span>
+                    <span>
+                      KYC verification is required to access Sales, Purchases, Parties, and Subscription management. You skipped this step previously. Please upload your identity documents to continue. Previous onboarding steps are completed and locked.
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* Address & Contact Recap Badge */}
               <div className="p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 flex items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-2 min-w-0">
@@ -575,13 +639,20 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
                     )}
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setCurrentStep(2)}
-                  className="text-[11px] font-medium text-zinc-900 dark:text-zinc-100 underline underline-offset-2 hover:opacity-75 shrink-0"
-                >
-                  Edit Address
-                </button>
+                {isPreviousStepsDisabled ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium text-zinc-500 dark:text-zinc-400 bg-zinc-100 dark:bg-zinc-800/80 px-2.5 py-1 rounded-md border border-zinc-200/80 dark:border-zinc-700/80 shrink-0">
+                    <CheckCircle2 className="h-3 w-3 text-zinc-500" />
+                    <span>Locked</span>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep(2)}
+                    className="text-[11px] font-medium text-zinc-900 dark:text-zinc-100 underline underline-offset-2 hover:opacity-75 shrink-0"
+                  >
+                    Edit Address
+                  </button>
+                )}
               </div>
 
               {/* Rejection Alert if Applicable */}
@@ -919,15 +990,27 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
                 <span>Back to Personal</span>
               </button>
             ) : currentStep === 3 ? (
-              <button
-                type="button"
-                onClick={() => setCurrentStep(2)}
-                disabled={loading}
-                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 cursor-pointer"
-              >
-                <ArrowLeft className="h-3.5 w-3.5" />
-                <span>Back to Address</span>
-              </button>
+              !isPreviousStepsDisabled ? (
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(2)}
+                  disabled={loading}
+                  className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-xs font-semibold text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50 cursor-pointer"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  <span>Back to Address</span>
+                </button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={handleReturnToDashboard}
+                  disabled={loading}
+                  className="text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-750"
+                >
+                  <span>Return to Dashboard</span>
+                </Button>
+              )
             ) : currentStep === 4 ? (
               <button
                 type="button"
@@ -943,7 +1026,7 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
             )}
 
             {/* Forward Action Buttons */}
-            <div className="flex items-center justify-end">
+            <div className="flex flex-wrap items-center justify-end gap-2">
               {currentStep === 1 && (
                 <Button
                   type="submit"
@@ -970,28 +1053,50 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
               )}
 
               {currentStep === 3 && (
-                <Button
-                  type="submit"
-                  form="step-3-doc-form"
-                  variant="primary"
-                  className="w-full sm:w-auto"
-                >
-                  <span>Continue to Photo Upload</span>
-                  <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
-                </Button>
+                <>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={user?.kycSkipped ? handleReturnToDashboard : handleSkipKyc}
+                    disabled={loading}
+                    className="w-full sm:w-auto text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-750"
+                  >
+                    <span>{user?.kycSkipped ? 'Return to Dashboard' : 'Skip for now'}</span>
+                  </Button>
+                  <Button
+                    type="submit"
+                    form="step-3-doc-form"
+                    variant="primary"
+                    className="w-full sm:w-auto"
+                  >
+                    <span>Continue to Photo Upload</span>
+                    <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
+                  </Button>
+                </>
               )}
 
               {currentStep === 4 && (
-                <Button
-                  type="submit"
-                  form="step-4-photos-form"
-                  variant="primary"
-                  loading={loading}
-                  className="w-full sm:w-auto"
-                >
-                  <FileCheck2 className="h-3.5 w-3.5 mr-1.5" />
-                  <span>Submit KYC Details</span>
-                </Button>
+                <>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={user?.kycSkipped ? handleReturnToDashboard : handleSkipKyc}
+                    disabled={loading}
+                    className="w-full sm:w-auto text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-750"
+                  >
+                    <span>{user?.kycSkipped ? 'Return to Dashboard' : 'Skip for now'}</span>
+                  </Button>
+                  <Button
+                    type="submit"
+                    form="step-4-photos-form"
+                    variant="primary"
+                    loading={loading}
+                    className="w-full sm:w-auto"
+                  >
+                    <FileCheck2 className="h-3.5 w-3.5 mr-1.5" />
+                    <span>Submit KYC Details</span>
+                  </Button>
+                </>
               )}
 
               {currentStep === 5 && (
@@ -1016,7 +1121,13 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
           <div className="space-y-1 pt-1 border-t border-zinc-200/60 dark:border-zinc-800">
             <div className="flex items-center justify-between text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
               <span className="truncate">
-                {currentStep === 1
+                {isPreviousStepsDisabled
+                  ? currentStep === 3
+                    ? 'KYC Step 1 of 2: Document Details (Address Verified)'
+                    : currentStep === 4
+                    ? 'KYC Step 2 of 2: Upload KYC Photos'
+                    : 'Verification Complete'
+                  : currentStep === 1
                   ? 'Step 1 of 4: Personal Information'
                   : currentStep === 2
                   ? 'Step 2 of 4: Official Address'

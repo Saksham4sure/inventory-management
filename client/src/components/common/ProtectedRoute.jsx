@@ -22,8 +22,9 @@ export const ProtectedRoute = () => {
   }
 
   // Mandatory Verification Gate:
-  // Both Business and Customer users must complete their verified details and KYC
-  // on the onboarding screen before they get to operate the app.
+  // Address is mandatory for all users before operating the app.
+  // Users who choose "Skip for now" on KYC can access general operations.
+  // Users who are not fully verified can still visit Onboarding to complete their KYC.
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   if (!isSuperAdmin) {
     const hasVerifiedAddress = Boolean(
@@ -37,15 +38,16 @@ export const ProtectedRoute = () => {
       user?.kyc?.status !== 'NOT_SUBMITTED' &&
       user?.kyc?.status !== 'REJECTED'
     );
+    const isKycVerified = user?.kyc?.status === 'VERIFIED';
+    const canAccessGeneralApp = hasVerifiedAddress && (hasUploadedKyc || user?.kycSkipped || user?.onboardingCompleted);
 
-    const isVerificationComplete = hasVerifiedAddress && hasUploadedKyc;
-
-    if (!isVerificationComplete) {
+    if (!canAccessGeneralApp) {
       if (location.pathname !== ROUTES.ONBOARDING && location.pathname !== ROUTES.BUSINESS_SETUP) {
         return <Navigate to={ROUTES.ONBOARDING} replace />;
       }
     } else {
-      if (location.pathname === ROUTES.ONBOARDING || location.pathname === ROUTES.BUSINESS_SETUP) {
+      // Only redirect away from Onboarding if user has fully verified KYC
+      if (isKycVerified && (location.pathname === ROUTES.ONBOARDING || location.pathname === ROUTES.BUSINESS_SETUP)) {
         return <Navigate to={user?.userType === 'CUSTOMER' ? ROUTES.CUSTOMER_PURCHASES : ROUTES.DASHBOARD} replace />;
       }
     }

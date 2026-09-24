@@ -25,6 +25,7 @@ import {
   Building2,
   CreditCard,
   ShieldCheck,
+  ShieldAlert,
   FileCheck2,
   Clock,
   XCircle,
@@ -246,6 +247,35 @@ export const DashboardPage = () => {
           </div>
         </div>
       )}
+
+      {/* KYC Alert Banner if Skipped / Not Submitted */}
+      {(user?.kyc?.status === 'NOT_SUBMITTED' || !user?.kyc?.status || user?.kycSkipped) &&
+        user?.kyc?.status !== 'PENDING' &&
+        user?.kyc?.status !== 'VERIFIED' &&
+        user?.kyc?.status !== 'REJECTED' && (
+          <div className="rounded-2xl bg-zinc-100 dark:bg-zinc-850/80 border border-zinc-200 dark:border-zinc-750 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-zinc-800 dark:text-zinc-200">
+            <div className="flex items-start sm:items-center gap-3">
+              <div className="h-9 w-9 rounded-xl bg-zinc-200/80 dark:bg-zinc-750 text-zinc-600 dark:text-zinc-300 flex items-center justify-center shrink-0">
+                <ShieldAlert className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="font-bold text-xs">Identity Verification (KYC) Required for Key Features</p>
+                <p className="text-[11px] text-zinc-600 dark:text-zinc-400 mt-0.5">
+                  You skipped KYC verification during onboarding. Verification is required to unlock Sales, Purchases, Parties, and Subscription management.
+                </p>
+              </div>
+            </div>
+            <Link to={`${ROUTES.ONBOARDING}?required=kyc`} className="shrink-0">
+              <Button
+                variant="secondary"
+                size="sm"
+                className="rounded-xl whitespace-nowrap text-xs border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+              >
+                Verify KYC Documents <ArrowRight className="h-3 w-3 ml-1" />
+              </Button>
+            </Link>
+          </div>
+        )}
 
       {/* Onboarding Banner if Business Setup was Skipped */}
       {!hasBusiness && (

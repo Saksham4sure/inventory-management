@@ -11,6 +11,7 @@ import { PlatformAdminLayout } from '../components/layout/PlatformAdminLayout';
 // Route Guards
 import { ProtectedRoute } from '../components/common/ProtectedRoute';
 import { BusinessRoute } from '../components/common/BusinessRoute';
+import { KycRoute } from '../components/common/KycRoute';
 import { SuperAdminRoute } from '../components/common/SuperAdminRoute';
 
 // Lazy-loaded pages for standard tenant workspace
@@ -75,8 +76,9 @@ export const AppRoutes = () => {
       user?.kyc?.status !== 'NOT_SUBMITTED' &&
       user?.kyc?.status !== 'REJECTED'
     );
+    const hasSkippedKyc = Boolean(user?.kycSkipped || user?.onboardingCompleted);
 
-    if (!hasAddress || !hasKyc) {
+    if (!hasAddress || (!hasKyc && !hasSkippedKyc)) {
       return ROUTES.ONBOARDING;
     }
 
@@ -172,7 +174,10 @@ export const AppRoutes = () => {
             <Route path={ROUTES.PROFILE} element={<ProfilePage />} />
             <Route path={ROUTES.CUSTOMER_PURCHASES} element={<CustomerPurchasesPage />} />
             <Route path={ROUTES.CUSTOMER_CREDITS} element={<CustomerCreditsPage />} />
-            <Route path={ROUTES.SUBSCRIPTION} element={<SubscriptionPage />} />
+            {/* Subscription Route (requires verified KYC) */}
+            <Route element={<KycRoute />}>
+              <Route path={ROUTES.SUBSCRIPTION} element={<SubscriptionPage />} />
+            </Route>
             <Route path={ROUTES.BUSINESS_PROFILE} element={<BusinessProfilePage />} />
             <Route path={ROUTES.TEAM} element={<TeamPage />} />
 
@@ -180,10 +185,14 @@ export const AppRoutes = () => {
             <Route element={<BusinessRoute />}>
               <Route path={ROUTES.PRODUCTS} element={<ProductsPage />} />
               <Route path={ROUTES.SCAN} element={<QRScanPage />} />
-              <Route path={ROUTES.SALES} element={<SalesPage />} />
-              <Route path={ROUTES.PURCHASES} element={<PurchasesPage />} />
-              <Route path={ROUTES.PARTIES} element={<PartiesPage />} />
               <Route path={ROUTES.TRANSACTIONS} element={<TransactionsPage />} />
+
+              {/* KYC-Mandatory Business Operations */}
+              <Route element={<KycRoute />}>
+                <Route path={ROUTES.SALES} element={<SalesPage />} />
+                <Route path={ROUTES.PURCHASES} element={<PurchasesPage />} />
+                <Route path={ROUTES.PARTIES} element={<PartiesPage />} />
+              </Route>
             </Route>
           </Route>
         </Route>

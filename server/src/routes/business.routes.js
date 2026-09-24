@@ -8,7 +8,7 @@ import {
   changeBusinessSubscription,
   cancelSubscriptionRequest,
 } from '../controllers/business.controller.js';
-import { authenticate, authorize } from '../middlewares/auth.middleware.js';
+import { authenticate, authorize, requireKyc } from '../middlewares/auth.middleware.js';
 import { requireBusiness } from '../middlewares/business.middleware.js';
 import { ROLES } from '../constants/roles.js';
 
@@ -34,11 +34,12 @@ router.put(
 
 // Subscription details & plan switching for tenant users
 // Strictly limited to Business OWNER only (no managers or members)
-router.get('/subscription', authenticate, getBusinessSubscription);
+router.get('/subscription', authenticate, requireKyc, getBusinessSubscription);
 router.post(
   '/subscription/change',
   authenticate,
   requireBusiness,
+  requireKyc,
   authorize(ROLES.OWNER),
   changeBusinessSubscription
 );
@@ -46,6 +47,7 @@ router.post(
   '/subscription/cancel-request',
   authenticate,
   requireBusiness,
+  requireKyc,
   authorize(ROLES.OWNER),
   cancelSubscriptionRequest
 );

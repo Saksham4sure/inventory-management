@@ -8,16 +8,9 @@ export const OnboardingPage = () => {
   const { user } = useAuth();
 
   const hasAddress = Boolean(user?.location?.formattedAddress && user?.location?.formattedAddress.trim());
-  const hasKyc = Boolean(
-    user?.kyc?.documentNumber &&
-    user?.kyc?.frontImage &&
-    user?.kyc?.backImage &&
-    user?.kyc?.status &&
-    user?.kyc?.status !== 'NOT_SUBMITTED' &&
-    user?.kyc?.status !== 'REJECTED'
-  );
+  const isKycVerified = user?.kyc?.status === 'VERIFIED';
 
-  if (hasAddress && hasKyc && user?.onboardingCompleted) {
+  if (hasAddress && isKycVerified) {
     if (user?.userType === 'CUSTOMER') {
       return <Navigate to={ROUTES.CUSTOMER_PURCHASES} replace />;
     }

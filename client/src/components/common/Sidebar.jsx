@@ -19,6 +19,7 @@ import {
   ChevronRight,
   Sparkles,
   Bell,
+  Lock,
 } from 'lucide-react';
 import { useNotifications } from '../../hooks/useNotifications';
 import { ROUTES } from '../../constants/routes';
@@ -29,6 +30,7 @@ export const Sidebar = ({ isMobileOpen, onClose }) => {
   const { unreadCount } = useNotifications();
 
   const isCustomer = user?.userType === 'CUSTOMER' || (!user?.businessId && user?.role === 'USER');
+  const isKycVerified = user?.role === 'SUPER_ADMIN' || user?.kyc?.status === 'VERIFIED';
 
   // Customer portal nav items
   const customerNavItems = [
@@ -40,9 +42,9 @@ export const Sidebar = ({ isMobileOpen, onClose }) => {
     { label: 'Dashboard', path: ROUTES.DASHBOARD, icon: LayoutDashboard },
     { label: 'Products & Stock', path: ROUTES.PRODUCTS, icon: Boxes },
     { label: 'Scan & Register', path: ROUTES.SCAN, icon: ScanLine, highlight: true },
-    { label: 'Sales & Returns', path: ROUTES.SALES, icon: TrendingUp },
-    { label: 'Purchases & Stock In', path: ROUTES.PURCHASES, icon: ShoppingCart },
-    { label: 'Parties & Credits', path: ROUTES.PARTIES, icon: Users },
+    { label: 'Sales & Returns', path: ROUTES.SALES, icon: TrendingUp, requiresKyc: true },
+    { label: 'Purchases & Stock In', path: ROUTES.PURCHASES, icon: ShoppingCart, requiresKyc: true },
+    { label: 'Parties & Credits', path: ROUTES.PARTIES, icon: Users, requiresKyc: true },
     { label: 'Full Audit Trail', path: ROUTES.TRANSACTIONS, icon: ArrowLeftRight },
   ];
 
@@ -55,7 +57,7 @@ export const Sidebar = ({ isMobileOpen, onClose }) => {
         { label: 'Notifications', path: ROUTES.NOTIFICATIONS, icon: Bell, badge: unreadCount },
         { label: 'Business Profile', path: ROUTES.BUSINESS_PROFILE, icon: Building2 },
         { label: 'Team Members', path: ROUTES.TEAM, icon: Users },
-        { label: 'Subscription & Plans', path: ROUTES.SUBSCRIPTION, icon: CreditCard },
+        { label: 'Subscription & Plans', path: ROUTES.SUBSCRIPTION, icon: CreditCard, requiresKyc: true },
         { label: 'User Profile', path: ROUTES.PROFILE, icon: User },
       ];
 
@@ -93,6 +95,12 @@ export const Sidebar = ({ isMobileOpen, onClose }) => {
               </div>
               {isActive && (
                 <span className="h-1.5 w-1.5 rounded-full bg-white dark:bg-zinc-950 shrink-0" />
+              )}
+              {item.requiresKyc && !isKycVerified && !isActive && (
+                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200/60 dark:border-zinc-750 font-mono flex items-center gap-1 shrink-0">
+                  <Lock className="h-2.5 w-2.5" />
+                  <span>KYC</span>
+                </span>
               )}
               {item.badge > 0 && !isActive && (
                 <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-indigo-600 text-white font-mono shadow-2xs">
@@ -166,23 +174,27 @@ export const Sidebar = ({ isMobileOpen, onClose }) => {
           <Link
             to={ROUTES.SUBSCRIPTION}
             onClick={onClose}
-            className="group/sub block rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-zinc-50 dark:bg-[#181b22]/70 p-3 shadow-2xs hover:border-indigo-500/40 dark:hover:border-indigo-500/40 transition-all duration-200 active:scale-[0.98]"
+            className="group/sub block rounded-2xl border border-black/[0.06] dark:border-white/[0.08] bg-zinc-50 dark:bg-[#181b22]/70 p-3 shadow-2xs hover:border-zinc-400 dark:hover:border-zinc-600 transition-all duration-200 active:scale-[0.98]"
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 group-hover/sub:scale-110 transition-transform">
-                  <Sparkles className="h-3.5 w-3.5" />
+                <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-zinc-200/60 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-400 group-hover/sub:scale-110 transition-transform">
+                  {!isKycVerified ? <Lock className="h-3.5 w-3.5" /> : <Sparkles className="h-3.5 w-3.5" />}
                 </div>
                 <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 tracking-tight">
                   {business?.subscription?.plan?.replace('_', ' ') || 'Starter Plan'}
                 </span>
               </div>
-              <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 font-mono">
-                {business?.subscription?.status || 'TRIAL'}
+              <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full font-mono ${
+                !isKycVerified
+                  ? 'bg-zinc-200 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
+                  : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300'
+              }`}>
+                {!isKycVerified ? 'KYC REQ' : business?.subscription?.status || 'TRIAL'}
               </span>
             </div>
             <div className="flex items-center justify-between mt-1.5 text-[11px] text-zinc-500 dark:text-zinc-400">
-              <span>Manage & Extend Tier</span>
+              <span>{!isKycVerified ? 'Verify KYC to Manage Tier' : 'Manage & Extend Tier'}</span>
               <ChevronRight className="h-3 w-3 text-zinc-400 group-hover/sub:translate-x-0.5 transition-transform" />
             </div>
           </Link>

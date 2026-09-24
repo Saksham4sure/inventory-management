@@ -5,7 +5,7 @@ import {
   getDashboardSummary,
   deleteTransaction,
 } from '../controllers/transaction.controller.js';
-import { authenticate } from '../middlewares/auth.middleware.js';
+import { authenticate, requireKyc } from '../middlewares/auth.middleware.js';
 import { requireBusiness } from '../middlewares/business.middleware.js';
 
 const router = Router();
@@ -13,8 +13,8 @@ const router = Router();
 router.use(authenticate, requireBusiness);
 
 router.get('/dashboard', getDashboardSummary);
-router.get('/', getTransactions);
-router.post('/', createTransaction);
-router.delete('/:id', deleteTransaction);
+router.get('/', requireKyc, getTransactions);
+router.post('/', requireKyc, createTransaction);
+router.delete('/:id', requireKyc, deleteTransaction);
 
 export default router;

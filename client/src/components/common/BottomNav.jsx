@@ -5,16 +5,21 @@ import {
   ScanLine,
   TrendingUp,
   ShoppingCart,
+  Lock,
 } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
 import { ROUTES } from '../../constants/routes';
 
 export const BottomNav = () => {
+  const { user } = useAuth();
+  const isKycVerified = user?.role === 'SUPER_ADMIN' || user?.kyc?.status === 'VERIFIED';
+
   const tabs = [
     { label: 'Overview', path: ROUTES.DASHBOARD, icon: LayoutDashboard },
     { label: 'Products', path: ROUTES.PRODUCTS, icon: Boxes },
     { label: 'Scan QR', path: ROUTES.SCAN, icon: ScanLine, isPrimary: true },
-    { label: 'Sales', path: ROUTES.SALES, icon: TrendingUp },
-    { label: 'Purchases', path: ROUTES.PURCHASES, icon: ShoppingCart },
+    { label: 'Sales', path: ROUTES.SALES, icon: TrendingUp, requiresKyc: true },
+    { label: 'Purchases', path: ROUTES.PURCHASES, icon: ShoppingCart, requiresKyc: true },
   ];
 
   return (
@@ -60,6 +65,11 @@ export const BottomNav = () => {
                 <>
                   <div className="relative">
                     <Icon className="h-4.5 w-4.5" />
+                    {tab.requiresKyc && !isKycVerified && (
+                      <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-600 dark:text-zinc-300 flex items-center justify-center">
+                        <Lock className="h-1.5 w-1.5" />
+                      </span>
+                    )}
                     {isActive && (
                       <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-zinc-900 dark:bg-zinc-100" />
                     )}

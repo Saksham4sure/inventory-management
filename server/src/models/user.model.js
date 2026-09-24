@@ -135,6 +135,10 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    kycSkipped: {
+      type: Boolean,
+      default: false,
+    },
     businessId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Business',

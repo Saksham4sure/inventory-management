@@ -44,3 +44,17 @@ export const authorize = (...roles) => {
     next();
   };
 };
+
+export const requireKyc = (req, res, next) => {
+  if (req.user?.role === 'SUPER_ADMIN') {
+    return next();
+  }
+  if (req.user?.kyc?.status !== 'VERIFIED') {
+    throw new ApiError(
+      403,
+      'Identity verification (KYC) required. Please complete your identity verification in onboarding before accessing this resource.'
+    );
+  }
+  next();
+};
+

@@ -511,6 +511,52 @@ export const updateOnboarding = asyncHandler(async (req, res) => {
     user.onboardingStep = Math.max(user.onboardingStep || 1, 2);
   }
 
+  // SKIP KYC OPTION (Allows user to access the app while deferring KYC verification)
+  if (req.body.skipKyc) {
+    user.kycSkipped = true;
+    user.onboardingCompleted = true;
+    user.onboardingStep = Math.max(user.onboardingStep || 1, 3);
+
+    // Ensure business entity exists for business user with this verified address
+    if (user.userType === 'BUSINESS' && !user.businessId) {
+      const defaultTrialPlan =
+        (await SubscriptionPlan.findOne({
+          isDefaultTrial: true,
+          isActive: true,
+        })) ||
+        (await SubscriptionPlan.findOne({ isActive: true }).sort({ tierOrder: 1 }));
+
+      const now = new Date();
+      const trialDays = 14;
+      const trialEndDate = new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1000);
+
+      const newBiz = await Business.create({
+        name: `${user.name}'s Business`,
+        owner: user._id,
+        category: 'General Retail',
+        currency: 'NPR',
+        phone: user.phone || '',
+        email: user.email,
+        address: user.location?.formattedAddress || '',
+        subscription: {
+          plan: defaultTrialPlan ? defaultTrialPlan.planId : 'STARTER',
+          status: 'TRIAL',
+          startDate: now,
+          endDate: trialEndDate,
+          isTrial: true,
+        },
+        members: [
+          {
+            user: user._id,
+            role: ROLES.OWNER,
+            joinedAt: now,
+          },
+        ],
+      });
+      user.businessId = newBiz._id;
+    }
+  }
+
   // STEP 2: KYC Details Upload
   if (step === 2 || kyc) {
     if (kyc && kyc.frontImage && kyc.backImage) {
@@ -532,6 +578,7 @@ export const updateOnboarding = asyncHandler(async (req, res) => {
         rejectionReason: '',
       };
 
+      user.kycSkipped = false;
       user.onboardingCompleted = true;
       user.onboardingStep = 2;
 
