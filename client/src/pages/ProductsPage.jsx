@@ -8,6 +8,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Select } from '../components/ui/Select';
 import { Modal } from '../components/ui/Modal';
+import { Badge } from '../components/ui/Badge';
 import { QRViewerModal } from '../components/common/QRViewerModal';
 import { formatCurrency, formatStockBadge } from '../utils/formatters';
 import {
