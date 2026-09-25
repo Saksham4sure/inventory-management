@@ -269,7 +269,14 @@ export const createExpense = asyncHandler(async (req, res) => {
     throw new ApiError(400, 'Expense amount must be a positive number');
   }
 
-  if (!category || !category.trim()) {
+  const cleanCategory = typeof category === 'object' && category !== null
+    ? (category.target?.value || category.value || '')
+    : String(category || '').trim();
+  const cleanPaymentMethod = typeof paymentMethod === 'object' && paymentMethod !== null
+    ? (paymentMethod.target?.value || paymentMethod.value || 'CASH')
+    : String(paymentMethod || 'CASH').trim();
+
+  if (!cleanCategory) {
     throw new ApiError(400, 'Expense category is required');
   }
 
@@ -290,8 +297,8 @@ export const createExpense = asyncHandler(async (req, res) => {
     title: title.trim(),
     amount: numAmount,
     currency: currency.toUpperCase(),
-    category: category.trim(),
-    paymentMethod,
+    category: cleanCategory,
+    paymentMethod: cleanPaymentMethod,
     date: date ? new Date(date) : new Date(),
     notes: notes.trim(),
     referenceNumber: referenceNumber.trim(),
@@ -349,8 +356,19 @@ export const updateExpense = asyncHandler(async (req, res) => {
     expense.amount = num;
   }
   if (currency !== undefined) expense.currency = currency.toUpperCase();
-  if (category !== undefined) expense.category = category.trim();
-  if (paymentMethod !== undefined) expense.paymentMethod = paymentMethod;
+  if (category !== undefined) {
+    const cleanCategory = typeof category === 'object' && category !== null
+      ? (category.target?.value || category.value || '')
+      : String(category || '').trim();
+    if (!cleanCategory) throw new ApiError(400, 'Expense category cannot be empty');
+    expense.category = cleanCategory;
+  }
+  if (paymentMethod !== undefined) {
+    const cleanPayment = typeof paymentMethod === 'object' && paymentMethod !== null
+      ? (paymentMethod.target?.value || paymentMethod.value || 'CASH')
+      : String(paymentMethod || 'CASH').trim();
+    expense.paymentMethod = cleanPayment;
+  }
   if (date !== undefined) expense.date = new Date(date);
   if (notes !== undefined) expense.notes = notes.trim();
   if (referenceNumber !== undefined) expense.referenceNumber = referenceNumber.trim();

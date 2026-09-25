@@ -105,14 +105,26 @@ export const ExpenseFormModal = ({
       return;
     }
 
+    const cleanCategory = typeof category === 'object' && category !== null
+      ? (category.target?.value ?? category.value ?? '')
+      : String(category || '').trim();
+    const cleanPaymentMethod = typeof paymentMethod === 'object' && paymentMethod !== null
+      ? (paymentMethod.target?.value ?? paymentMethod.value ?? 'CASH')
+      : String(paymentMethod || 'CASH').trim();
+
+    if (!cleanCategory) {
+      showError('Please select an expense category');
+      return;
+    }
+
     try {
       setLoading(true);
       const payload = {
         title: title.trim(),
         amount: numAmount,
         currency,
-        category,
-        paymentMethod,
+        category: cleanCategory,
+        paymentMethod: cleanPaymentMethod,
         date,
         referenceNumber: referenceNumber.trim(),
         notes: notes.trim(),
@@ -214,18 +226,23 @@ export const ExpenseFormModal = ({
         </div>
 
         {/* Category & Payment Method Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-30">
           <Select
             label="Category *"
+            id="expense-category"
+            name="category"
             value={category}
-            onChange={(val) => setCategory(val)}
+            onChange={(e) => setCategory(e?.target?.value ?? e)}
             options={categoryOptions}
+            searchable
           />
 
           <Select
             label="Payment Method"
+            id="expense-payment-method"
+            name="paymentMethod"
             value={paymentMethod}
-            onChange={(val) => setPaymentMethod(val)}
+            onChange={(e) => setPaymentMethod(e?.target?.value ?? e)}
             options={PAYMENT_METHODS}
           />
         </div>

@@ -105,10 +105,17 @@ export const BusinessExpensesPage = () => {
   const fetchExpenses = useCallback(async () => {
     try {
       setLoading(true);
+      const cleanCategory = typeof category === 'object' && category !== null
+        ? (category.target?.value ?? category.value ?? 'ALL')
+        : category;
+      const cleanPayment = typeof paymentMethod === 'object' && paymentMethod !== null
+        ? (paymentMethod.target?.value ?? paymentMethod.value ?? 'ALL')
+        : paymentMethod;
+
       const params = {
         type: 'BUSINESS',
-        category,
-        paymentMethod,
+        category: cleanCategory,
+        paymentMethod: cleanPayment,
         search,
         startDate,
         endDate,
@@ -364,14 +371,14 @@ export const BusinessExpensesPage = () => {
               {/* Category Filter */}
               <Select
                 value={category}
-                onChange={(val) => setCategory(val)}
+                onChange={(e) => setCategory(e?.target?.value ?? e)}
                 options={CATEGORY_FILTER_OPTIONS}
               />
 
               {/* Payment Method Filter */}
               <Select
                 value={paymentMethod}
-                onChange={(val) => setPaymentMethod(val)}
+                onChange={(e) => setPaymentMethod(e?.target?.value ?? e)}
                 options={PAYMENT_FILTER_OPTIONS}
               />
 

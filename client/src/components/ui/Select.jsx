@@ -48,9 +48,18 @@ export const Select = ({
     });
   }
 
+  // Extract primitive value safely (supports string, number, or synthetic event object)
+  const resolvedValue = (() => {
+    if (value === undefined || value === null) return '';
+    if (typeof value === 'object') {
+      return String(value.target?.value ?? value.value ?? '');
+    }
+    return String(value);
+  })();
+
   // Find currently selected option
   const selectedOption = normalizedOptions.find(
-    (opt) => String(opt.value) === String(value)
+    (opt) => String(opt.value) === resolvedValue
   );
 
   // Auto-enable search if there are more than 7 options
@@ -126,13 +135,25 @@ export const Select = ({
 
   const handleSelectOption = (optValue) => {
     if (onChange) {
-      // Send standard synthetic-like event object for React compatibility
-      onChange({
+      // Send standard synthetic-like event object for React compatibility,
+      // with direct value properties and string coercion so it works whether caller
+      // expects (e) => handle(e.target.value) or (val) => setVal(val).
+      const syntheticEvent = {
         target: {
           value: optValue,
           name: name || id,
         },
-      });
+        currentTarget: {
+          value: optValue,
+          name: name || id,
+        },
+        value: optValue,
+        name: name || id,
+        toString: () => String(optValue),
+        valueOf: () => optValue,
+      };
+
+      onChange(syntheticEvent, optValue);
     }
     closeMenu();
   };
@@ -197,7 +218,7 @@ export const Select = ({
         <select
           tabIndex={-1}
           aria-hidden="true"
-          value={value || ''}
+          value={resolvedValue || ''}
           name={name || id}
           onChange={() => {}}
           className="sr-only"
@@ -246,7 +267,7 @@ export const Select = ({
             <div className="max-h-60 overflow-y-auto space-y-0.5 overscroll-contain modal-scroll">
               {filteredOptions.length > 0 ? (
                 filteredOptions.map((opt) => {
-                  const isSelected = String(opt.value) === String(value);
+                  const isSelected = String(opt.value) === resolvedValue;
                   return (
                     <div
                       key={opt.value}

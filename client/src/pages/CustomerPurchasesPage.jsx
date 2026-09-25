@@ -85,9 +85,12 @@ export const CustomerPurchasesPage = () => {
   const fetchExpenses = useCallback(async () => {
     try {
       setExpensesLoading(true);
+      const cleanCategory = typeof category === 'object' && category !== null
+        ? (category.target?.value ?? category.value ?? 'ALL')
+        : category;
       const params = {
         type: 'PERSONAL',
-        category,
+        category: cleanCategory,
         search,
       };
       const res = await expenseService.getExpenses(params);
@@ -359,7 +362,7 @@ export const CustomerPurchasesPage = () => {
 
               <Select
                 value={category}
-                onChange={(val) => setCategory(val)}
+                onChange={(e) => setCategory(e?.target?.value ?? e)}
                 options={PERSONAL_CATEGORY_FILTERS}
               />
             </div>
