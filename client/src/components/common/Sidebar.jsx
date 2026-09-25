@@ -19,6 +19,7 @@ import {
   Sparkles,
   Bell,
   Lock,
+  Receipt,
 } from 'lucide-react';
 import { useNotifications } from '../../hooks/useNotifications';
 import { ROUTES } from '../../constants/routes';
@@ -43,6 +44,7 @@ export const Sidebar = ({ isMobileOpen, onClose }) => {
     { label: 'Scan & Register', path: ROUTES.SCAN, icon: ScanLine, highlight: true },
     { label: 'Sales & Returns', path: ROUTES.SALES, icon: TrendingUp, requiresKyc: true },
     { label: 'Purchases & Stock In', path: ROUTES.PURCHASES, icon: ShoppingCart, requiresKyc: true },
+    { label: 'Business Expenses', path: ROUTES.EXPENSES, icon: Receipt, requiresKyc: true },
     { label: 'Parties & Credits', path: ROUTES.PARTIES, icon: Users, requiresKyc: true },
     { label: 'Full Audit Trail', path: ROUTES.TRANSACTIONS, icon: ArrowLeftRight },
   ];

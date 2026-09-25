@@ -33,7 +33,7 @@ import {
   Users,
 } from 'lucide-react';
 
-export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) => {
+export const OnboardingModal = ({ isOpen = true, onClose }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, updateUser, logout } = useAuth();
@@ -1054,15 +1054,17 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
 
               {currentStep === 3 && (
                 <>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={user?.kycSkipped ? handleReturnToDashboard : handleSkipKyc}
-                    disabled={loading}
-                    className="w-full sm:w-auto text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-750"
-                  >
-                    <span>{user?.kycSkipped ? 'Return to Dashboard' : 'Skip for now'}</span>
-                  </Button>
+                  {!isPreviousStepsDisabled && !user?.kycSkipped && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={handleSkipKyc}
+                      disabled={loading}
+                      className="w-full sm:w-auto text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-750"
+                    >
+                      <span>Skip for now</span>
+                    </Button>
+                  )}
                   <Button
                     type="submit"
                     form="step-3-doc-form"
@@ -1077,15 +1079,17 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
 
               {currentStep === 4 && (
                 <>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={user?.kycSkipped ? handleReturnToDashboard : handleSkipKyc}
-                    disabled={loading}
-                    className="w-full sm:w-auto text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-750"
-                  >
-                    <span>{user?.kycSkipped ? 'Return to Dashboard' : 'Skip for now'}</span>
-                  </Button>
+                  {!isPreviousStepsDisabled && !user?.kycSkipped && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={handleSkipKyc}
+                      disabled={loading}
+                      className="w-full sm:w-auto text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-750"
+                    >
+                      <span>Skip for now</span>
+                    </Button>
+                  )}
                   <Button
                     type="submit"
                     form="step-4-photos-form"

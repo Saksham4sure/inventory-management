@@ -28,6 +28,7 @@ const ProductsPage = lazy(() => import('../pages/ProductsPage'));
 const QRScanPage = lazy(() => import('../pages/QRScanPage'));
 const SalesPage = lazy(() => import('../pages/SalesPage'));
 const PurchasesPage = lazy(() => import('../pages/PurchasesPage'));
+const BusinessExpensesPage = lazy(() => import('../pages/BusinessExpensesPage'));
 const PartiesPage = lazy(() => import('../pages/PartiesPage'));
 const TransactionsPage = lazy(() => import('../pages/TransactionsPage'));
 const SubscriptionPage = lazy(() => import('../pages/SubscriptionPage'));
@@ -191,6 +192,7 @@ export const AppRoutes = () => {
               <Route element={<KycRoute />}>
                 <Route path={ROUTES.SALES} element={<SalesPage />} />
                 <Route path={ROUTES.PURCHASES} element={<PurchasesPage />} />
+                <Route path={ROUTES.EXPENSES} element={<BusinessExpensesPage />} />
                 <Route path={ROUTES.PARTIES} element={<PartiesPage />} />
               </Route>
             </Route>

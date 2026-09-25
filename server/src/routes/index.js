@@ -7,6 +7,7 @@ import partyRoutes from './party.routes.js';
 import teamRoutes from './team.routes.js';
 import notificationRoutes from './notification.routes.js';
 import adminRoutes from './admin.routes.js';
+import expenseRoutes from './expense.routes.js';
 import { getPublicPlans } from '../controllers/admin.controller.js';
 
 const apiRouter = Router();
@@ -18,6 +19,7 @@ apiRouter.use('/notifications', notificationRoutes);
 apiRouter.use('/products', productRoutes);
 apiRouter.use('/transactions', transactionRoutes);
 apiRouter.use('/parties', partyRoutes);
+apiRouter.use('/expenses', expenseRoutes);
 apiRouter.use('/admin', adminRoutes);
 apiRouter.get('/plans', getPublicPlans);
 
