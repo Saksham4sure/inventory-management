@@ -106,7 +106,7 @@ export const ProfilePictureViewModal = ({
                   className="w-full justify-center rounded-xl text-xs py-2.5 font-medium shadow-xs"
                 >
                   <Edit3 className="w-3.5 h-3.5 mr-1.5 shrink-0" />
-                  Edit / Crop
+                  Edit
                 </Button>
               )}
 
