@@ -36,7 +36,7 @@ export const BusinessRoute = () => {
                 </Button>
               </Link>
             ) : (
-              <Link to={ROUTES.BUSINESS_PROFILE}>
+              <Link to={`${ROUTES.PROFILE}?tab=business`}>
                 <Button variant="primary" className="w-full sm:w-auto">
                   Set Up Business <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
                 </Button>

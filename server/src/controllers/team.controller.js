@@ -10,8 +10,8 @@ import { validateEmail } from '../utils/inputValidator.js';
 
 export const getTeam = asyncHandler(async (req, res) => {
   const business = await Business.findById(req.user.businessId)
-    .populate('owner', 'name email role createdAt')
-    .populate('members.user', 'name email role createdAt isActive');
+    .populate('owner', 'name email role createdAt profilePicture avatar')
+    .populate('members.user', 'name email role createdAt isActive profilePicture avatar');
 
   if (!business) {
     throw new ApiError(404, 'Business not found');
@@ -21,7 +21,7 @@ export const getTeam = asyncHandler(async (req, res) => {
     businessId: business._id,
     status: 'PENDING',
   })
-    .populate('invitee', 'name email')
+    .populate('invitee', 'name email profilePicture avatar')
     .populate('inviter', 'name email')
     .sort({ createdAt: -1 });
 
@@ -146,7 +146,7 @@ export const inviteMember = asyncHandler(async (req, res) => {
   });
 
   const populatedInvitation = await Invitation.findById(invitation._id)
-    .populate('invitee', 'name email')
+    .populate('invitee', 'name email profilePicture avatar')
     .populate('inviter', 'name email');
 
   res.status(201).json(

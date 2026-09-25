@@ -89,7 +89,7 @@ export const SubscriptionPage = () => {
       month: 'short',
       day: 'numeric',
     });
-  }, [data?.subscription?.endDate, activeDays]);
+  }, [data, activeDays]);
 
   const handleOpenExtendAction = (plan) => {
     if (!hasBusiness) {
@@ -346,7 +346,7 @@ export const SubscriptionPage = () => {
             </div>
           </div>
           <Link
-            to={ROUTES.BUSINESS_PROFILE}
+            to={`${ROUTES.PROFILE}?tab=business`}
             className="self-start sm:self-auto inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs transition-colors shadow-xs shrink-0"
           >
             <span>Configure Business</span>
@@ -975,7 +975,7 @@ export const SubscriptionPage = () => {
               </button>
               {noticeModal.type === 'business_required' && (
                 <Link
-                  to={ROUTES.BUSINESS_PROFILE}
+                  to={`${ROUTES.PROFILE}?tab=business`}
                   className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-white text-white dark:text-zinc-900 text-xs font-bold shadow-xs transition-colors"
                 >
                   <span>Configure Business</span>

@@ -26,7 +26,7 @@ export const Navbar = ({ onOpenMobileMenu }) => {
 
         {business ? (
           <Link
-            to={ROUTES.BUSINESS_PROFILE}
+            to={`${ROUTES.PROFILE}?tab=business`}
             title="Manage Business Profile"
             className="flex items-center gap-2.5 p-1 -m-1 rounded-2xl hover:bg-black/[0.03] dark:hover:bg-white/[0.05] transition-all active:scale-[0.98]"
           >
@@ -49,7 +49,7 @@ export const Navbar = ({ onOpenMobileMenu }) => {
           </Link>
         ) : (
           <Link
-            to={ROUTES.BUSINESS_SETUP}
+            to={`${ROUTES.PROFILE}?tab=business`}
             title="Set up Business Profile"
             className="flex items-center gap-2 text-xs font-semibold tracking-tight text-zinc-700 dark:text-zinc-300 hover:opacity-80 transition-opacity"
           >
@@ -71,7 +71,7 @@ export const Navbar = ({ onOpenMobileMenu }) => {
 
         {/* User profile capsule */}
         <Link
-          to={ROUTES.PROFILE}
+          to={`${ROUTES.PROFILE}?tab=personal`}
           title="Manage User Profile"
           className="hidden sm:flex items-center gap-2.5 pl-2 py-1 pr-1.5 rounded-full bg-black/[0.03] dark:bg-white/[0.06] border border-black/[0.06] dark:border-white/[0.08] backdrop-blur-md hover:bg-black/[0.06] dark:hover:bg-white/[0.1] transition-all active:scale-[0.98]"
         >

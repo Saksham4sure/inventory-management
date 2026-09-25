@@ -11,7 +11,6 @@ import {
   TrendingUp,
   ShoppingCart,
   Users,
-  Building2,
   User,
   CreditCard,
   LogOut,
@@ -56,10 +55,9 @@ export const Sidebar = ({ isMobileOpen, onClose }) => {
       ]
     : [
         { label: 'Notifications', path: ROUTES.NOTIFICATIONS, icon: Bell, badge: unreadCount },
-        { label: 'Business Profile', path: ROUTES.BUSINESS_PROFILE, icon: Building2 },
+        { label: 'Profile & Business', path: ROUTES.PROFILE, icon: User },
         { label: 'Team Members', path: ROUTES.TEAM, icon: Users },
         { label: 'Subscription & Plans', path: ROUTES.SUBSCRIPTION, icon: CreditCard, requiresKyc: true },
-        { label: 'User Profile', path: ROUTES.PROFILE, icon: User },
       ];
 
   const renderNavList = (items) =>

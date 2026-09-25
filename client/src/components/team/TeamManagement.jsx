@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { teamService } from '../../services/teamService';
+import { authService } from '../../services/authService';
 import { useAuth } from '../../hooks/useAuth';
 import { useBusiness } from '../../hooks/useBusiness';
 import { useConfirm } from '../../hooks/useConfirm';
@@ -7,25 +8,23 @@ import { useSnackbar } from '../../hooks/useSnackbar';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
-import { Select } from '../ui/Select';
-import { Badge } from '../ui/Badge';
 import { Modal } from '../ui/Modal';
-import { formatDate, formatCurrency } from '../../utils/formatters';
+import { formatCurrency } from '../../utils/formatters';
 import {
   Users,
   UserPlus,
-  Shield,
   ShieldCheck,
   Clock,
   Trash2,
   Sliders,
-  CheckCircle2,
   AlertCircle,
-  Mail,
   Crown,
-  Lock,
   RefreshCw,
   X,
+  Search,
+  Loader2,
+  Check,
+  UserCheck,
 } from 'lucide-react';
 
 export const TeamManagement = () => {
@@ -46,6 +45,11 @@ export const TeamManagement = () => {
 
   // Invite modal state
   const [isInviteOpen, setIsInviteOpen] = useState(false);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [searchingUser, setSearchingUser] = useState(false);
+  const [candidateUser, setCandidateUser] = useState(null);
+  const [matchedUser, setMatchedUser] = useState(null);
+  const [userSearchError, setUserSearchError] = useState('');
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('USER');
   const [inviteLimits, setInviteLimits] = useState({
@@ -112,6 +116,11 @@ export const TeamManagement = () => {
   };
 
   const handleOpenInvite = () => {
+    setUserSearchQuery('');
+    setSearchingUser(false);
+    setCandidateUser(null);
+    setMatchedUser(null);
+    setUserSearchError('');
     setInviteEmail('');
     setInviteRole('USER');
     setInviteLimits({
@@ -127,10 +136,155 @@ export const TeamManagement = () => {
     setIsInviteOpen(true);
   };
 
+  const handleCloseInvite = () => {
+    setIsInviteOpen(false);
+    setUserSearchQuery('');
+    setSearchingUser(false);
+    setCandidateUser(null);
+    setMatchedUser(null);
+    setUserSearchError('');
+    setInviteEmail('');
+    setInviteError('');
+  };
+
+  // Automatic user lookup when user types 8-digit ID, complete email, 10-digit phone, or stops typing
+  useEffect(() => {
+    if (!isInviteOpen) return;
+    const query = userSearchQuery.trim();
+
+    if (!query) {
+      setCandidateUser(null);
+      setUserSearchError('');
+      setSearchingUser(false);
+      return;
+    }
+
+    // If query matches the currently confirmed user, no need to re-search
+    if (
+      matchedUser &&
+      (query === matchedUser.userId ||
+        query === matchedUser.accountId ||
+        query.toLowerCase() === (matchedUser.email || '').toLowerCase() ||
+        query === matchedUser.phone)
+    ) {
+      return;
+    }
+
+    const isEightDigitId = /^\d{8}$/.test(query);
+    const isCompleteEmail = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(query);
+    const isTenDigitPhone = /^9[678]\d{8}$/.test(query);
+    const isCompleteFormat = isEightDigitId || isCompleteEmail || isTenDigitPhone;
+
+    // Wait until at least 4 characters or completed format
+    if (query.length < 4 && !isCompleteFormat) {
+      setCandidateUser(null);
+      return;
+    }
+
+    const delay = isCompleteFormat ? 200 : 500;
+
+    const timer = setTimeout(async () => {
+      try {
+        setSearchingUser(true);
+        setUserSearchError('');
+        const res = await authService.searchUsers(query);
+        if (res?.user) {
+          const foundUser = res.user;
+
+          // Validation 1: Owner or current user
+          const currentUserId = user?._id || user?.id;
+          const ownerId = teamData.owner?._id || teamData.owner?.id;
+          const foundId = foundUser._id || foundUser.id;
+
+          if (
+            (foundId && currentUserId && foundId.toString() === currentUserId.toString()) ||
+            (foundId && ownerId && foundId.toString() === ownerId.toString()) ||
+            (foundUser.email && user?.email && foundUser.email.toLowerCase() === user.email.toLowerCase()) ||
+            (foundUser.email && teamData.owner?.email && foundUser.email.toLowerCase() === teamData.owner.email.toLowerCase())
+          ) {
+            setCandidateUser(null);
+            setUserSearchError('You cannot add yourself or the business owner as a team member.');
+            return;
+          }
+
+          // Validation 2: Already an active member
+          const isAlreadyMember = teamData.members?.some((m) => {
+            const mId = m.user?._id || m.user?.id || m.user;
+            return (
+              (mId && foundId && mId.toString() === foundId.toString()) ||
+              (m.user?.email && foundUser.email && m.user.email.toLowerCase() === foundUser.email.toLowerCase())
+            );
+          });
+          if (isAlreadyMember) {
+            setCandidateUser(null);
+            setUserSearchError('This user is already a member of your team.');
+            return;
+          }
+
+          // Validation 3: Pending invitation
+          const hasPendingInvite = teamData.invitations?.some((inv) => {
+            const invUser = inv.invitee?._id || inv.invitee?.id || inv.invitee;
+            return (
+              (invUser && foundId && invUser.toString() === foundId.toString()) ||
+              (inv.inviteeEmail && foundUser.email && inv.inviteeEmail.toLowerCase() === foundUser.email.toLowerCase())
+            );
+          });
+          if (hasPendingInvite) {
+            setCandidateUser(null);
+            setUserSearchError('This user already has a pending invitation.');
+            return;
+          }
+
+          setCandidateUser(foundUser);
+        } else {
+          setCandidateUser(null);
+          setUserSearchError('No registered user found with this User ID, Email, or Phone.');
+        }
+      } catch (err) {
+        setCandidateUser(null);
+        const msg =
+          err?.response?.data?.message ||
+          err.message ||
+          'No registered user found with this User ID, Email, or Phone.';
+        setUserSearchError(msg);
+      } finally {
+        setSearchingUser(false);
+      }
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [userSearchQuery, isInviteOpen, matchedUser, user, teamData.owner, teamData.members, teamData.invitations]);
+
+  // Explicit confirmation of candidate user
+  const handleConfirmUser = (userToConfirm) => {
+    const u = userToConfirm || candidateUser;
+    if (!u) return;
+    setMatchedUser(u);
+    setCandidateUser(null);
+    setUserSearchError('');
+    setInviteEmail(u.email || '');
+    showSuccess(`Confirmed registered user: ${u.name}`);
+  };
+
+  // Reset user selection to search again
+  const handleResetUser = () => {
+    setMatchedUser(null);
+    setCandidateUser(null);
+    setUserSearchQuery('');
+    setUserSearchError('');
+    setInviteEmail('');
+  };
+
   const handleSendInvite = async (e) => {
     e.preventDefault();
-    if (!inviteEmail.trim()) {
-      setInviteError('Please enter the user email address.');
+    if (!matchedUser) {
+      setInviteError('Please search and confirm a registered user first.');
+      return;
+    }
+
+    const emailToSend = (matchedUser.email || inviteEmail).trim();
+    if (!emailToSend) {
+      setInviteError('The confirmed user does not have an email address.');
       return;
     }
 
@@ -138,7 +292,7 @@ export const TeamManagement = () => {
       setSubmittingInvite(true);
       setInviteError('');
       await teamService.inviteMember({
-        email: inviteEmail.trim(),
+        email: emailToSend,
         role: inviteRole,
         limits: {
           ...inviteLimits,
@@ -146,8 +300,8 @@ export const TeamManagement = () => {
         },
       });
 
-      showSuccess(`Invitation sent to ${inviteEmail}. They will see it in their website notifications.`);
-      setIsInviteOpen(false);
+      showSuccess(`Invitation sent to ${matchedUser.name} (${emailToSend}). They will see it in their website notifications.`);
+      handleCloseInvite();
       fetchTeam();
       refreshBusiness();
     } catch (err) {
@@ -304,8 +458,16 @@ export const TeamManagement = () => {
             <Card className="p-4 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 bg-white/90 dark:bg-[#181b22]/90 backdrop-blur-md">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-bold text-sm shadow-xs">
-                    <Crown className="h-5 w-5" />
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-bold text-sm shadow-xs overflow-hidden">
+                    {teamData.owner?.profilePicture || teamData.owner?.avatar ? (
+                      <img
+                        src={teamData.owner.profilePicture || teamData.owner.avatar}
+                        alt={teamData.owner.name || 'Owner'}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Crown className="h-5 w-5" />
+                    )}
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
@@ -364,8 +526,16 @@ export const TeamManagement = () => {
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         {/* Member Identity */}
                         <div className="flex items-center gap-3">
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 font-bold text-xs">
-                            {mUser.name ? mUser.name[0].toUpperCase() : 'U'}
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 font-bold text-xs overflow-hidden">
+                            {mUser.profilePicture || mUser.avatar ? (
+                              <img
+                                src={mUser.profilePicture || mUser.avatar}
+                                alt={mUser.name || 'User'}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span>{mUser.name ? mUser.name[0].toUpperCase() : 'U'}</span>
+                            )}
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
@@ -480,8 +650,16 @@ export const TeamManagement = () => {
                     className="p-3.5 rounded-xl border border-zinc-200/80 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50 flex items-center justify-between gap-3 text-xs"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-800 text-zinc-500">
-                        <Clock className="h-4 w-4" />
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-200 dark:bg-zinc-800 text-zinc-500 overflow-hidden font-bold text-xs">
+                        {inv.invitee?.profilePicture || inv.invitee?.avatar ? (
+                          <img
+                            src={inv.invitee.profilePicture || inv.invitee.avatar}
+                            alt={inv.invitee.name || 'Invitee'}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Clock className="h-4 w-4" />
+                        )}
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
@@ -518,7 +696,7 @@ export const TeamManagement = () => {
       {/* MODAL 1: Invite Member */}
       <Modal
         isOpen={isInviteOpen}
-        onClose={() => setIsInviteOpen(false)}
+        onClose={handleCloseInvite}
         title="Add Team Member"
         maxWidth="max-w-lg"
       >
@@ -530,23 +708,152 @@ export const TeamManagement = () => {
             </div>
           )}
 
-          <div className="p-3 rounded-xl bg-zinc-100 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-750 text-xs text-zinc-600 dark:text-zinc-400 space-y-1">
-            <p className="font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
-              <Mail className="h-3.5 w-3.5" /> Direct Account Check
+          <div className="space-y-3">
+            <p className="text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
+              Search the user by their 8-digit <strong className="text-zinc-700 dark:text-zinc-300">User ID</strong>, registered <strong className="text-zinc-700 dark:text-zinc-300">Email</strong>, or <strong className="text-zinc-700 dark:text-zinc-300">Phone</strong>. Once confirmed and added, they will receive an in-app website notification to accept or decline the team invitation.
             </p>
-            <p className="text-[11px] leading-relaxed">
-              Enter the registered email of the user. Once invited, they will receive an in-app website notification with an option to accept or decline the team invitation.
-            </p>
-          </div>
 
-          <Input
-            label="User Email Address *"
-            type="email"
-            placeholder="e.g. staff.member@gmail.com"
-            required
-            value={inviteEmail}
-            onChange={(e) => setInviteEmail(e.target.value)}
-          />
+            {/* User Search Bar - Auto searches on complete typing */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-400" />
+              <input
+                type="text"
+                placeholder="Type 8-digit User ID, Email, or Phone..."
+                value={userSearchQuery}
+                onChange={(e) => {
+                  setUserSearchQuery(e.target.value);
+                  if (userSearchError) setUserSearchError('');
+                }}
+                className="w-full rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 pl-9 pr-9 py-2.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-400/30"
+              />
+              {searchingUser ? (
+                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500 animate-spin" />
+              ) : userSearchQuery ? (
+                <button
+                  type="button"
+                  onClick={handleResetUser}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              ) : null}
+            </div>
+
+            {userSearchError && (
+              <div className="p-2.5 rounded-xl bg-zinc-100 dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-750 text-xs text-zinc-700 dark:text-zinc-300 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0 text-zinc-500" />
+                <span>{userSearchError}</span>
+              </div>
+            )}
+
+            {/* Candidate User Found -> Requires User Confirmation */}
+            {candidateUser && !matchedUser && (
+              <div className="rounded-2xl border border-zinc-200 dark:border-zinc-750 bg-zinc-50 dark:bg-zinc-850 p-4 space-y-3.5 animate-in fade-in duration-200">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                    User Found — Please Confirm
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-800 dark:text-zinc-200">
+                    Auto-Matched
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold text-sm overflow-hidden ring-1 ring-black/5 dark:ring-white/10">
+                    {candidateUser.profilePicture || candidateUser.avatar ? (
+                      <img
+                        src={candidateUser.profilePicture || candidateUser.avatar}
+                        alt={candidateUser.name || 'User'}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span>{candidateUser.name ? candidateUser.name.charAt(0).toUpperCase() : 'U'}</span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate">
+                      {candidateUser.name}
+                    </p>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400 font-mono truncate">
+                      ID: {candidateUser.userId || candidateUser.accountId || 'NO-ID'} • {candidateUser.email}
+                    </p>
+                    {candidateUser.phone && (
+                      <p className="text-xs text-zinc-500 dark:text-zinc-400 font-mono">
+                        {candidateUser.phone}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 pt-1 border-t border-zinc-200 dark:border-zinc-750">
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="sm"
+                    onClick={() => handleConfirmUser(candidateUser)}
+                    className="flex-1 text-xs py-2 rounded-xl font-semibold"
+                  >
+                    <Check className="h-3.5 w-3.5 mr-1" /> Confirm This User
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleResetUser}
+                    className="text-xs py-2 rounded-xl"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Confirmed Matched User Display Card */}
+            {matchedUser && (
+              <div className="rounded-2xl border border-zinc-200 dark:border-zinc-750 bg-zinc-100/80 dark:bg-zinc-850/80 p-3.5 space-y-3 animate-in fade-in duration-200">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold text-xs overflow-hidden ring-1 ring-black/5 dark:ring-white/10">
+                      {matchedUser.profilePicture || matchedUser.avatar ? (
+                        <img
+                          src={matchedUser.profilePicture || matchedUser.avatar}
+                          alt={matchedUser.name || 'User'}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <UserCheck className="h-4 w-4" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate">
+                          {matchedUser.name}
+                        </p>
+                        <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shrink-0">
+                          Confirmed
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono truncate">
+                        ID: {matchedUser.userId || matchedUser.accountId || 'NO-ID'} • {matchedUser.email}
+                      </p>
+                      {matchedUser.phone && (
+                        <p className="text-[11px] text-zinc-500 dark:text-zinc-400 font-mono">
+                          {matchedUser.phone}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleResetUser}
+                    className="text-xs font-medium text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 underline underline-offset-2 ml-2 shrink-0"
+                  >
+                    Change
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Role Choice */}
           <div>
@@ -694,7 +1001,7 @@ export const TeamManagement = () => {
             <Button
               variant="secondary"
               size="sm"
-              onClick={() => setIsInviteOpen(false)}
+              onClick={handleCloseInvite}
             >
               Cancel
             </Button>
@@ -702,6 +1009,7 @@ export const TeamManagement = () => {
               variant="primary"
               size="sm"
               type="submit"
+              disabled={!matchedUser || submittingInvite}
               loading={submittingInvite}
               className="font-bold"
             >

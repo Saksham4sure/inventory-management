@@ -863,11 +863,11 @@ export const searchUsers = asyncHandler(async (req, res) => {
 
   let user = await User.findOne({
     $or: orConditions,
-  }).select('name email phone accountId userId userType role location');
+  }).select('name email phone accountId userId userType role location profilePicture avatar');
 
   // Fallback: If cleanQuery matches the end of ObjectId (e.g. hex "75baa101")
   if (!user && /^[0-9a-fA-F]{6,12}$/.test(cleanQuery)) {
-    const allUsers = await User.find({}).select('name email phone accountId userId userType role location');
+    const allUsers = await User.find({}).select('name email phone accountId userId userType role location profilePicture avatar');
     const matchedBySlice = allUsers.find(
       (u) => u._id.toString().toLowerCase().endsWith(normalizedLower)
     );

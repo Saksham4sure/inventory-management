@@ -38,7 +38,7 @@ import {
 
 export const PartiesPage = () => {
   const { business } = useBusiness();
-  const { confirm, alert } = useConfirm();
+  const { confirm } = useConfirm();
   const { showSuccess, showError } = useSnackbar();
   const currency = business?.currency || 'USD';
 
@@ -62,7 +62,6 @@ export const PartiesPage = () => {
     },
   });
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
   // Filters
   const [search, setSearch] = useState('');
@@ -112,7 +111,6 @@ export const PartiesPage = () => {
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
-      setError('');
 
       const params = {};
       if (activeTab === 'CUSTOMER' || activeTab === 'SUPPLIER') {
@@ -717,8 +715,16 @@ export const PartiesPage = () => {
                   >
                     <div className="flex items-start justify-between pb-2 border-b border-zinc-100 dark:border-zinc-800/80">
                       <div className="flex items-center gap-2.5">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-xl font-bold text-xs bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-700/60">
-                          {getInitials(party.name)}
+                        <div className="flex h-9 w-9 items-center justify-center rounded-xl font-bold text-xs bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-700/60 overflow-hidden">
+                          {party.user?.profilePicture || party.user?.avatar ? (
+                            <img
+                              src={party.user.profilePicture || party.user.avatar}
+                              alt={party.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            getInitials(party.name)
+                          )}
                         </div>
                         <div>
                           <p className="font-bold text-xs text-zinc-900 dark:text-zinc-100">
@@ -839,8 +845,16 @@ export const PartiesPage = () => {
                         >
                           <td className="px-5 py-3.5">
                             <div className="flex items-center gap-2.5">
-                              <div className="flex h-8 w-8 items-center justify-center rounded-xl font-bold text-xs bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-700/60">
-                                {getInitials(party.name)}
+                              <div className="flex h-8 w-8 items-center justify-center rounded-xl font-bold text-xs bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200/60 dark:border-zinc-700/60 overflow-hidden">
+                                {party.user?.profilePicture || party.user?.avatar ? (
+                                  <img
+                                    src={party.user.profilePicture || party.user.avatar}
+                                    alt={party.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  getInitials(party.name)
+                                )}
                               </div>
                               <div>
                                 <div className="font-semibold text-xs text-zinc-900 dark:text-zinc-100">
@@ -1019,8 +1033,16 @@ export const PartiesPage = () => {
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold text-sm">
-                      {candidateUser.name ? candidateUser.name.charAt(0).toUpperCase() : 'U'}
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold text-sm overflow-hidden ring-1 ring-black/5 dark:ring-white/10">
+                      {candidateUser.profilePicture || candidateUser.avatar ? (
+                        <img
+                          src={candidateUser.profilePicture || candidateUser.avatar}
+                          alt={candidateUser.name || 'User'}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span>{candidateUser.name ? candidateUser.name.charAt(0).toUpperCase() : 'U'}</span>
+                      )}
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100 truncate">
@@ -1065,8 +1087,16 @@ export const PartiesPage = () => {
                 <div className="rounded-2xl border border-zinc-200 dark:border-zinc-750 bg-zinc-100/80 dark:bg-zinc-850/80 p-3.5 space-y-3 animate-in fade-in duration-200">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold text-xs">
-                        <UserCheck className="h-4 w-4" />
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold text-xs overflow-hidden ring-1 ring-black/5 dark:ring-white/10">
+                        {matchedUser.profilePicture || matchedUser.avatar ? (
+                          <img
+                            src={matchedUser.profilePicture || matchedUser.avatar}
+                            alt={matchedUser.name || 'User'}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <UserCheck className="h-4 w-4" />
+                        )}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">

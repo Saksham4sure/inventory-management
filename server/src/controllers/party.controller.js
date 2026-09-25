@@ -50,6 +50,7 @@ export const getParties = asyncHandler(async (req, res) => {
       .skip(skip)
       .limit(Number(limit))
       .populate('createdBy', 'name')
+      .populate('user', 'name email avatar profilePicture')
       .lean(),
     Party.countDocuments(filter),
   ]);
@@ -75,7 +76,9 @@ export const getPartyById = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const businessId = req.user.businessId;
 
-  const party = await Party.findOne({ _id: id, businessId }).populate('createdBy', 'name');
+  const party = await Party.findOne({ _id: id, businessId })
+    .populate('createdBy', 'name')
+    .populate('user', 'name email avatar profilePicture');
   if (!party) {
     throw new ApiError(404, 'Party not found');
   }

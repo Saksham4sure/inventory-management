@@ -11,10 +11,7 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import { Modal } from '../components/ui/Modal';
-import { Input } from '../components/ui/Input';
-import { PhoneInput } from '../components/ui/PhoneInput';
 import { formatCurrency } from '../utils/formatters';
-import { validateNepaliPhone } from '../utils/phoneValidator';
 import {
   ScanLine,
   Camera,
@@ -26,7 +23,6 @@ import {
   AlertTriangle,
   ShoppingCart,
   TrendingDown,
-  TrendingUp,
   RotateCcw,
   Package,
   Upload,
@@ -87,10 +83,7 @@ export const QRScanPage = () => {
   const [isCreditPartyModalOpen, setIsCreditPartyModalOpen] = useState(false);
   const [existingParties, setExistingParties] = useState([]);
   const [loadingParties, setLoadingParties] = useState(false);
-  const [partyTab, setPartyTab] = useState('existing'); // 'existing' | 'new'
   const [partySearch, setPartySearch] = useState('');
-  const [newPartyName, setNewPartyName] = useState('');
-  const [newPartyPhone, setNewPartyPhone] = useState('');
 
   // Scanner refs & anti-loop controls
   const qrCodeRef = useRef(null);
@@ -516,15 +509,6 @@ export const QRScanPage = () => {
     }
   };
 
-  // When changing transaction mode (Sale <-> Purchase), reset credit party if mismatched
-  const handleSwitchTxnType = (type) => {
-    setTxnType(type);
-    if (creditParty) {
-      setCreditParty(null);
-      setPaymentMethod('CASH');
-    }
-  };
-
   // Select an Existing Party for Credit
   const handleSelectExistingParty = (party) => {
     setCreditParty({
@@ -537,38 +521,6 @@ export const QRScanPage = () => {
     });
     setPaymentMethod('CREDIT');
     setIsCreditPartyModalOpen(false);
-    setError('');
-  };
-
-  // Use Just Name & Phone for New Party
-  const handleSelectNewParty = () => {
-    if (!newPartyName.trim() || !newPartyPhone.trim()) {
-      setError('Please provide both Name and Phone number for the party identity.');
-      return;
-    }
-
-    const phoneCheck = validateNepaliPhone(newPartyPhone);
-    if (!phoneCheck.isValid) {
-      setError(
-        phoneCheck.error ||
-          'Please enter a valid Nepali contact number (10-digit mobile starting with 98/97/96 or 8-digit landline).'
-      );
-      return;
-    }
-
-    setCreditParty({
-      _id: null,
-      name: newPartyName.trim(),
-      phone: phoneCheck.normalized,
-      type: txnType === 'SALE' ? 'CUSTOMER' : 'SUPPLIER',
-      currentBalance: 0,
-      isNew: true,
-    });
-    setPaymentMethod('CREDIT');
-    setIsCreditPartyModalOpen(false);
-    setNewPartyName('');
-    setNewPartyPhone('');
-    setError('');
   };
 
   const handleCloseCreditModal = () => {
@@ -831,7 +783,17 @@ export const QRScanPage = () => {
         <div className="flex items-center gap-2">
           {selectedCustomer && (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800">
-              <UserCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              {selectedCustomer.profilePicture || selectedCustomer.avatar ? (
+                <div className="h-5 w-5 rounded-full overflow-hidden shrink-0 ring-1 ring-emerald-500/20">
+                  <img
+                    src={selectedCustomer.profilePicture || selectedCustomer.avatar}
+                    alt={selectedCustomer.name}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ) : (
+                <UserCheck className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+              )}
               <div className="text-left">
                 <p className="text-xs font-bold text-emerald-900 dark:text-emerald-200">
                   {selectedCustomer.name}
@@ -918,6 +880,15 @@ export const QRScanPage = () => {
                   )}
                 </div>
               </div>
+
+              {error && (
+                <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-300 text-xs flex items-center justify-between gap-2">
+                  <span>{error}</span>
+                  <button type="button" onClick={() => setError('')} className="p-0.5 hover:bg-rose-500/20 rounded">
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
 
               {/* Viewfinder Container */}
               <div className="relative mx-auto w-full max-w-[280px] sm:max-w-[320px] aspect-square rounded-2xl overflow-hidden bg-black flex items-center justify-center border border-zinc-200/20 shadow-inner">
@@ -1081,7 +1052,7 @@ export const QRScanPage = () => {
                         }
                       }
                     }}
-                    onFocus={(e) => {
+                    onFocus={() => {
                       if (manualAmount === '0') {
                         setManualAmount('');
                       }
@@ -1469,8 +1440,16 @@ export const QRScanPage = () => {
                     </div>
 
                     <div className="flex items-center gap-2.5">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold text-xs">
-                        {candidateCustomer.name ? candidateCustomer.name.charAt(0).toUpperCase() : 'C'}
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold text-xs overflow-hidden ring-1 ring-black/5 dark:ring-white/10">
+                        {candidateCustomer.profilePicture || candidateCustomer.avatar ? (
+                          <img
+                            src={candidateCustomer.profilePicture || candidateCustomer.avatar}
+                            alt={candidateCustomer.name || 'Customer'}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span>{candidateCustomer.name ? candidateCustomer.name.charAt(0).toUpperCase() : 'C'}</span>
+                        )}
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate">
@@ -1509,8 +1488,16 @@ export const QRScanPage = () => {
                 {selectedCustomer ? (
                   <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-zinc-100/90 dark:bg-zinc-850 border border-zinc-200 dark:border-zinc-750">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold text-xs">
-                        <UserCheck className="h-4 w-4" />
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 font-bold text-xs overflow-hidden ring-1 ring-black/5 dark:ring-white/10">
+                        {selectedCustomer.profilePicture || selectedCustomer.avatar ? (
+                          <img
+                            src={selectedCustomer.profilePicture || selectedCustomer.avatar}
+                            alt={selectedCustomer.name || 'Customer'}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <UserCheck className="h-4 w-4" />
+                        )}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
@@ -1642,11 +1629,7 @@ export const QRScanPage = () => {
       <Modal
         isOpen={isCreditPartyModalOpen}
         onClose={handleCloseCreditModal}
-        title={
-          txnType === 'SALE'
-            ? 'Select Customer for Credit Sale'
-            : 'Select Supplier for Credit Purchase'
-        }
+        title="Select Customer for Credit Sale"
         maxWidth="max-w-md"
       >
         <div className="space-y-4">
@@ -1656,7 +1639,7 @@ export const QRScanPage = () => {
               <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-400" />
               <input
                 type="text"
-                placeholder={`Search ${txnType === 'SALE' ? 'customers' : 'suppliers'} by name or phone...`}
+                placeholder="Search customers by name or phone..."
                 value={partySearch}
                 onChange={(e) => setPartySearch(e.target.value)}
                 className="w-full rounded-xl border border-zinc-200/90 dark:border-zinc-750 bg-white dark:bg-zinc-900 pl-8 pr-3 py-1.5 text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-zinc-400"
@@ -1671,7 +1654,7 @@ export const QRScanPage = () => {
                 </div>
               ) : filteredExistingParties.length === 0 ? (
                 <div className="py-6 text-center text-xs text-zinc-400 space-y-2">
-                  <p>No {txnType === 'SALE' ? 'customers' : 'suppliers'} found.</p>
+                  <p>No customers found.</p>
                   <p className="text-[11px] text-zinc-400">
                     Create a new party from the Parties page first.
                   </p>

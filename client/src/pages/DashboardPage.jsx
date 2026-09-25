@@ -26,7 +26,6 @@ import {
   CreditCard,
   ShieldCheck,
   ShieldAlert,
-  FileCheck2,
   Clock,
   XCircle,
 } from 'lucide-react';
@@ -307,7 +306,7 @@ export const DashboardPage = () => {
                 </Button>
               </Link>
             ) : (
-              <Link to={ROUTES.BUSINESS_PROFILE}>
+              <Link to={`${ROUTES.PROFILE}?tab=business`}>
                 <Button variant="primary" size="sm" className="rounded-xl whitespace-nowrap">
                   Set Up Business <ArrowRight className="h-3.5 w-3.5 ml-1" />
                 </Button>

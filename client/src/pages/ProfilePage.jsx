@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useBusiness } from '../hooks/useBusiness';
 import { authService } from '../services/authService';
@@ -11,6 +12,7 @@ import { Modal } from '../components/ui/Modal';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { ProfilePictureEditorModal } from '../components/profile/ProfilePictureEditorModal';
 import { ProfilePictureViewModal } from '../components/profile/ProfilePictureViewModal';
+import { BusinessProfileSection } from '../components/profile/BusinessProfileSection';
 import { LocationSelect } from '../components/ui/LocationSelect';
 import { PhoneInput } from '../components/ui/PhoneInput';
 import { formatDate } from '../utils/formatters';
@@ -76,6 +78,27 @@ export const ProfilePage = () => {
   const { user, updateUser } = useAuth();
   const { business } = useBusiness();
   const { showSuccess, showError } = useSnackbar();
+
+  // Tab management for business users (Personal Profile vs Business Profile)
+  const [searchParams, setSearchParams] = useSearchParams();
+  const isCustomer = user?.userType === 'CUSTOMER' && !user?.businessId;
+  const isBusinessUser = !isCustomer;
+
+  const requestedTab = searchParams.get('tab');
+  const activeTab = isBusinessUser && requestedTab === 'business' ? 'business' : 'personal';
+
+  const handleTabChange = (newTab) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      if (newTab === 'personal') {
+        next.delete('tab');
+        next.delete('subtab');
+      } else {
+        next.set('tab', newTab);
+      }
+      return next;
+    });
+  };
 
   // Profile details state
   const [name, setName] = useState(user?.name || '');
@@ -361,16 +384,61 @@ export const ProfilePage = () => {
   return (
     <div className="space-y-6 sm:space-y-8 max-w-5xl mx-auto pb-12">
       {/* Page Header */}
-      <div className="pb-3 border-b border-black/[0.06] dark:border-white/[0.08]">
-        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
-          User Profile & Account Settings
-        </h1>
-        <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-          Manage your verified credentials, government identity document, residential address, and security
-        </p>
+      <div className="pb-4 border-b border-black/[0.06] dark:border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">
+            {isBusinessUser ? 'Profile & Business Settings' : 'User Profile & Account Settings'}
+          </h1>
+          <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1">
+            {isBusinessUser
+              ? 'Manage your personal account, government identity verification, and business store profile in one unified hub'
+              : 'Manage your verified credentials, government identity document, residential address, and security'}
+          </p>
+        </div>
+
+        {/* Segmented Switcher for Business Users */}
+        {isBusinessUser && (
+          <div className="flex items-center gap-1.5 p-1 bg-zinc-200/70 dark:bg-zinc-800/80 rounded-2xl w-full sm:w-fit shrink-0">
+            <button
+              type="button"
+              onClick={() => handleTabChange('personal')}
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                activeTab === 'personal'
+                  ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-xs'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+              }`}
+            >
+              <User className="h-4 w-4" />
+              <span>Personal Profile</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleTabChange('business')}
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+                activeTab === 'business'
+                  ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-xs'
+                  : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200'
+              }`}
+            >
+              <Building2 className="h-4 w-4" />
+              <span>Business Profile</span>
+              {business ? (
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold">
+                  Active
+                </span>
+              ) : (
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold">
+                  Setup
+                </span>
+              )}
+            </button>
+          </div>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {activeTab === 'personal' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* LEFT COLUMN: Account Summary & Overview */}
         <div className="lg:col-span-4 space-y-5">
           {/* Main User Card */}
@@ -526,55 +594,100 @@ export const ProfilePage = () => {
             </div>
           </Card>
 
-          {/* Business & Organization Card (if available) */}
-          {business && (
-            <Card className="p-5 space-y-3">
-              <div className="flex items-center gap-2 pb-2.5 border-b border-black/[0.05] dark:border-white/[0.08]">
-                <Building2 className="h-4 w-4 text-zinc-500 dark:text-zinc-400" />
-                <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
-                  Associated Business
-                </h3>
-              </div>
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-zinc-500 dark:text-zinc-400">Name</span>
-                  <span className="font-semibold text-zinc-900 dark:text-zinc-100">{business.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-zinc-500 dark:text-zinc-400">Category</span>
-                  <span className="text-zinc-700 dark:text-zinc-300">{business.category || 'Retail'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-zinc-500 dark:text-zinc-400">PAN / Tax ID</span>
-                  <span className="font-mono text-zinc-700 dark:text-zinc-300">
-                    {business.taxNumber || 'N/A'}
-                  </span>
-                </div>
-                {business?.coordinates?.latitude !== null &&
-                  business?.coordinates?.latitude !== undefined &&
-                  business?.coordinates?.longitude !== null &&
-                  business?.coordinates?.longitude !== undefined && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-zinc-500 dark:text-zinc-400">GPS Location</span>
-                      <a
-                        href={`https://www.google.com/maps?q=${business.coordinates.latitude},${business.coordinates.longitude}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-mono text-zinc-700 dark:text-zinc-300 hover:underline hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1 text-[11px]"
-                      >
-                        {business.coordinates.latitude.toFixed(4)}, {business.coordinates.longitude.toFixed(4)}
-                        <ExternalLink className="h-2.5 w-2.5 text-zinc-400" />
-                      </a>
+          {/* Business & Organization Card (if available or setup pending for business users) */}
+          {isBusinessUser && (
+            business ? (
+              <Card className="p-5 space-y-3 border-indigo-500/20 bg-gradient-to-br from-indigo-500/[0.03] to-transparent">
+                <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-black/[0.05] dark:border-white/[0.08]">
+                  <div className="flex items-center gap-2">
+                    <div className="h-7 w-7 rounded-lg bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 flex items-center justify-center">
+                      <Building2 className="h-3.5 w-3.5" />
                     </div>
-                  )}
-                <div className="flex justify-between items-center pt-2 border-t border-black/[0.05] dark:border-white/[0.08]">
-                  <span className="text-zinc-500 dark:text-zinc-400">Plan</span>
-                  <Badge variant="accent">
-                    {business.subscription?.plan || 'Standard'}
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-700 dark:text-zinc-300">
+                      Associated Business
+                    </h3>
+                  </div>
+                  <Badge variant="primary" size="sm" dot>
+                    {business.subscription?.plan?.replace('_', ' ') || 'Active'}
                   </Badge>
                 </div>
-              </div>
-            </Card>
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500 dark:text-zinc-400">Name</span>
+                    <span className="font-semibold text-zinc-900 dark:text-zinc-100">{business.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500 dark:text-zinc-400">Category</span>
+                    <span className="text-zinc-700 dark:text-zinc-300">{business.category || 'Retail Store'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-zinc-500 dark:text-zinc-400">PAN / Tax ID</span>
+                    <span className="font-mono text-zinc-700 dark:text-zinc-300">
+                      {business.taxNumber || 'N/A'}
+                    </span>
+                  </div>
+                  {business?.coordinates?.latitude !== null &&
+                    business?.coordinates?.latitude !== undefined &&
+                    business?.coordinates?.longitude !== null &&
+                    business?.coordinates?.longitude !== undefined && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-zinc-500 dark:text-zinc-400">GPS Location</span>
+                        <a
+                          href={`https://www.google.com/maps?q=${business.coordinates.latitude},${business.coordinates.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-mono text-zinc-700 dark:text-zinc-300 hover:underline hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1 text-[11px]"
+                        >
+                          {Number(business.coordinates.latitude).toFixed(4)}, {Number(business.coordinates.longitude).toFixed(4)}
+                          <ExternalLink className="h-2.5 w-2.5 text-zinc-400" />
+                        </a>
+                      </div>
+                    )}
+                  <div className="flex justify-between items-center pt-2 border-t border-black/[0.05] dark:border-white/[0.08]">
+                    <span className="text-zinc-500 dark:text-zinc-400">Base Currency</span>
+                    <span className="font-mono font-semibold text-zinc-900 dark:text-zinc-100">
+                      {business.currency || 'NPR'}
+                    </span>
+                  </div>
+                </div>
+                <div className="pt-2 border-t border-black/[0.05] dark:border-white/[0.08]">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleTabChange('business')}
+                    className="w-full text-xs justify-center rounded-xl"
+                  >
+                    Manage Business Store Details &rarr;
+                  </Button>
+                </div>
+              </Card>
+            ) : (
+              <Card className="p-5 space-y-3 border-amber-500/20 bg-amber-500/[0.03]">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-8 w-8 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                    <Building2 className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold text-zinc-900 dark:text-zinc-100">
+                      Business Setup Required
+                    </h3>
+                    <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                      Configure your store entity alongside your personal profile
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="primary"
+                  size="sm"
+                  onClick={() => handleTabChange('business')}
+                  className="w-full text-xs justify-center rounded-xl"
+                >
+                  Set Up Business Profile Now &rarr;
+                </Button>
+              </Card>
+            )
           )}
         </div>
 
@@ -1177,6 +1290,9 @@ export const ProfilePage = () => {
           </Card>
         </div>
       </div>
+      ) : (
+        <BusinessProfileSection onSwitchToPersonalTab={() => handleTabChange('personal')} />
+      )}
 
       {/* Lightbox Modal for Document Image Zoom */}
       <Modal

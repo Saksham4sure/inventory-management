@@ -27,7 +27,7 @@ export const TeamPage = () => {
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => navigate(ROUTES.BUSINESS_PROFILE)}
+            onClick={() => navigate(`${ROUTES.PROFILE}?tab=business`)}
             className="text-xs self-start sm:self-auto"
           >
             <Building2 className="h-3.5 w-3.5 mr-1.5" />
@@ -48,7 +48,7 @@ export const TeamPage = () => {
           <Button
             variant="primary"
             size="sm"
-            onClick={() => navigate(ROUTES.BUSINESS_PROFILE)}
+            onClick={() => navigate(`${ROUTES.PROFILE}?tab=business`)}
             className="mt-4"
           >
             Go to Business Profile
