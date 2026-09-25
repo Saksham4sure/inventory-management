@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useBusiness } from '../hooks/useBusiness';
 import { authService } from '../services/authService';
@@ -8,6 +8,9 @@ import { Input } from '../components/ui/Input';
 import { DatePicker } from '../components/ui/DatePicker';
 import { Badge } from '../components/ui/Badge';
 import { Modal } from '../components/ui/Modal';
+import { ConfirmDialog } from '../components/ui/ConfirmDialog';
+import { ProfilePictureEditorModal } from '../components/profile/ProfilePictureEditorModal';
+import { ProfilePictureViewModal } from '../components/profile/ProfilePictureViewModal';
 import { LocationSelect } from '../components/ui/LocationSelect';
 import { PhoneInput } from '../components/ui/PhoneInput';
 import { formatDate } from '../utils/formatters';
@@ -19,18 +22,13 @@ import {
   KeyRound,
   CheckCircle2,
   AlertCircle,
-  Lock,
   ShieldCheck,
   ShieldAlert,
   Upload,
   Trash2,
   Building2,
-  Calendar,
   Eye,
-  MapPin,
-  Phone,
-  Mail,
-  FileCheck2,
+  Camera,
   ExternalLink,
   Clock,
 } from 'lucide-react';
@@ -87,6 +85,15 @@ export const ProfilePage = () => {
 
   const [profileLoading, setProfileLoading] = useState(false);
 
+  // Profile Picture state
+  const fileInputRef = useRef(null);
+  const [editorModalOpen, setEditorModalOpen] = useState(false);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [confirmRemoveOpen, setConfirmRemoveOpen] = useState(false);
+  const [imageToEdit, setImageToEdit] = useState('');
+  const [avatarLoading, setAvatarLoading] = useState(false);
+  const [avatarRemoveLoading, setAvatarRemoveLoading] = useState(false);
+
   // Password change state
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -102,6 +109,77 @@ export const ProfilePage = () => {
 
   // Lightbox preview modal for KYC documents
   const [previewImage, setPreviewImage] = useState(null);
+
+  // Profile picture file select -> opens editor modal to crop / frame
+  const handleProfilePictureSelect = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showError('Please select a valid image file (JPEG, PNG, WEBP, GIF).');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      showError('Profile picture image size should be less than 5MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImageToEdit(reader.result);
+      setEditorModalOpen(true);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleTriggerUpload = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleSaveProfilePicture = async (croppedDataUrl) => {
+    try {
+      setAvatarLoading(true);
+      const res = await authService.uploadProfilePicture(croppedDataUrl);
+      if (res?.user) {
+        updateUser(res.user);
+      }
+      showSuccess('Profile picture updated successfully!');
+      setEditorModalOpen(false);
+      setImageToEdit('');
+    } catch (err) {
+      showError(err.message || 'Failed to update profile picture');
+    } finally {
+      setAvatarLoading(false);
+    }
+  };
+
+  const handleRemoveProfilePicture = async () => {
+    try {
+      setAvatarRemoveLoading(true);
+      const res = await authService.removeProfilePicture();
+      if (res?.user) {
+        updateUser(res.user);
+      }
+      showSuccess('Profile picture removed successfully');
+      setConfirmRemoveOpen(false);
+    } catch (err) {
+      showError(err.message || 'Failed to remove profile picture');
+    } finally {
+      setAvatarRemoveLoading(false);
+    }
+  };
+
+  const handleEditCurrentPicture = () => {
+    const currentPic = user?.profilePicture || user?.avatar;
+    if (currentPic) {
+      setImageToEdit(currentPic);
+      setEditorModalOpen(true);
+    } else {
+      handleTriggerUpload();
+    }
+  };
 
   // Sync state whenever user changes
   useEffect(() => {
@@ -297,14 +375,72 @@ export const ProfilePage = () => {
         <div className="lg:col-span-4 space-y-5">
           {/* Main User Card */}
           <Card className="text-center p-6 flex flex-col items-center">
-            <div className="relative">
-              <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-zinc-900 text-white dark:bg-white dark:text-zinc-950 font-bold text-2xl shadow-md ring-4 ring-black/[0.04] dark:ring-white/[0.06] mb-3.5">
-                {user?.name ? user.name[0].toUpperCase() : 'U'}
+            {/* Hidden Profile Picture File Input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleProfilePictureSelect}
+            />
+
+            {/* Profile Avatar with Hover Overlay & Quick Actions */}
+            <div className="relative mb-3.5 group">
+              <div
+                onClick={() => {
+                  if (user?.profilePicture || user?.avatar) {
+                    setViewModalOpen(true);
+                  } else {
+                    handleTriggerUpload();
+                  }
+                }}
+                title={user?.profilePicture || user?.avatar ? 'Click to view profile picture' : 'Click to upload profile picture'}
+                className="relative flex h-24 w-24 sm:h-28 sm:w-28 items-center justify-center rounded-3xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-bold text-3xl shadow-lg ring-4 ring-black/[0.04] dark:ring-white/[0.08] overflow-hidden cursor-pointer select-none transition-all duration-300 hover:ring-zinc-400 dark:hover:ring-zinc-600"
+              >
+                {user?.profilePicture || user?.avatar ? (
+                  <img
+                    src={user.profilePicture || user.avatar}
+                    alt={user?.name || 'Profile'}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                ) : (
+                  <span>{user?.name ? user.name[0].toUpperCase() : 'U'}</span>
+                )}
+
+                {/* Subtle Hover Action Overlay */}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center text-white text-[11px] font-semibold gap-1">
+                  {user?.profilePicture || user?.avatar ? (
+                    <>
+                      <Eye className="w-5 h-5" />
+                      <span>View</span>
+                    </>
+                  ) : (
+                    <>
+                      <Camera className="w-5 h-5" />
+                      <span>Upload</span>
+                    </>
+                  )}
+                </div>
               </div>
+
+              {/* Camera Action Badge */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleTriggerUpload();
+                }}
+                title={user?.profilePicture || user?.avatar ? 'Change photo' : 'Upload photo'}
+                className="absolute -bottom-1 -left-1 flex h-8 w-8 items-center justify-center rounded-2xl bg-white text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100 ring-2 ring-black/[0.08] dark:ring-white/[0.12] shadow hover:scale-110 active:scale-95 transition-all cursor-pointer"
+              >
+                <Camera className="h-4 w-4" />
+              </button>
+
+              {/* KYC Verified Badge (bottom right) */}
               {hasKyc && (
                 <span
                   title="Identity Document Verified"
-                  className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white ring-2 ring-white dark:ring-zinc-900 shadow"
+                  className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-2xl bg-emerald-500 text-white ring-2 ring-white dark:ring-zinc-900 shadow"
                 >
                   <CheckCircle2 className="h-4 w-4" />
                 </span>
@@ -315,9 +451,8 @@ export const ProfilePage = () => {
               {user?.name || 'User'}
             </h2>
 
-            {/* Email with Immutable lock */}
-            <div className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400 font-mono mt-0.5">
-              <Lock className="h-3 w-3 text-zinc-400 dark:text-zinc-500 shrink-0" />
+            {/* Email */}
+            <div className="text-xs text-zinc-500 dark:text-zinc-400 font-mono mt-0.5">
               <span>{user?.email}</span>
             </div>
 
@@ -477,16 +612,11 @@ export const ProfilePage = () => {
                   helperText="First and last name"
                 />
 
-                {/* Email Address (Strictly Locked / Immutable) */}
+                {/* Email Address */}
                 <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="block text-[11px] font-semibold tracking-wider uppercase text-zinc-500 dark:text-zinc-400">
-                      Email Address
-                    </label>
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-[10px] font-medium text-zinc-500 dark:text-zinc-400 border border-zinc-200/80 dark:border-zinc-700/80">
-                      <Lock className="h-2.5 w-2.5 text-zinc-400" /> Immutable
-                    </span>
-                  </div>
+                  <label className="block text-[11px] font-semibold tracking-wider uppercase text-zinc-500 dark:text-zinc-400">
+                    Email Address
+                  </label>
                   <Input
                     id="emailAddress"
                     type="email"
@@ -530,14 +660,14 @@ export const ProfilePage = () => {
                   </span>
                   {user?.kyc?.status === 'VERIFIED' && (
                     <span className="inline-flex items-center gap-1 text-[10px] font-mono font-medium px-2 py-0.5 rounded-full bg-zinc-900 text-white dark:bg-white dark:text-zinc-900">
-                      <Lock className="h-2.5 w-2.5" /> Locked by KYC
+                      <CheckCircle2 className="h-2.5 w-2.5" /> Verified by KYC
                     </span>
                   )}
                 </div>
 
                 {user?.kyc?.status === 'VERIFIED' && (
                   <div className="flex items-center gap-2.5 p-3 rounded-2xl bg-zinc-100 dark:bg-zinc-850 border border-zinc-200/80 dark:border-zinc-750 text-xs text-zinc-700 dark:text-zinc-300">
-                    <Lock className="h-4 w-4 shrink-0 text-zinc-900 dark:text-zinc-100" />
+                    <ShieldCheck className="h-4 w-4 shrink-0 text-zinc-900 dark:text-zinc-100" />
                     <p className="leading-relaxed">
                       Your residential location is permanently locked and cannot be changed after successful government KYC identity verification.
                     </p>
@@ -601,8 +731,8 @@ export const ProfilePage = () => {
 
               {hasKyc && (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 text-xs font-semibold">
-                  <Lock className="h-3 w-3" />
-                  Verified &amp; Immutable
+                  <CheckCircle2 className="h-3 w-3" />
+                  Verified
                 </span>
               )}
             </div>
@@ -620,7 +750,7 @@ export const ProfilePage = () => {
                           Identity Document Verified &amp; Permanent
                         </span>
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 text-[10px] font-semibold">
-                          <Lock className="h-2.5 w-2.5" /> Approved
+                          <CheckCircle2 className="h-2.5 w-2.5" /> Approved
                         </span>
                       </div>
                       <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed">
@@ -696,9 +826,6 @@ export const ProfilePage = () => {
                       <span className="font-semibold text-zinc-700 dark:text-zinc-300">
                         Front Side Document
                       </span>
-                      <span className="text-[10px] text-zinc-400 font-mono flex items-center gap-1">
-                        <Lock className="h-2.5 w-2.5 text-zinc-700 dark:text-zinc-300" /> Immutable
-                      </span>
                     </div>
                     <div
                       onClick={() =>
@@ -733,9 +860,6 @@ export const ProfilePage = () => {
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-semibold text-zinc-700 dark:text-zinc-300">
                         Back Side Document
-                      </span>
-                      <span className="text-[10px] text-zinc-400 font-mono flex items-center gap-1">
-                        <Lock className="h-2.5 w-2.5 text-zinc-700 dark:text-zinc-300" /> Immutable
                       </span>
                     </div>
                     <div
@@ -968,7 +1092,7 @@ export const ProfilePage = () => {
 
                 {/* Verification process notice */}
                 <div className="p-3.5 rounded-2xl bg-zinc-100 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 text-[11px] text-zinc-600 dark:text-zinc-400 flex items-center gap-2.5">
-                  <Lock className="h-4 w-4 text-indigo-500 shrink-0" />
+                  <ShieldCheck className="h-4 w-4 text-zinc-700 dark:text-zinc-300 shrink-0" />
                   <span>
                     <strong>Platform Compliance Review:</strong> Your uploaded documents will be forwarded to the Platform Compliance team for validation. Once approved, your identity status will be verified.
                   </span>
@@ -1072,16 +1196,48 @@ export const ProfilePage = () => {
             </div>
             <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
               <div className="flex items-center gap-1.5">
-                <Lock className="h-3.5 w-3.5 text-emerald-500" />
+                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
                 <span>Verified Government Identity Record</span>
               </div>
-              <span className="font-mono text-[11px] bg-zinc-100 dark:bg-zinc-800 px-2 py-0.5 rounded">
-                Immutable
-              </span>
             </div>
           </div>
         )}
       </Modal>
+
+      {/* View Profile Picture Modal */}
+      <ProfilePictureViewModal
+        isOpen={viewModalOpen}
+        onClose={() => setViewModalOpen(false)}
+        user={user}
+        onEdit={handleEditCurrentPicture}
+        onChangeImage={handleTriggerUpload}
+        onRemove={() => setConfirmRemoveOpen(true)}
+      />
+
+      {/* Edit / Crop Profile Picture Modal */}
+      <ProfilePictureEditorModal
+        isOpen={editorModalOpen}
+        onClose={() => {
+          setEditorModalOpen(false);
+          setImageToEdit('');
+        }}
+        imageSrc={imageToEdit}
+        onSave={handleSaveProfilePicture}
+        onChangeImage={handleTriggerUpload}
+        loading={avatarLoading}
+      />
+
+      {/* Confirm Remove Profile Picture */}
+      <ConfirmDialog
+        isOpen={confirmRemoveOpen}
+        title="Remove Profile Picture?"
+        message="Are you sure you want to remove your profile picture? Your initials will be displayed instead."
+        confirmText={avatarRemoveLoading ? 'Removing...' : 'Remove Photo'}
+        cancelText="Cancel"
+        variant="danger"
+        onConfirm={handleRemoveProfilePicture}
+        onCancel={() => setConfirmRemoveOpen(false)}
+      />
     </div>
   );
 };

@@ -407,14 +407,15 @@ export const AdminBusinessesPage = () => {
 
       {/* MODAL 1: Manage Subscription & Trial Extension */}
       {subscriptionModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl p-6 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-hidden">
+          <div className="w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl relative my-auto max-h-[90vh] flex flex-col overflow-hidden">
             <button
               onClick={() => setSubscriptionModal(null)}
-              className="absolute right-4 top-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-white"
+              className="absolute right-4 top-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-white z-10 p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
             >
               <X className="h-4 w-4" />
             </button>
+            <div className="flex-1 overflow-y-auto p-6 modal-scroll overscroll-contain">
 
             <div className="flex items-center gap-2.5 mb-4">
               <div className="h-9 w-9 rounded-xl bg-zinc-600/10 text-zinc-800 dark:text-zinc-400 flex items-center justify-center">
@@ -518,20 +519,22 @@ export const AdminBusinessesPage = () => {
                 </button>
               </div>
             </form>
+            </div>
           </div>
         </div>
       )}
 
       {/* MODAL 2: Edit Business Profile */}
       {editModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl p-6 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-hidden">
+          <div className="w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl relative my-auto max-h-[90vh] flex flex-col overflow-hidden">
             <button
               onClick={() => setEditModal(null)}
-              className="absolute right-4 top-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-white"
+              className="absolute right-4 top-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-white z-10 p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
             >
               <X className="h-4 w-4" />
             </button>
+            <div className="flex-1 overflow-y-auto p-6 modal-scroll overscroll-contain">
 
             <div className="flex items-center gap-2.5 mb-4">
               <div className="h-9 w-9 rounded-xl bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 flex items-center justify-center">
@@ -634,14 +637,15 @@ export const AdminBusinessesPage = () => {
                 </button>
               </div>
             </form>
+            </div>
           </div>
         </div>
       )}
 
       {/* MODAL 3: Delete Business Confirmation */}
       {deleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="w-full max-w-sm bg-white dark:bg-zinc-900 border border-rose-200 dark:border-rose-900/60 rounded-2xl shadow-2xl p-6 text-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-hidden">
+          <div className="w-full max-w-sm bg-white dark:bg-zinc-900 border border-rose-200 dark:border-rose-900/60 rounded-2xl shadow-2xl p-6 text-center overflow-hidden">
             <div className="h-12 w-12 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto mb-3">
               <AlertCircle className="h-6 w-6" />
             </div>

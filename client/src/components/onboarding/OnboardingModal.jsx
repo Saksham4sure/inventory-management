@@ -398,11 +398,11 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-2 pt-14 pb-4 sm:p-5 bg-black/60 dark:bg-black/80 backdrop-blur-sm overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 pt-14 pb-4 sm:p-5 bg-black/60 dark:bg-black/80 backdrop-blur-sm overflow-hidden"
       role="dialog"
       aria-modal="true"
     >
-      <div className="relative w-full max-w-2xl bg-white dark:bg-[#14161f] border border-zinc-200 dark:border-zinc-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col my-auto animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-2xl bg-white dark:bg-[#14161f] border border-zinc-200 dark:border-zinc-800 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col my-auto animate-in fade-in zoom-in-95 duration-200 max-h-[92vh]">
         {/* Modal Header */}
         <div className="p-4 sm:p-6 border-b border-zinc-100 dark:border-zinc-800/80 bg-zinc-50/70 dark:bg-zinc-900/50">
           <div className="flex items-center justify-between gap-2.5 sm:gap-4">
@@ -460,7 +460,7 @@ export const OnboardingModal = ({ isOpen = true, onClose, isMandatory = true }) 
         </div>
 
         {/* Modal Body */}
-        <div className="p-4 sm:p-7 overflow-y-auto max-h-[calc(88dvh-120px)] sm:max-h-[68vh]">
+        <div className="p-4 sm:p-7 overflow-y-auto max-h-[calc(88dvh-120px)] sm:max-h-[68vh] modal-scroll overscroll-contain">
           {/* STEP 1: PERSONAL & CONTACT INFORMATION */}
           {currentStep === 1 && (
             <form

@@ -21,7 +21,6 @@ import {
   Lock,
   Send,
   CalendarPlus,
-  Zap,
   Building2,
 } from 'lucide-react';
 
@@ -81,19 +80,16 @@ export const SubscriptionPage = () => {
   }, [selectedExtendOption, customDays]);
 
   const projectedNewEndDate = useMemo(() => {
-    if (!data?.subscription) return 'N/A';
-    const currentEnd = data.subscription.endDate
-      ? new Date(data.subscription.endDate)
-      : new Date();
-    const baseTime = currentEnd.getTime() > Date.now() ? currentEnd.getTime() : Date.now();
-    const projected = new Date(baseTime + activeDays * 24 * 60 * 60 * 1000);
+    if (!data?.subscription?.endDate) return 'N/A';
+    const endMs = new Date(data.subscription.endDate).getTime();
+    const projected = new Date(endMs + activeDays * 24 * 60 * 60 * 1000);
     return projected.toLocaleDateString(undefined, {
       weekday: 'short',
       year: 'numeric',
       month: 'short',
       day: 'numeric',
     });
-  }, [data, activeDays]);
+  }, [data?.subscription?.endDate, activeDays]);
 
   const handleOpenExtendAction = (plan) => {
     if (!hasBusiness) {
@@ -750,9 +746,10 @@ export const SubscriptionPage = () => {
 
       {/* PLAN ACTION / EXTENSION MODAL */}
       {selectedPlanModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="w-full max-w-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-2xl p-6 sm:p-7 relative max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center gap-3 mb-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-hidden">
+          <div className="w-full max-w-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-2xl relative max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="flex-1 overflow-y-auto p-6 sm:p-7 modal-scroll overscroll-contain">
+              <div className="flex items-center gap-3 mb-5">
               <div className="h-11 w-11 rounded-2xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
                 {selectedPlanModal.action === 'EXTEND' ? (
                   <CalendarPlus className="h-6 w-6" />
@@ -923,7 +920,8 @@ export const SubscriptionPage = () => {
             </div>
           </div>
         </div>
-      )}
+      </div>
+    )}
 
       {/* POPUP NOTICE MODAL (Replaces alerts) */}
       {noticeModal && (
@@ -932,7 +930,7 @@ export const SubscriptionPage = () => {
           onClick={() => setNoticeModal(null)}
         >
           <div
-            className="w-full max-w-md rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 shadow-2xl space-y-4 animate-ios-alert"
+            className="w-full max-w-md rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 shadow-2xl space-y-4 animate-ios-alert overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3">
@@ -996,7 +994,7 @@ export const SubscriptionPage = () => {
           onClick={() => setConfirmCancelModal(false)}
         >
           <div
-            className="w-full max-w-md rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 shadow-2xl space-y-4 animate-ios-alert"
+            className="w-full max-w-md rounded-3xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-6 shadow-2xl space-y-4 animate-ios-alert overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3">

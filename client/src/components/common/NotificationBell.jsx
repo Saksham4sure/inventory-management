@@ -161,7 +161,7 @@ export const NotificationBell = () => {
           </div>
 
           {/* Notifications List */}
-          <div className="max-h-[380px] overflow-y-auto divide-y divide-zinc-100 dark:divide-zinc-800/60 overscroll-contain">
+          <div className="max-h-[380px] overflow-y-auto divide-y divide-zinc-100 dark:divide-zinc-800/60 overscroll-contain modal-scroll">
             {notifications.length === 0 ? (
               <div className="py-12 px-4 text-center">
                 <div className="h-10 w-10 rounded-full bg-zinc-100 dark:bg-zinc-800/60 flex items-center justify-center mx-auto mb-2 text-zinc-400">

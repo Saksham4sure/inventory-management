@@ -1209,7 +1209,7 @@ export const QRScanPage = () => {
               </div>
 
               {/* Items List */}
-              <div className="divide-y divide-zinc-100 dark:divide-zinc-800/60 my-2 max-h-[320px] overflow-y-auto pr-1">
+              <div className="divide-y divide-zinc-100 dark:divide-zinc-800/60 my-2 max-h-[320px] overflow-y-auto pr-1 modal-scroll overscroll-contain">
                 {cart.length > 0 ? (
                   cart.map((item) => {
                     const subtotal = item.quantity * item.unitPrice;
@@ -1663,7 +1663,7 @@ export const QRScanPage = () => {
               />
             </div>
 
-            <div className="border border-zinc-200/80 dark:border-zinc-800 rounded-xl p-1.5 max-h-56 overflow-y-auto divide-y divide-zinc-100 dark:divide-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-900/50">
+            <div className="border border-zinc-200/80 dark:border-zinc-800 rounded-xl p-1.5 max-h-56 overflow-y-auto divide-y divide-zinc-100 dark:divide-zinc-800/60 bg-zinc-50/50 dark:bg-zinc-900/50 modal-scroll overscroll-contain">
               {loadingParties ? (
                 <div className="py-6 text-center text-xs text-zinc-400">
                   <RefreshCw className="h-4 w-4 animate-spin mx-auto mb-1" />
@@ -1769,7 +1769,7 @@ export const QRScanPage = () => {
               </div>
             )}
 
-            <div className="border border-zinc-200 dark:border-zinc-800 rounded-2xl p-3 bg-zinc-50/60 dark:bg-zinc-850/60 space-y-2 max-h-48 overflow-y-auto">
+            <div className="border border-zinc-200 dark:border-zinc-800 rounded-2xl p-3 bg-zinc-50/60 dark:bg-zinc-850/60 space-y-2 max-h-48 overflow-y-auto modal-scroll overscroll-contain">
               {completedTxn.items?.map((it, idx) => (
                 <div key={idx} className="flex justify-between text-xs">
                   <span className="font-medium text-zinc-800 dark:text-zinc-200">

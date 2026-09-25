@@ -6,6 +6,8 @@ import {
   resendVerification,
   getMe,
   updateProfile,
+  uploadProfilePicture,
+  removeProfilePicture,
   updateOnboarding,
   uploadKyc,
   searchUsers,
@@ -24,6 +26,8 @@ router.post('/verify-email', emailRateLimiter, verifyEmail);
 router.post('/resend-verification', emailRateLimiter, resendVerification);
 router.get('/me', authenticate, getMe);
 router.put('/profile', authenticate, updateProfile);
+router.put('/profile/avatar', authenticate, uploadProfilePicture);
+router.delete('/profile/avatar', authenticate, removeProfilePicture);
 router.put('/onboarding', authenticate, updateOnboarding);
 router.post('/kyc', authenticate, uploadKyc);
 router.get('/users/search', authenticate, searchUsers);

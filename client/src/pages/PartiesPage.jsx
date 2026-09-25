@@ -1407,7 +1407,7 @@ export const PartiesPage = () => {
             </div>
 
             {/* Transactions Timeline */}
-            <div className="border rounded-2xl p-2 bg-zinc-50/50 dark:bg-zinc-900/50 max-h-80 overflow-y-auto divide-y divide-zinc-100 dark:divide-zinc-800/80">
+            <div className="border border-zinc-200/80 dark:border-zinc-800 rounded-2xl p-2 bg-zinc-50/50 dark:bg-zinc-900/50 max-h-80 overflow-y-auto divide-y divide-zinc-100 dark:divide-zinc-800/80 modal-scroll overscroll-contain">
               {loadingLedger ? (
                 <div className="py-8 text-center text-xs text-zinc-400">
                   <RefreshCw className="h-4 w-4 animate-spin mx-auto mb-2" />

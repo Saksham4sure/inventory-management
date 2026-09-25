@@ -83,8 +83,18 @@ export const Navbar = ({ onOpenMobileMenu }) => {
               {user?.email || ''}
             </span>
           </div>
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-bold text-xs shadow-2xs">
-            {user?.name ? user.name[0].toUpperCase() : 'U'}
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-bold text-xs shadow-2xs overflow-hidden">
+            {user?.profilePicture || user?.avatar ? (
+              <img
+                src={user.profilePicture || user.avatar}
+                alt={user?.name || 'User'}
+                className="w-full h-full object-cover"
+              />
+            ) : user?.name ? (
+              user.name[0].toUpperCase()
+            ) : (
+              'U'
+            )}
           </div>
         </Link>
       </div>

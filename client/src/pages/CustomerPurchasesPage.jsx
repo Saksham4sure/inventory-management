@@ -169,7 +169,7 @@ export const CustomerPurchasesPage = () => {
               <p className="text-xs font-bold text-zinc-900 dark:text-zinc-100 mb-2">
                 Purchased Items ({selectedTxn.items?.length || 0})
               </p>
-              <div className="divide-y divide-zinc-200 dark:divide-zinc-800 max-h-60 overflow-y-auto">
+              <div className="divide-y divide-zinc-200 dark:divide-zinc-800 max-h-60 overflow-y-auto modal-scroll overscroll-contain">
                 {selectedTxn.items?.map((item, idx) => (
                   <div key={idx} className="py-2 flex justify-between items-center text-xs">
                     <div>

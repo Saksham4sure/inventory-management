@@ -724,14 +724,15 @@ export const AdminSubscriptionsPage = () => {
 
       {/* MODAL: Edit or Create Subscription Tier */}
       {activeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
-          <div className="w-full max-w-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl p-6 relative my-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-hidden">
+          <div className="w-full max-w-lg bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl relative my-auto max-h-[90vh] flex flex-col overflow-hidden">
             <button
               onClick={() => setActiveModal(null)}
-              className="absolute right-4 top-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-white"
+              className="absolute right-4 top-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-white z-10 p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
             >
               <X className="h-4 w-4" />
             </button>
+            <div className="flex-1 overflow-y-auto p-6 modal-scroll overscroll-contain">
 
             <div className="flex items-center gap-2.5 mb-4">
               <div className="h-9 w-9 rounded-xl bg-zinc-600/10 text-zinc-800 dark:text-zinc-400 flex items-center justify-center">
@@ -907,7 +908,7 @@ export const AdminSubscriptionsPage = () => {
                   </button>
                 </div>
 
-                <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-2 bg-zinc-50 dark:bg-zinc-950 rounded-xl border border-zinc-200 dark:border-zinc-800">
+                <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-2 bg-zinc-50 dark:bg-zinc-950 rounded-xl border border-zinc-200 dark:border-zinc-800 modal-scroll overscroll-contain">
                   {planForm.features.map((feat, i) => (
                     <span
                       key={i}
@@ -963,14 +964,15 @@ export const AdminSubscriptionsPage = () => {
                 </button>
               </div>
             </form>
+            </div>
           </div>
         </div>
       )}
 
       {/* APPROVE / REJECT APPLICATION MODAL */}
       {reqActionModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl p-6 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-hidden">
+          <div className="w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl p-6 relative overflow-hidden">
             <button
               onClick={() => {
                 setReqActionModal(null);

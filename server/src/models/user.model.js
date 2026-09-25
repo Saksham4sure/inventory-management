@@ -79,6 +79,14 @@ const userSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    avatar: {
+      type: String,
+      default: '',
+    },
+    profilePicture: {
+      type: String,
+      default: '',
+    },
     location: {
       province: { type: String, default: '' },
       district: { type: String, default: '' },
@@ -207,6 +215,13 @@ userSchema.pre('save', async function (next) {
   } else if (this.age && (this.isModified('age') || !this.dob)) {
     const currentYear = new Date().getFullYear();
     this.dob = new Date(Date.UTC(currentYear - this.age, 0, 1));
+  }
+
+  // Synchronize avatar and profilePicture
+  if (this.isModified('avatar') && !this.isModified('profilePicture')) {
+    this.profilePicture = this.avatar;
+  } else if (this.isModified('profilePicture') && !this.isModified('avatar')) {
+    this.avatar = this.profilePicture;
   }
 
   if (!this.isModified('password')) return next();

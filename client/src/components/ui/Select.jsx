@@ -243,7 +243,7 @@ export const Select = ({
             )}
 
             {/* Options List */}
-            <div className="max-h-60 overflow-y-auto space-y-0.5 overscroll-contain">
+            <div className="max-h-60 overflow-y-auto space-y-0.5 overscroll-contain modal-scroll">
               {filteredOptions.length > 0 ? (
                 filteredOptions.map((opt) => {
                   const isSelected = String(opt.value) === String(value);

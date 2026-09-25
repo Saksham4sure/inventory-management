@@ -242,7 +242,7 @@ export const getMe = asyncHandler(async (req, res) => {
 });
 
 export const updateProfile = asyncHandler(async (req, res) => {
-  const { name, phone, location, dob, age, currentPassword, newPassword } = req.body;
+  const { name, phone, location, dob, age, currentPassword, newPassword, avatar, profilePicture } = req.body;
 
   // Immutability Check: Email cannot be changed
   if (req.body.email && req.body.email.toLowerCase().trim() !== req.user.email) {
@@ -331,6 +331,22 @@ export const updateProfile = asyncHandler(async (req, res) => {
     }
   }
 
+  // Profile Picture update / removal
+  if (avatar !== undefined || profilePicture !== undefined) {
+    const newPic = avatar !== undefined ? avatar : profilePicture;
+    if (newPic && typeof newPic === 'string' && newPic.trim() !== '') {
+      let finalPicUrl = newPic.trim();
+      if (finalPicUrl.startsWith('data:image/')) {
+        finalPicUrl = await uploadImageToCloudinary(finalPicUrl, 'stockpulse_avatars');
+      }
+      user.avatar = finalPicUrl;
+      user.profilePicture = finalPicUrl;
+    } else if (newPic === '' || newPic === null) {
+      user.avatar = '';
+      user.profilePicture = '';
+    }
+  }
+
   // If user wants to change password
   if (newPassword) {
     if (!currentPassword) {
@@ -354,6 +370,56 @@ export const updateProfile = asyncHandler(async (req, res) => {
 
   res.status(200).json(
     new ApiResponse(200, { user: sanitizeUser(user) }, 'Profile updated successfully')
+  );
+});
+
+export const uploadProfilePicture = asyncHandler(async (req, res) => {
+  const { avatar, profilePicture, image } = req.body;
+  const rawImage = avatar || profilePicture || image;
+
+  if (!rawImage || typeof rawImage !== 'string' || !rawImage.trim()) {
+    throw new ApiError(400, 'Profile picture image data is required');
+  }
+
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    throw new ApiError(404, 'User not found');
+  }
+
+  let finalUrl = rawImage.trim();
+  if (finalUrl.startsWith('data:image/')) {
+    finalUrl = await uploadImageToCloudinary(finalUrl, 'stockpulse_avatars');
+  }
+
+  user.avatar = finalUrl;
+  user.profilePicture = finalUrl;
+  await user.save();
+
+  res.status(200).json(
+    new ApiResponse(
+      200,
+      { user: sanitizeUser(user) },
+      'Profile picture updated successfully'
+    )
+  );
+});
+
+export const removeProfilePicture = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    throw new ApiError(404, 'User not found');
+  }
+
+  user.avatar = '';
+  user.profilePicture = '';
+  await user.save();
+
+  res.status(200).json(
+    new ApiResponse(
+      200,
+      { user: sanitizeUser(user) },
+      'Profile picture removed successfully'
+    )
   );
 });
 

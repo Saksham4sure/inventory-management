@@ -31,6 +31,16 @@ export const authService = {
     return response.data.data;
   },
 
+  uploadProfilePicture: async (imageData) => {
+    const response = await api.put('/auth/profile/avatar', { profilePicture: imageData });
+    return response.data.data;
+  },
+
+  removeProfilePicture: async () => {
+    const response = await api.delete('/auth/profile/avatar');
+    return response.data.data;
+  },
+
   updateOnboarding: async (data) => {
     const response = await api.put('/auth/onboarding', data);
     return response.data.data;

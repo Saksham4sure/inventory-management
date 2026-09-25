@@ -548,14 +548,15 @@ export const AdminUsersPage = () => {
 
       {/* MODAL: Edit User */}
       {editModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl p-6 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-hidden">
+          <div className="w-full max-w-md bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl relative my-auto max-h-[90vh] flex flex-col overflow-hidden">
             <button
               onClick={() => setEditModal(null)}
-              className="absolute right-4 top-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-white"
+              className="absolute right-4 top-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-white z-10 p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
             >
               <X className="h-4 w-4" />
             </button>
+            <div className="flex-1 overflow-y-auto p-6 modal-scroll overscroll-contain">
 
             <h3 className="font-bold text-sm text-zinc-900 dark:text-white mb-4 flex items-center gap-2">
               <Users className="h-4 w-4 text-zinc-600" />
@@ -654,14 +655,15 @@ export const AdminUsersPage = () => {
                 </button>
               </div>
             </form>
+            </div>
           </div>
         </div>
       )}
 
       {/* MODAL: Reset Password */}
       {passwordModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="w-full max-w-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl p-6 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-hidden">
+          <div className="w-full max-w-sm bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl p-6 relative overflow-hidden">
             <button
               onClick={() => setPasswordModal(null)}
               className="absolute right-4 top-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-white"
@@ -740,8 +742,8 @@ export const AdminUsersPage = () => {
 
       {/* MODAL: Delete User Confirmation */}
       {deleteModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="w-full max-w-sm bg-white dark:bg-zinc-900 border border-rose-200 dark:border-rose-900/60 rounded-2xl shadow-2xl p-6 text-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-hidden">
+          <div className="w-full max-w-sm bg-white dark:bg-zinc-900 border border-rose-200 dark:border-rose-900/60 rounded-2xl shadow-2xl p-6 text-center overflow-hidden">
             <div className="h-12 w-12 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center mx-auto mb-3">
               <AlertTriangle className="h-6 w-6" />
             </div>
@@ -773,18 +775,19 @@ export const AdminUsersPage = () => {
       )}
       {/* MODAL: KYC Document Inspection & Verification */}
       {kycModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm overflow-y-auto">
-          <div className="w-full max-w-2xl bg-white dark:bg-[#14161f] border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-2xl p-6 relative my-auto max-h-[92vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm overflow-hidden">
+          <div className="w-full max-w-2xl bg-white dark:bg-[#14161f] border border-zinc-200 dark:border-zinc-800 rounded-3xl shadow-2xl relative my-auto max-h-[92vh] flex flex-col overflow-hidden">
             <button
               onClick={() => {
                 setKycModal(null);
                 setShowRejectForm(false);
                 setRejectionReason('');
               }}
-              className="absolute right-4 top-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-white p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              className="absolute right-4 top-4 text-zinc-400 hover:text-zinc-600 dark:hover:text-white p-1 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer z-10"
             >
               <X className="h-5 w-5" />
             </button>
+            <div className="flex-1 overflow-y-auto p-6 modal-scroll overscroll-contain">
 
             {/* Modal Header */}
             <div className="flex items-center gap-3 mb-5">
@@ -1136,6 +1139,7 @@ export const AdminUsersPage = () => {
                 )}
               </div>
             )}
+            </div>
           </div>
         </div>
       )}

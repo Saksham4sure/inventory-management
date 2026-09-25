@@ -8,7 +8,6 @@ import {
   ScanLine,
   QrCode,
   X,
-  ShieldCheck,
   TrendingUp,
   ShoppingCart,
   Users,
@@ -207,8 +206,18 @@ export const Sidebar = ({ isMobileOpen, onClose }) => {
             onClick={onClose}
             className="flex items-center gap-2.5 min-w-0 flex-1 hover:opacity-80 transition-opacity"
           >
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-bold text-xs shrink-0 shadow-2xs">
-              {user?.name ? user.name[0].toUpperCase() : 'U'}
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-bold text-xs shrink-0 shadow-2xs overflow-hidden">
+              {user?.profilePicture || user?.avatar ? (
+                <img
+                  src={user.profilePicture || user.avatar}
+                  alt={user?.name || 'User'}
+                  className="w-full h-full object-cover"
+                />
+              ) : user?.name ? (
+                user.name[0].toUpperCase()
+              ) : (
+                'U'
+              )}
             </div>
             <div className="flex flex-col min-w-0">
               <span className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate">
