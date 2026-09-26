@@ -361,15 +361,6 @@ export const OnboardingModal = ({ isOpen = true, onClose }) => {
     }
   };
 
-  const handleReturnToDashboard = () => {
-    if (onClose) onClose();
-    if (user?.userType === 'CUSTOMER') {
-      navigate(ROUTES.CUSTOMER_PURCHASES, { replace: true });
-    } else {
-      navigate(ROUTES.DASHBOARD, { replace: true });
-    }
-  };
-
   const handleSignOut = () => {
     logout();
     navigate(ROUTES.LOGIN, { replace: true });
@@ -444,8 +435,18 @@ export const OnboardingModal = ({ isOpen = true, onClose }) => {
               </div>
             </div>
 
-            {/* Header Right: Sign Out Option */}
-            <div className="flex items-center shrink-0">
+            {/* Header Right: Actions (Skip only for KYC steps 3 & 4) */}
+            <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+              {(currentStep === 3 || currentStep === 4) && (
+                <button
+                  type="button"
+                  onClick={handleSkipKyc}
+                  disabled={loading}
+                  className="text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 underline underline-offset-4 transition-colors cursor-pointer disabled:opacity-50 px-1 py-0.5"
+                >
+                  Skip for now
+                </button>
+              )}
               <button
                 type="button"
                 onClick={handleSignOut}
@@ -460,7 +461,7 @@ export const OnboardingModal = ({ isOpen = true, onClose }) => {
         </div>
 
         {/* Modal Body */}
-        <div className="p-4 sm:p-7 overflow-y-auto max-h-[calc(88dvh-120px)] sm:max-h-[68vh] modal-scroll overscroll-contain">
+        <div className="p-4 sm:p-7 overflow-y-auto max-h-[calc(90dvh-130px)] sm:max-h-[72vh] pb-10 modal-scroll overscroll-contain">
           {/* STEP 1: PERSONAL & CONTACT INFORMATION */}
           {currentStep === 1 && (
             <form
@@ -537,31 +538,18 @@ export const OnboardingModal = ({ isOpen = true, onClose }) => {
               className="space-y-4"
             >
               {/* Verified Address Scope Indicator */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                <div className="p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800/80 flex flex-col items-center text-center gap-1">
-                  <Building2 className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
-                  <span className="text-[10px] font-semibold text-zinc-700 dark:text-zinc-300">
-                    Business Profile
+              <div className="p-3 rounded-2xl bg-zinc-100/80 dark:bg-zinc-900/70 border border-zinc-200 dark:border-zinc-800 text-xs text-zinc-600 dark:text-zinc-300 flex items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2 min-w-0">
+                  <MapPin className="h-4 w-4 text-zinc-500 dark:text-zinc-400 shrink-0" />
+                  <span className="truncate">
+                    {user?.userType === 'CUSTOMER'
+                      ? 'Your official address is registered to your personal verified account.'
+                      : 'Official address used across store profiles, POS invoices & compliance.'}
                   </span>
                 </div>
-                <div className="p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800/80 flex flex-col items-center text-center gap-1">
-                  <Receipt className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
-                  <span className="text-[10px] font-semibold text-zinc-700 dark:text-zinc-300">
-                    POS Receipts
-                  </span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800/80 flex flex-col items-center text-center gap-1">
-                  <Users className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
-                  <span className="text-[10px] font-semibold text-zinc-700 dark:text-zinc-300">
-                    Customer Records
-                  </span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800/80 flex flex-col items-center text-center gap-1">
-                  <ShieldCheck className="h-4 w-4 text-zinc-600 dark:text-zinc-400" />
-                  <span className="text-[10px] font-semibold text-zinc-700 dark:text-zinc-300">
-                    KYC Compliance
-                  </span>
-                </div>
+                <span className="text-[10px] font-semibold uppercase tracking-wider font-mono text-zinc-700 dark:text-zinc-300 bg-zinc-200/70 dark:bg-zinc-800 px-2 py-0.5 rounded-md border border-zinc-300/60 dark:border-zinc-700 shrink-0">
+                  Address Info
+                </span>
               </div>
 
               {/* Cascading Nepal Location Selector */}
@@ -578,7 +566,7 @@ export const OnboardingModal = ({ isOpen = true, onClose }) => {
                     setLocationValue(newState || formatted);
                   }}
                   required
-                  isBusinessSetup={true}
+                  isBusinessSetup={user?.userType !== 'CUSTOMER'}
                   showStreetInput={true}
                 />
               </div>
@@ -1001,15 +989,7 @@ export const OnboardingModal = ({ isOpen = true, onClose }) => {
                   <span>Back to Address</span>
                 </button>
               ) : (
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={handleReturnToDashboard}
-                  disabled={loading}
-                  className="text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-750"
-                >
-                  <span>Return to Dashboard</span>
-                </Button>
+                <div className="hidden sm:block" />
               )
             ) : currentStep === 4 ? (
               <button
@@ -1053,18 +1033,15 @@ export const OnboardingModal = ({ isOpen = true, onClose }) => {
               )}
 
               {currentStep === 3 && (
-                <>
-                  {!isPreviousStepsDisabled && !user?.kycSkipped && (
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={handleSkipKyc}
-                      disabled={loading}
-                      className="w-full sm:w-auto text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-750"
-                    >
-                      <span>Skip for now</span>
-                    </Button>
-                  )}
+                <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={handleSkipKyc}
+                    disabled={loading}
+                    className="text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 underline underline-offset-4 transition-colors cursor-pointer disabled:opacity-50 py-2 px-1"
+                  >
+                    Skip for now
+                  </button>
                   <Button
                     type="submit"
                     form="step-3-doc-form"
@@ -1074,22 +1051,19 @@ export const OnboardingModal = ({ isOpen = true, onClose }) => {
                     <span>Continue to Photo Upload</span>
                     <ArrowRight className="h-3.5 w-3.5 ml-1.5" />
                   </Button>
-                </>
+                </div>
               )}
 
               {currentStep === 4 && (
-                <>
-                  {!isPreviousStepsDisabled && !user?.kycSkipped && (
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={handleSkipKyc}
-                      disabled={loading}
-                      className="w-full sm:w-auto text-zinc-600 dark:text-zinc-400 border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-750"
-                    >
-                      <span>Skip for now</span>
-                    </Button>
-                  )}
+                <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={handleSkipKyc}
+                    disabled={loading}
+                    className="text-xs font-semibold text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 underline underline-offset-4 transition-colors cursor-pointer disabled:opacity-50 py-2 px-1"
+                  >
+                    Skip for now
+                  </button>
                   <Button
                     type="submit"
                     form="step-4-photos-form"
@@ -1100,7 +1074,7 @@ export const OnboardingModal = ({ isOpen = true, onClose }) => {
                     <FileCheck2 className="h-3.5 w-3.5 mr-1.5" />
                     <span>Submit KYC Details</span>
                   </Button>
-                </>
+                </div>
               )}
 
               {currentStep === 5 && (

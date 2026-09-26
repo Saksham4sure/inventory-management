@@ -259,7 +259,7 @@ export const LocationSelect = ({
       </div>
 
       {/* Cascading Dropdowns: Province & District */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-30">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Select
           label="Province"
           id={`${id}-province`}
@@ -285,7 +285,7 @@ export const LocationSelect = ({
       </div>
 
       {/* Cascading Dropdowns: Municipality & Ward */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 relative z-20">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <Select
           label="Municipality / Local Level"
           id={`${id}-municipality`}

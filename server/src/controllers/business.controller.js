@@ -43,6 +43,14 @@ export const setupBusiness = asyncHandler(async (req, res) => {
     formattedPhone = phoneValidation.normalized;
   }
 
+  // Normal users (CUSTOMER) cannot create a business directly; they can only work for a business if invited
+  if (req.user.userType === 'CUSTOMER') {
+    throw new ApiError(
+      403,
+      'Normal users cannot register a business. You can only work for a business if invited.'
+    );
+  }
+
   // If user already has a business, prevent duplicate setup unless explicitly invited
   if (req.user.businessId) {
     throw new ApiError(400, 'You have already configured a business');

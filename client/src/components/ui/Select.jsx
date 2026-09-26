@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, Children } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronsUpDown, Check, Search, X } from 'lucide-react';
 
 export const Select = ({
@@ -21,7 +22,18 @@ export const Select = ({
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const containerRef = useRef(null);
+  const triggerRef = useRef(null);
+  const popoverRef = useRef(null);
   const searchInputRef = useRef(null);
+
+  const [menuCoords, setMenuCoords] = useState({
+    top: undefined,
+    bottom: undefined,
+    left: 0,
+    width: 0,
+    maxHeight: 240,
+    placement: 'bottom',
+  });
 
   // Normalize options from either options prop or children <option> tags
   let normalizedOptions = [];
@@ -78,15 +90,86 @@ export const Select = ({
     setSearchQuery('');
   };
 
+  const updateMenuPosition = () => {
+    if (!triggerRef.current) return;
+    const rect = triggerRef.current.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const viewportWidth = window.innerWidth;
+
+    // If trigger is scrolled completely out of viewport, close menu
+    if (rect.bottom < 0 || rect.top > viewportHeight) {
+      closeMenu();
+      return;
+    }
+
+    const spaceBelow = viewportHeight - rect.bottom;
+    const spaceAbove = rect.top;
+
+    // Flip to top if space below is too tight (< 220px) AND space above has more room
+    const shouldPlaceTop = spaceBelow < 220 && spaceAbove > spaceBelow;
+
+    const maxHeight = shouldPlaceTop
+      ? Math.max(120, Math.min(260, spaceAbove - 20))
+      : Math.max(120, Math.min(260, spaceBelow - 20));
+
+    let left = rect.left;
+    const width = rect.width;
+    if (left + width > viewportWidth - 8) {
+      left = Math.max(8, viewportWidth - width - 8);
+    }
+    if (left < 8) left = 8;
+
+    setMenuCoords({
+      top: shouldPlaceTop ? undefined : rect.bottom + 6,
+      bottom: shouldPlaceTop ? viewportHeight - rect.top + 6 : undefined,
+      left,
+      width,
+      maxHeight,
+      placement: shouldPlaceTop ? 'top' : 'bottom',
+    });
+  };
+
   const openMenu = () => {
     setSearchQuery('');
     setIsOpen(true);
+    // Smoothly scroll trigger into comfortable view if near container boundaries
+    setTimeout(() => {
+      triggerRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      updateMenuPosition();
+    }, 20);
   };
+
+  // Recalculate menu position on scroll or window resize
+  useEffect(() => {
+    if (!isOpen) return;
+    updateMenuPosition();
+
+    const handleScrollOrResize = (e) => {
+      // If scroll happens within the dropdown itself, don't trigger parent updates
+      if (popoverRef.current && popoverRef.current.contains(e.target)) {
+        return;
+      }
+      updateMenuPosition();
+    };
+
+    window.addEventListener('resize', handleScrollOrResize);
+    window.addEventListener('scroll', handleScrollOrResize, true);
+
+    return () => {
+      window.removeEventListener('resize', handleScrollOrResize);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+    };
+  }, [isOpen]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (containerRef.current && !containerRef.current.contains(e.target)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target) &&
+        popoverRef.current &&
+        !popoverRef.current.contains(e.target)
+      ) {
         closeMenu();
       }
     };
@@ -135,9 +218,6 @@ export const Select = ({
 
   const handleSelectOption = (optValue) => {
     if (onChange) {
-      // Send standard synthetic-like event object for React compatibility,
-      // with direct value properties and string coercion so it works whether caller
-      // expects (e) => handle(e.target.value) or (val) => setVal(val).
       const syntheticEvent = {
         target: {
           value: optValue,
@@ -158,9 +238,107 @@ export const Select = ({
     closeMenu();
   };
 
+  const popoverElement =
+    isOpen && typeof document !== 'undefined'
+      ? createPortal(
+          <div
+            ref={popoverRef}
+            role="listbox"
+            style={{
+              position: 'fixed',
+              top: menuCoords.top !== undefined ? `${menuCoords.top}px` : undefined,
+              bottom: menuCoords.bottom !== undefined ? `${menuCoords.bottom}px` : undefined,
+              left: `${menuCoords.left}px`,
+              width: `${menuCoords.width}px`,
+              zIndex: 99999,
+              transformOrigin: menuCoords.placement === 'top' ? 'bottom center' : 'top center',
+            }}
+            className="rounded-2xl bg-white/95 dark:bg-[#191b22]/95 backdrop-blur-2xl border border-black/[0.08] dark:border-white/[0.12] shadow-2xl ring-1 ring-black/[0.05] dark:ring-white/[0.05] p-1.5 animate-ios-menu overflow-hidden min-w-[200px]"
+          >
+            {/* iOS Search Bar */}
+            {isSearchActive && (
+              <div className="p-1 pb-1.5 border-b border-black/[0.05] dark:border-white/[0.06] mb-1">
+                <div className="relative flex items-center">
+                  <Search className="absolute left-2.5 h-3.5 w-3.5 text-zinc-400 pointer-events-none" />
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={handleSearchKeyDown}
+                    placeholder="Search options..."
+                    className="w-full pl-8 pr-7 py-1.5 text-xs rounded-xl bg-black/[0.04] dark:bg-white/[0.06] text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 border border-transparent focus:border-black/[0.1] dark:focus:border-white/[0.15] focus:outline-none transition-all"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Options List */}
+            <div
+              style={{ maxHeight: `${menuCoords.maxHeight}px` }}
+              className="overflow-y-auto space-y-0.5 overscroll-contain modal-scroll"
+            >
+              {filteredOptions.length > 0 ? (
+                filteredOptions.map((opt) => {
+                  const isSelected = String(opt.value) === resolvedValue;
+                  return (
+                    <div
+                      key={opt.value}
+                      role="option"
+                      aria-selected={isSelected}
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleSelectOption(opt.value);
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSelectOption(opt.value);
+                      }}
+                      className={`group flex items-center justify-between rounded-xl px-3 py-2 text-xs sm:text-sm transition-all duration-150 cursor-pointer select-none active:scale-[0.985] ${
+                        isSelected
+                          ? 'bg-black/[0.06] dark:bg-white/[0.09] text-zinc-950 dark:text-white font-semibold'
+                          : 'text-zinc-700 dark:text-zinc-300 hover:bg-black/[0.035] dark:hover:bg-white/[0.05] active:bg-black/[0.07] dark:active:bg-white/[0.1]'
+                      }`}
+                    >
+                      <div className="flex flex-col min-w-0 pr-2">
+                        <span className="truncate">{opt.label}</span>
+                        {opt.subtext && (
+                          <span className="text-[11px] text-zinc-400 dark:text-zinc-500 truncate mt-0.5 font-normal">
+                            {opt.subtext}
+                          </span>
+                        )}
+                      </div>
+
+                      {isSelected && (
+                        <Check className="w-4 h-4 text-zinc-900 dark:text-zinc-100 shrink-0 ml-2 animate-ios-check" />
+                      )}
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="py-4 text-center text-xs text-zinc-400 dark:text-zinc-500">
+                  No matching options
+                </div>
+              )}
+            </div>
+          </div>,
+          document.body
+        )
+      : null;
+
   return (
     <div
-      className={`w-full ${label ? 'space-y-1.5' : ''} ${isOpen ? 'relative z-50' : 'relative z-10'}`}
+      className={`w-full ${label ? 'space-y-1.5' : ''}`}
       ref={containerRef}
     >
       {label && (
@@ -173,8 +351,9 @@ export const Select = ({
       )}
 
       <div className="relative">
-        {/* iPhone Inspired Trigger Button */}
+        {/* Trigger Button */}
         <button
+          ref={triggerRef}
           id={id}
           type="button"
           disabled={disabled}
@@ -230,87 +409,8 @@ export const Select = ({
           ))}
         </select>
 
-        {/* iPhone Inspired Floating Popover Sheet */}
-        {isOpen && (
-          <div
-            role="listbox"
-            className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 rounded-2xl bg-white/95 dark:bg-[#191b22]/95 backdrop-blur-2xl border border-black/[0.08] dark:border-white/[0.12] shadow-2xl ring-1 ring-black/[0.05] dark:ring-white/[0.05] p-1.5 animate-ios-menu overflow-hidden min-w-[200px]"
-          >
-            {/* iOS Search Bar */}
-            {isSearchActive && (
-              <div className="p-1 pb-1.5 border-b border-black/[0.05] dark:border-white/[0.06] mb-1">
-                <div className="relative flex items-center">
-                  <Search className="absolute left-2.5 h-3.5 w-3.5 text-zinc-400 pointer-events-none" />
-                  <input
-                    ref={searchInputRef}
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={handleSearchKeyDown}
-                    placeholder="Search options..."
-                    className="w-full pl-8 pr-7 py-1.5 text-xs rounded-xl bg-black/[0.04] dark:bg-white/[0.06] text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 border border-transparent focus:border-black/[0.1] dark:focus:border-white/[0.15] focus:outline-none transition-all"
-                  />
-                  {searchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => setSearchQuery('')}
-                      className="absolute right-2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 cursor-pointer"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Options List */}
-            <div className="max-h-60 overflow-y-auto space-y-0.5 overscroll-contain modal-scroll">
-              {filteredOptions.length > 0 ? (
-                filteredOptions.map((opt) => {
-                  const isSelected = String(opt.value) === resolvedValue;
-                  return (
-                    <div
-                      key={opt.value}
-                      role="option"
-                      aria-selected={isSelected}
-                      onMouseDown={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleSelectOption(opt.value);
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSelectOption(opt.value);
-                      }}
-                      className={`group flex items-center justify-between rounded-xl px-3 py-2 text-xs sm:text-sm transition-all duration-150 cursor-pointer select-none active:scale-[0.985] ${
-                        isSelected
-                          ? 'bg-black/[0.06] dark:bg-white/[0.09] text-zinc-950 dark:text-white font-semibold'
-                          : 'text-zinc-700 dark:text-zinc-300 hover:bg-black/[0.035] dark:hover:bg-white/[0.05] active:bg-black/[0.07] dark:active:bg-white/[0.1]'
-                      }`}
-                    >
-                      <div className="flex flex-col min-w-0 pr-2">
-                        <span className="truncate">{opt.label}</span>
-                        {opt.subtext && (
-                          <span className="text-[11px] text-zinc-400 dark:text-zinc-500 truncate mt-0.5 font-normal">
-                            {opt.subtext}
-                          </span>
-                        )}
-                      </div>
-
-                      {isSelected && (
-                        <Check className="w-4 h-4 text-zinc-900 dark:text-zinc-100 shrink-0 ml-2 animate-ios-check" />
-                      )}
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="py-4 text-center text-xs text-zinc-400 dark:text-zinc-500">
-                  No matching options
-                </div>
-              )}
-            </div>
-          </div>
-        )}
+        {/* Portaled Floating Popover */}
+        {popoverElement}
       </div>
 
       {error && <p className="text-[11px] text-rose-600 dark:text-rose-400 font-medium pl-0.5">{error}</p>}

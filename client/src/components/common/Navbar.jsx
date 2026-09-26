@@ -10,6 +10,7 @@ import { ROUTES } from '../../constants/routes';
 export const Navbar = ({ onOpenMobileMenu }) => {
   const { user } = useAuth();
   const { business } = useBusiness();
+  const isNormalUser = user?.userType === 'CUSTOMER' || (!user?.businessId && user?.role === 'USER');
 
   return (
     <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-black/[0.06] dark:border-white/[0.08] bg-white/80 dark:bg-[#12141a]/85 px-4 sm:px-6 backdrop-blur-xl transition-colors">
@@ -46,6 +47,15 @@ export const Navbar = ({ onOpenMobileMenu }) => {
                 {business.category || 'Inventory Store'}
               </span>
             </div>
+          </Link>
+        ) : isNormalUser ? (
+          <Link
+            to={ROUTES.CUSTOMER_PURCHASES}
+            title="StockPulse"
+            className="flex items-center gap-2 text-xs font-semibold tracking-tight text-zinc-700 dark:text-zinc-300 hover:opacity-80 transition-opacity"
+          >
+            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+            StockPulse
           </Link>
         ) : (
           <Link
